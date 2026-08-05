@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
     Search,
     MapPin,
@@ -10,10 +11,7 @@ import {
     Menu,
     ChevronDown,
     X,
-    Laptop,
-    Monitor,
     HardDrive,
-    Keyboard,
     Flame,
     Sparkles,
     ChevronRight,
@@ -260,7 +258,7 @@ export const Header: React.FC = () => {
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);
 
-    // Close search suggestions on click outside
+    // Close search suggestions on click outside & menus on scroll
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -272,13 +270,28 @@ export const Header: React.FC = () => {
             }
         };
 
+        const handleScroll = () => {
+            if (window.scrollY > 40) {
+                setIsMegaMenuOpen(false);
+                setActiveHorizontalCategory(null);
+                setIsLocationOpen(false);
+                setIsSearchOpen(false);
+            }
+        };
+
+        handleScroll();
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        window.addEventListener('scroll', handleScroll);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, []);
 
     return (
-        <header className="w-full font-sans select-none sticky top-0 z-50 shadow-md">
-            <div className="bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white">
+        <>
+            <header className="w-full font-sans select-none sticky top-0 z-50 shadow-md bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white">
                 <div className="max-w-[1250px] mx-auto px-3 sm:px-4 lg:px-6 py-2.5 flex items-center justify-between gap-2 md:gap-4">
                     <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
                         <button
@@ -288,7 +301,7 @@ export const Header: React.FC = () => {
                         >
                             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
-                        <a href="/" className="flex items-center space-x-2 group">
+                        <Link to="/" className="flex items-center space-x-2 group">
                             <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10 group-hover:bg-white/20 transition-all duration-300 shadow-inner">
                                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/80 flex items-center justify-center font-extrabold text-xs sm:text-sm tracking-tighter">
                                     PC
@@ -299,7 +312,7 @@ export const Header: React.FC = () => {
                                     PC<span className="text-amber-300 font-extrabold">STORE</span>
                                 </span>
                             </div>
-                        </a>
+                        </Link>
                         <div className="relative hidden md:block">
                             <button
                                 onClick={() => setIsLocationOpen(!isLocationOpen)}
@@ -403,41 +416,41 @@ export const Header: React.FC = () => {
 
                     <div className="hidden lg:flex items-center space-x-1 xl:space-x-3 text-xs font-medium">
                         {/* 1. XÂY DỰNG CẤU HÌNH */}
-                        <a
-                            href="/build-pc"
+                        <Link
+                            to="/build-pc"
                             className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <PcCase className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Xây Dựng Cấu Hình
                             </span>
-                        </a>
+                        </Link>
 
                         {/* 2. KHÁCH HÀNG LIÊN HỆ */}
-                        <a
-                            href="/contact"
+                        <Link
+                            to="/contact"
                             className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <PhoneCall className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Khách Hàng Liên Hệ
                             </span>
-                        </a>
+                        </Link>
 
                         {/* 3. TIN TỨC CÔNG NGHỆ */}
-                        <a
-                            href="/news"
+                        <Link
+                            to="/news"
                             className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <Newspaper className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Tin Tức Công Nghệ
                             </span>
-                        </a>
+                        </Link>
 
                         {/* 4. GIỎ HÀNG */}
-                        <a
-                            href="/cart"
+                        <Link
+                            to="/cart"
                             className="relative flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <div className="relative">
@@ -451,41 +464,108 @@ export const Header: React.FC = () => {
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Giỏ Hàng
                             </span>
-                        </a>
+                        </Link>
 
                         {/* 5. TÀI KHOẢN */}
-                        <a
-                            href="/account"
+                        <Link
+                            to="/account"
                             className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Tài Khoản
                             </span>
-                        </a>
+                        </Link>
                     </div>
 
                     {/* MOBILE QUICK CARTS & USER */}
                     <div className="flex lg:hidden items-center space-x-2 shrink-0">
-                        <a href="/cart" className="relative p-2 text-white hover: rounded-lg">
+                        <Link to="/cart" className="relative p-2 text-white hover: rounded-lg">
                             <ShoppingCart className="w-6 h-6" />
                             <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600">
                                 {cartCount}
                             </span>
-                        </a>
-                        <a href="/account" className="p-2 text-white hover: rounded-lg">
+                        </Link>
+                        <Link to="/account" className="p-2 text-white hover: rounded-lg">
                             <User className="w-6 h-6" />
-                        </a>
+                        </Link>
                     </div>
 
                 </div>
-            </div>
+
+                {/* MOBILE DRAWER NAVIGATION MENU */}
+                {isMobileMenuOpen && (
+                    <div className="lg:hidden bg-white text-gray-900 border-t border-gray-200 shadow-xl max-h-[80vh] overflow-y-auto animate-in slide-in-from-top duration-200">
+                        {/* Quick Actions in Mobile Drawer */}
+                        <div className="grid grid-cols-2 gap-2 p-3 bg-blue-50 border-b border-blue-100">
+                            <Link
+                                to="/build-pc"
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <Cpu className="w-4 h-4 text-blue-600" />
+                                <span>Xây Dựng Cấu Hình</span>
+                            </Link>
+                            <Link
+                                to="/contact"
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <PhoneCall className="w-4 h-4 text-blue-600" />
+                                <span>Khách Hàng Liên Hệ</span>
+                            </Link>
+                            <Link
+                                to="/news"
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <Newspaper className="w-4 h-4 text-blue-600" />
+                                <span>Tin Tức Công Nghệ</span>
+                            </Link>
+                            <Link
+                                to="/account"
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <User className="w-4 h-4 text-blue-600" />
+                                <span>Tài Khoản</span>
+                            </Link>
+                        </div>
+
+                        {/* Categories List in Mobile Drawer */}
+                        <div className="p-3">
+                            <div className="font-extrabold text-xs text-gray-500 uppercase tracking-wider mb-2">
+                                Danh Mục Sản Phẩm
+                            </div>
+                            <div className="space-y-1">
+                                {CATEGORIES.map((cat) => (
+                                    <div key={cat.id} className="border-b border-gray-100 pb-1">
+                                        <div className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50">
+                                            <div className="flex items-center space-x-2">
+                                                {cat.icon}
+                                                <span>{cat.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="pl-6 space-y-1 pb-1">
+                                            {cat.subcategories.flatMap(s => s.items).slice(0, 3).map((item, idx) => (
+                                                <a
+                                                    key={idx}
+                                                    href="#"
+                                                    className="block text-[11px] text-gray-600 hover:text-blue-600 py-0.5"
+                                                >
+                                                    • {item}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </header>
 
             {/* ========================================================================= */}
             {/* BOTTOM NAV BAR: CATEGORY NAVIGATION ROW */}
             {/* ========================================================================= */}
-            <div
-                className="bg-[#2366EF] border-t border-blue-400/30 text-white hidden lg:block"
+            <nav
+                className="bg-[#2366EF] text-white hidden lg:block border-t border-blue-400/30 relative z-40 shadow-sm"
                 onMouseLeave={() => setActiveHorizontalCategory(null)}
             >
                 <div className="max-w-[1250px] mx-auto px-4 lg:px-6 flex items-center relative">
@@ -581,8 +661,8 @@ export const Header: React.FC = () => {
                     <nav className="flex-1 w-full flex items-center justify-between py-2 text-xs font-semibold ml-4">
                         {HORIZONTAL_CATEGORIES.map((cat) => (
                             <div key={cat.id} className="relative">
-                                <a
-                                    href={`/category/${cat.id}`}
+                                <Link
+                                    to={`/category/${cat.id}`}
                                     onMouseEnter={() => {
                                         setIsMegaMenuOpen(false);
                                         setActiveHorizontalCategory(cat);
@@ -594,7 +674,7 @@ export const Header: React.FC = () => {
                                     <span>{cat.name}</span>
                                     <ChevronDown className={`w-3 h-3 text-blue-200 transition-transform duration-200 ${activeHorizontalCategory?.id === cat.id ? 'rotate-180 text-white' : ''
                                         }`} />
-                                </a>
+                                </Link>
                             </div>
                         ))}
                     </nav>
@@ -639,77 +719,8 @@ export const Header: React.FC = () => {
                         </div>
                     )}
                 </div>
-            </div>
-
-            {/* ========================================================================= */}
-            {/* MOBILE DRAWER NAVIGATION MENU */}
-            {/* ========================================================================= */}
-            {isMobileMenuOpen && (
-                <div className="lg:hidden bg-white text-gray-900 border-t border-gray-200 shadow-xl max-h-[80vh] overflow-y-auto animate-in slide-in-from-top duration-200">
-                    {/* Quick Actions in Mobile Drawer */}
-                    <div className="grid grid-cols-2 gap-2 p-3 bg-blue-50 border-b border-blue-100">
-                        <a
-                            href="/build-pc"
-                            className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
-                        >
-                            <Cpu className="w-4 h-4 text-blue-600" />
-                            <span>Xây Dựng Cấu Hình</span>
-                        </a>
-                        <a
-                            href="/contact"
-                            className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
-                        >
-                            <PhoneCall className="w-4 h-4 text-blue-600" />
-                            <span>Khách Hàng Liên Hệ</span>
-                        </a>
-                        <a
-                            href="/news"
-                            className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
-                        >
-                            <Newspaper className="w-4 h-4 text-blue-600" />
-                            <span>Tin Tức Công Nghệ</span>
-                        </a>
-                        <a
-                            href="/account"
-                            className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
-                        >
-                            <User className="w-4 h-4 text-blue-600" />
-                            <span>Tài Khoản</span>
-                        </a>
-                    </div>
-
-                    {/* Categories List in Mobile Drawer */}
-                    <div className="p-3">
-                        <div className="font-extrabold text-xs text-gray-500 uppercase tracking-wider mb-2">
-                            Danh Mục Sản Phẩm
-                        </div>
-                        <div className="space-y-1">
-                            {CATEGORIES.map((cat) => (
-                                <div key={cat.id} className="border-b border-gray-100 pb-1">
-                                    <div className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50">
-                                        <div className="flex items-center space-x-2">
-                                            {cat.icon}
-                                            <span>{cat.name}</span>
-                                        </div>
-                                    </div>
-                                    <div className="pl-6 space-y-1 pb-1">
-                                        {cat.subcategories.flatMap(s => s.items).slice(0, 3).map((item, idx) => (
-                                            <a
-                                                key={idx}
-                                                href="#"
-                                                className="block text-[11px] text-gray-600 hover:text-blue-600 py-0.5"
-                                            >
-                                                • {item}
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </header>
+            </nav>
+        </>
     );
 };
 

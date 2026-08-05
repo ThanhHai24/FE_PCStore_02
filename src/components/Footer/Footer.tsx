@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Mail, Clock, ChevronUp, MessageCircle } from 'lucide-react';
+import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin } from 'lucide-react';
 
 interface ContactBranch {
   id: number;
+  name: string;
+  image: string;
+  address: string;
+  mapUrl: string;
   phone: string;
   email: string;
   hours: string;
@@ -11,26 +15,39 @@ interface ContactBranch {
 const contactBranches: ContactBranch[] = [
   {
     id: 1,
-    phone: '098.741.4899',
-    email: 'nguyenluc@nguyencongpc.vn',
-    hours: '08:00 - 17:30',
+    name: 'CƠ SỞ HÀ NỘI - 1',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80',
+    address: 'Hà Nội',
+    mapUrl: 'https://maps.google.com/?q=17+Ha+Ke+Tan+Hanoi',
+    phone: '0123.456.789',
+    email: 'example@example.com',
+    hours: '08:30 - 20:30',
   },
   {
     id: 2,
-    phone: '098.122.6969',
-    email: 'tuyetpham@nguyencongpc.vn',
-    hours: '08:00 - 17:30',
+    name: 'CƠ SỞ HÀ NỘI - 2',
+    image: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=800&auto=format&fit=crop&q=80',
+    address: 'Hà Nội',
+    mapUrl: 'https://maps.google.com/?q=10+ngo+93+Tran+Thai+Tong+Hanoi',
+    phone: '0345.678.901',
+    email: 'example@example.com',
+    hours: '08:00 - 20:30',
   },
   {
     id: 3,
-    phone: '0707.08.6666',
-    email: 'nguyenluc@nguyencongpc.vn',
-    hours: '08:00 - 17:30',
+    name: 'CƠ SỞ HỒ CHÍ MINH',
+    image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80',
+    address: 'TP. Hồ Chí Minh',
+    mapUrl: 'https://maps.google.com/?q=249+Ly+Thuong+Kiet+HCM',
+    phone: '0567.890.123',
+    email: 'example@example.com',
+    hours: '08:30 - 20:30',
   },
 ];
 
 export const Footer: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,6 +55,12 @@ export const Footer: React.FC = () => {
         setShowScrollTop(true);
       } else {
         setShowScrollTop(false);
+      }
+
+      if (window.scrollY > 100) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
       }
     };
 
@@ -54,39 +77,109 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="w-full bg-white text-gray-700 font-sans text-sm border-t border-gray-200 selection:bg-blue-500 selection:text-white">
+      <div className="border-b border-gray-200 bg-[#e5e5e5]">
+        <div className="max-w-[1250px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+          <div className="flex items-center gap-3.5 bg-white p-4 rounded-lg shadow-sm h-full">
+            <Truck className="w-10 h-10 text-blue-600 shrink-0" />
+            <div className="text-sm leading-tight">
+              <strong className="block font-bold text-gray-900 mb-0.5">CHÍNH SÁCH GIAO HÀNG</strong>
+              <span className="text-gray-500 text-xs sm:text-sm">Nhận hàng và thanh toán tại nhà</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 bg-white p-4 rounded-lg shadow-sm h-full">
+            <RefreshCcw className="w-10 h-10 text-blue-600 shrink-0" />
+            <div className="text-sm leading-tight">
+              <strong className="block font-bold text-gray-900 mb-0.5">ĐỔI TRẢ DỄ DÀNG</strong>
+              <span className="text-gray-500 text-xs sm:text-sm">1 Đổi 1 trong 15 ngày</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 bg-white p-4 rounded-lg shadow-sm h-full">
+            <CircleDollarSign className="w-10 h-10 text-blue-600 shrink-0" />
+            <div className="text-sm leading-tight">
+              <strong className="block font-bold text-gray-900 mb-0.5">THANH TOÁN TIỆN LỢI</strong>
+              <span className="text-gray-500 text-xs sm:text-sm">Tiền mặt, CK, Trả góp 0%</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 bg-white p-4 rounded-lg shadow-sm h-full">
+            <Headphones className="w-10 h-10 text-blue-600 shrink-0" />
+            <div className="text-sm leading-tight">
+              <strong className="block font-bold text-gray-900 mb-0.5">HỖ TRỢ NHIỆT TÌNH</strong>
+              <span className="text-gray-500 text-xs sm:text-sm">Tư vấn, giải đáp mọi thắc mắc</span>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* 1. TOP CONTACT BRANCHES SECTION */}
-      <div className="bg-[#f7f9fa] border-b border-gray-200 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs sm:text-sm">
+      <div className="bg-[#f7f7f7] border-b border-gray-200 py-6">
+        <div className="max-w-[1250px] mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {contactBranches.map((branch) => (
-              <div key={branch.id} className="flex flex-col space-y-1.5 justify-center">
-                <div className="flex items-center space-x-2 text-gray-700 font-medium">
-                  <Phone className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>
-                    Hotline:{' '}
-                    <a
-                      href={`tel:${branch.phone.replace(/\./g, '')}`}
-                      className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
-                    >
-                      {branch.phone}
-                    </a>
-                  </span>
+              <div key={branch.id} className="flex flex-col rounded-none ">
+                {/* Header bar */}
+                <div className="flex items-stretch font-bold text-sm">
+                  <div className="bg-[#fbbb21] text-gray-900 w-8 flex items-center justify-center shrink-0">
+                    {branch.id}
+                  </div>
+                  <div className="bg-[#2563eb] text-white flex-1 px-3 py-1.5 uppercase truncate">
+                    {branch.name}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Mail className="w-4 h-4 text-gray-500 shrink-0" />
-                  <span>
-                    Email:{' '}
-                    <a
-                      href={`mailto:${branch.email}`}
-                      className="text-blue-600 hover:underline transition-colors"
-                    >
-                      {branch.email}
-                    </a>
-                  </span>
+
+                {/* Branch image */}
+                <div className="w-full h-44 overflow-hidden bg-gray-100 mt-5">
+                  <img
+                    src={branch.image}
+                    alt={branch.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <Clock className="w-4 h-4 text-gray-500 shrink-0" />
-                  <span>Giờ mở cửa: {branch.hours}</span>
+
+                {/* Branch info */}
+                <div className="p-3.5 space-y-2 text-xs sm:text-sm text-gray-800">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-gray-700 shrink-0 mt-0.5" />
+                    <div>
+                      <span>{branch.address}</span>
+                      <a
+                        href={branch.mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-medium block mt-0.5"
+                      >
+                        [ Xem đường đi ]
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-700 shrink-0" />
+                    <span>
+                      Hotline:{' '}
+                      <a
+                        href={`tel:${branch.phone.split('-')[0].trim().replace(/\./g, '')}`}
+                        className="text-blue-600 hover:underline font-semibold"
+                      >
+                        {branch.phone}
+                      </a>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-700 shrink-0" />
+                    <span>
+                      Email:{' '}
+                      <a
+                        href={`mailto:${branch.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {branch.email}
+                      </a>
+                    </span>
+                  </div>
+
+                  <div className="pl-6 text-gray-700">
+                    Giờ mở cửa: {branch.hours}
+                  </div>
                 </div>
               </div>
             ))}
@@ -100,9 +193,9 @@ export const Footer: React.FC = () => {
           {/* COLUMN 1: GIỚI THIỆU NGUYỄN CÔNG */}
           <div>
             <h3 className="text-gray-900 font-bold text-base mb-4 uppercase tracking-wide">
-              Giới Thiệu Nguyễn Công
+              Giới Thiệu PCStore
             </h3>
-            <ul className="space-y-2.5 text-gray-600 text-sm">
+            <ul className="space-y-2.5 text-black text-sm">
               <li>
                 <a href="#" className="hover:text-blue-600 transition-colors">
                   Giới thiệu công ty
@@ -138,7 +231,7 @@ export const Footer: React.FC = () => {
                 <a
                   href="#"
                   aria-label="Instagram"
-                  className="w-9 h-9 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
+                  className="w-9 h-9 rounded bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
@@ -148,7 +241,7 @@ export const Footer: React.FC = () => {
                 <a
                   href="#"
                   aria-label="Facebook"
-                  className="w-9 h-9 rounded-full bg-[#1877F2] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
+                  className="w-9 h-9 rounded bg-[#1877F2] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                     <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
@@ -158,7 +251,7 @@ export const Footer: React.FC = () => {
                 <a
                   href="#"
                   aria-label="Youtube"
-                  className="w-9 h-9 rounded-full bg-[#FF0000] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
+                  className="w-9 h-9 rounded bg-[#FF0000] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
@@ -168,7 +261,7 @@ export const Footer: React.FC = () => {
                 <a
                   href="#"
                   aria-label="TikTok"
-                  className="w-9 h-9 rounded-full bg-[#000000] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
+                  className="w-9 h-9 rounded bg-[#000000] flex items-center justify-center text-white hover:opacity-90 transition-opacity shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-1-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.29 1.76-.22.84-.04 1.77.47 2.47.53.76 1.45 1.21 2.37 1.19 1.17.03 2.27-.64 2.81-1.67.43-.8.47-1.74.47-2.64V.02z" />
@@ -180,26 +273,12 @@ export const Footer: React.FC = () => {
               <div className="flex flex-wrap gap-2 pt-2 items-center">
                 {/* Bộ Công Thương Badge */}
                 <a href="#" className="inline-block hover:opacity-90 transition-opacity">
-                  <div className="bg-[#0074c7] text-white text-[10px] font-bold px-2 py-1 rounded flex items-center space-x-1.5 shadow-sm border border-blue-600">
-                    <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-[#0074c7] font-black text-[9px]">
-                      ✓
-                    </div>
-                    <div className="leading-tight">
-                      <div>ĐÃ THÔNG BÁO</div>
-                      <div className="text-[9px] font-normal tracking-tighter">BỘ CÔNG THƯƠNG</div>
-                    </div>
-                  </div>
+                  <img src="src/assets/images/footer-bct.png" alt="Bộ Công Thương" className='h-16 w-24 object-contain' />
                 </a>
 
                 {/* DMCA Badge */}
                 <a href="#" className="inline-block hover:opacity-90 transition-opacity">
-                  <div className="bg-[#1b2a47] text-white text-[10px] font-bold px-2.5 py-1 rounded flex items-center space-x-1 border border-slate-700 shadow-sm">
-                    <span className="text-blue-400 font-extrabold">DMCA</span>
-                    <span className="text-gray-300 font-normal">.com</span>
-                    <span className="bg-blue-500 text-white text-[8px] px-1 rounded ml-1 font-semibold uppercase">
-                      PROTECTED
-                    </span>
-                  </div>
+                  <img src="src/assets/images/dmca-compliant-grayscale.png" alt="DMCA" className='h-16 w-24 object-contain' />
                 </a>
               </div>
             </div>
@@ -210,7 +289,7 @@ export const Footer: React.FC = () => {
             <h3 className="text-gray-900 font-bold text-base mb-4 uppercase tracking-wide">
               Hỗ Trợ Khách Hàng
             </h3>
-            <ul className="space-y-2.5 text-gray-600 text-sm">
+            <ul className="space-y-2.5 text-black text-sm">
               <li>
                 <a href="#" className="hover:text-blue-600 transition-colors">
                   Hướng dẫn mua hàng trực tuyến
@@ -239,7 +318,7 @@ export const Footer: React.FC = () => {
             <h3 className="text-gray-900 font-bold text-base mb-4 uppercase tracking-wide">
               Chính Sách Chung
             </h3>
-            <ul className="space-y-2.5 text-gray-600 text-sm">
+            <ul className="space-y-2.5 text-black text-sm">
               <li>
                 <a href="#" className="hover:text-blue-600 transition-colors">
                   Chính sách, quy định chung
@@ -283,7 +362,7 @@ export const Footer: React.FC = () => {
             <h3 className="text-gray-900 font-bold text-base mb-4 uppercase tracking-wide">
               Thông Tin Khuyến Mại
             </h3>
-            <ul className="space-y-2.5 text-gray-600 text-sm">
+            <ul className="space-y-2.5 text-black text-sm">
               <li>
                 <a href="#" className="hover:text-blue-600 transition-colors">
                   Thông tin khuyến mại
@@ -310,52 +389,52 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* 3. BOTTOM LEGAL & COMPANY INFO SECTION */}
-      <div className="bg-[#efefef] border-t border-gray-300 py-6 text-gray-600 text-xs sm:text-sm">
+      <div className="bg-[#efefef] py-6 text-gray-600 text-xs sm:text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2 text-left">
           <p className="font-semibold text-gray-700 uppercase">
-            WEBSITE ĐƯỢC SỞ HỮU VÀ QUẢN LÝ BỞI NGUYỄN VIẾT CÔNG
+            WEBSITE ĐƯỢC SỞ HỮU VÀ QUẢN LÝ BỞI PCSTORE
           </p>
           <p className="font-bold text-gray-900">
-            CÔNG TY TNHH MÁY TÍNH NGUYỄN CÔNG
+            CÔNG TY TNHH MÁY TÍNH PCSTORE
           </p>
           <p>
-            Địa chỉ: 17 Hà Kế Tấn - Phường Phương Liệt - Hà Nội
+            Địa chỉ: Hà Nội
           </p>
           <p>
-            Mã số thuế: 0107568451 do Sở Kế Hoạch và Đầu Tư TP.Hà Nội (17/09/2016)
+            Mã số thuế: 0123456789 do Sở Kế Hoạch và Đầu Tư TP.Hà Nội
           </p>
           <p>
             Mua hàng:{' '}
-            <a href="tel:0899999191" className="font-semibold text-gray-800 hover:text-blue-600">
-              089.9999.191
+            <a href="tel:0123456789" className="font-semibold text-gray-800 hover:text-blue-600">
+              0123.456.789
             </a>{' '}
             -{' '}
-            <a href="tel:0812666665" className="font-semibold text-gray-800 hover:text-blue-600">
-              0812.666.665
+            <a href="tel:0987654321" className="font-semibold text-gray-800 hover:text-blue-600">
+              0987.654.321
             </a>
           </p>
           <p className="leading-relaxed">
             <span className="font-semibold text-gray-800">GÓP Ý:</span>{' '}
-            <a href="tel:0979999191" className="hover:text-blue-600">097.9999.191</a> -{' '}
-            <a href="tel:0983333388" className="hover:text-blue-600">098.33333.88</a>.{' '}
+            <a href="tel:0123456789" className="hover:text-blue-600">0123.456.789</a> -{' '}
+            <a href="tel:0987654321" className="hover:text-blue-600">0987.654.321</a>.{' '}
             <span>Email: </span>
-            <a href="mailto:info@nguyencongpc.vn" className="text-blue-600 hover:underline">
-              info@nguyencongpc.vn
+            <a href="mailto:info@example.vn" className="text-blue-600 hover:underline">
+              info@example.vn
             </a>
             .{' '}
             <span>Website: </span>
-            <a href="https://nguyencongpc.vn" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-              nguyencongpc.vn
+            <a href="#" target="_self" className="text-blue-600 hover:underline">
+              example.vn
             </a>
             .{' '}
             <span>Fanpage: </span>
             <a
-              href="https://www.facebook.com/MAY.TINH.NGUYEN.CONG"
+              href="https://www.facebook.com/"
               target="_blank"
               rel="noreferrer"
               className="text-blue-600 hover:underline break-all"
             >
-              www.facebook.com/MAY.TINH.NGUYEN.CONG
+              www.facebook.com/PCSTORE
             </a>
             .
           </p>
@@ -363,36 +442,32 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* 4. FLOATING WIDGETS (Zalo, Messenger, Scroll to top) */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 items-end">
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-2.5 items-end">
         {/* Chat Zalo widget */}
         <a
           href="#"
-          className="flex items-center space-x-2 bg-white border border-blue-200 text-blue-600 px-3.5 py-2 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group hover:-translate-y-0.5"
+          className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
         >
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-inner">
-            Zalo
-          </div>
+          <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/zalo.png" alt="zalo" />
           <div className="text-left leading-tight">
-            <div className="text-xs font-bold text-gray-800 group-hover:text-blue-600">
+            <div className="text-sm font-bold text-[#0066ff]">
               Chat Zalo
             </div>
-            <div className="text-[10px] text-gray-500">(8h-22h30)</div>
+            <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
           </div>
         </a>
 
         {/* Chat Facebook widget */}
         <a
           href="#"
-          className="flex items-center space-x-2 bg-white border border-blue-200 text-blue-600 px-3.5 py-2 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 group hover:-translate-y-0.5"
+          className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-inner">
-            <MessageCircle className="w-4 h-4" />
-          </div>
+          <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/facebook_messenger.png" alt="messenger" />
           <div className="text-left leading-tight">
-            <div className="text-xs font-bold text-gray-800 group-hover:text-blue-600">
+            <div className="text-sm font-bold text-[#0066ff]">
               Chat Facebook
             </div>
-            <div className="text-[10px] text-gray-500">(8h-22h30)</div>
+            <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
           </div>
         </a>
 
@@ -407,7 +482,36 @@ export const Footer: React.FC = () => {
           </button>
         )}
       </div>
+      {/* 5. FIXED SIDE BANNERS (Outside 1250px container) */}
+      <div className="hidden xl:block">
+        {/* Left Banner */}
+        <a
+          href="#"
+          className={`fixed z-40 transition-all duration-300 ease-in-out left-2 2xl:left-[calc(50%-635px)] 2xl:-translate-x-full ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+            }`}
+        >
+          <img
+            src="src/assets/images/leftbanner.jpg"
+            alt="Left Banner"
+            className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+          />
+        </a>
+
+        {/* Right Banner */}
+        <a
+          href="#"
+          className={`fixed z-40 transition-all duration-300 ease-in-out right-2 2xl:left-[calc(50%+635px)] 2xl:translate-x-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+            }`}
+        >
+          <img
+            src="src/assets/images/rightbanner.jpg"
+            alt="Right Banner"
+            className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+          />
+        </a>
+      </div>
     </footer>
+
   );
 };
 
