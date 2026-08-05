@@ -18,7 +18,8 @@ import {
     Sparkles,
     ChevronRight,
     ShieldCheck,
-    Phone
+    Phone,
+    PcCase
 } from 'lucide-react';
 
 interface CategoryItem {
@@ -35,34 +36,15 @@ const CATEGORIES: CategoryItem[] = [
     {
         id: 'pc',
         name: 'PC',
-        icon: <Cpu className="w-4 h-4 text-blue-500" />,
+        icon: <PcCase className="w-4 h-4 text-blue-500" />,
         subcategories: [
             {
                 title: 'PC Theo Nhu Cầu',
                 items: ['PC Gaming', 'PC Đồ Họa - Render', 'PC Văn Phòng', 'PC Giả Lập - NOX', 'PC Server - Workstation'],
             },
             {
-                title: 'PC Theo Vấn Đề / Chi Phí',
+                title: 'PC Theo Giá',
                 items: ['PC Dưới 10 Triệu', 'PC 10 - 20 Triệu', 'PC 20 - 40 Triệu', 'PC Cao Cấp > 50 Triệu'],
-            },
-            {
-                title: 'Bảo Hành & Đãi Ngộ',
-                items: ['Bảo hành 1 đổi 1 tận nơi', 'Miễn phí giao hàng toàn quốc', 'Hỗ trợ trả góp 0%'],
-            },
-        ],
-    },
-    {
-        id: 'laptop',
-        name: 'Laptop',
-        icon: <Laptop className="w-4 h-4 text-blue-500" />,
-        subcategories: [
-            {
-                title: 'Laptop Theo Hãng',
-                items: ['ASUS', 'MSI', 'Acer', 'Lenovo', 'Dell', 'HP', 'Apple Macbook'],
-            },
-            {
-                title: 'Laptop Theo Nhu Cầu',
-                items: ['Laptop Gaming High-End', 'Laptop Văn Phòng Mỏng Nhẹ', 'Laptop Đồ Họa 3D', 'Laptop Sinh Viên Giá Rẻ'],
             },
         ],
     },
@@ -72,7 +54,7 @@ const CATEGORIES: CategoryItem[] = [
         icon: <HardDrive className="w-4 h-4 text-blue-500" />,
         subcategories: [
             {
-                title: 'Dòng Mini PC Hot',
+                title: 'Dòng Mini PC',
                 items: ['Intel NUC Kit', 'ASUS NUC Series', 'Mac Mini M2/M3', 'Minisforum High Performance'],
             },
         ],
@@ -94,34 +76,157 @@ const CATEGORIES: CategoryItem[] = [
         icon: <Cpu className="w-4 h-4 text-blue-500" />,
         subcategories: [
             {
-                title: 'Linh Kiện Chính',
-                items: ['CPU - Bộ Vi Xử Lý', 'VGA - Card Màn Hình', 'Mainboard - Bo Mạch Chủ', 'RAM - Bộ Nhớ Trong'],
+                title: 'CPU - Bộ Vi Xử Lý',
+                items: ['CPU Intel', 'CPU AMD'],
             },
             {
-                title: 'Lưu Trữ & Nguồn',
-                items: ['Ổ Cứng SSD / HDD', 'Nguồn Máy Tính (PSU)', 'Vỏ Case Máy Tính', 'Tản Nhiệt CPU (Khí/Nước)'],
+                title: 'VGA - Card Màn Hình',
+                items: ['VGA NVIDIA', 'VGA AMD', 'NVIDIA RTX 5000 Series', 'RTX 5090', 'RTX 5070', 'RTX 5060', 'RTX 3050', 'Hãng VGA', 'RTX PRO'],
+            },
+            {
+                title: 'Mainboard - Bo Mạch Chủ',
+                items: ['Mainboard Asus', 'Mainboard Gigabyte', 'Mainboard MSI', 'Mainboard ASRock', 'Mainboard Supermicro', 'Mainboard BIOSTAR'],
+            },
+            {
+                title: 'RAM - Bộ Nhớ Trong',
+                items: ['RAM DDR5', 'RAM DDR4', 'RAM 32GB', 'RAM 16GB', 'RAM theo hãng'],
+            },
+            {
+                title: 'PSU - Nguồn Máy Tính',
+                items: ['Nguồn ASUS', 'Nguồn NZXT', 'Nguồn XIGMATEK', 'Nguồn Thermaltake', 'Nguồn Super Flower', 'Nguồn Gigabyte', 'Nguồn Corsair', 'Nguồn Cooler Master', 'Nguồn Antec', 'Nguồn MSI', 'Nguồn Segotep', 'Nguồn Deepcool', 'Nguồn OCPC'],
+            },
+            {
+                title: 'CASE - Vỏ Máy Tính',
+                items: ['Case Asus', 'Case Montech', 'Case NZXT', 'Case Vitra', 'Case MSI', 'Case GIGABYTE', 'Case Jonsbo', 'Case Corsair', 'Case Cooler Master', 'Case Thermaltake', 'Case Xigmatek', 'Case Antec', 'Case MIK'],
+            },
+            {
+                title: 'Tản Nhiệt PC - COOLING',
+                items: ['Keo Tản nhiệt', 'Fan tản nhiệt', 'Tản Nhiệt nước AIO', 'Tản nhiệt khí', 'Tản nước CUSTOM'],
             },
         ],
     },
     {
-        id: 'manhinh',
-        name: 'Màn hình',
-        icon: <Monitor className="w-4 h-4 text-blue-500" />,
+        id: 'storage-device',
+        name: 'Thiết bị lưu trữ',
+        icon: <HardDrive className="w-4 h-4 text-blue-500" />,
         subcategories: [
             {
-                title: 'Màn Hình Chuyên Dụng',
-                items: ['Màn Hình Gaming 144Hz - 360Hz', 'Màn Hình Đồ Họa Chuẩn Màu (Asus ProArt, Dell Ultrasharp)', 'Màn Hình Cong UltraWide 4K'],
+                title: 'Ổ cứng SSD',
+                items: ['SSD M.2 PCIe NVMe', 'SSD Gen 5', 'SSD Gen 4', 'SSD 1TB', 'SSD 512GB', 'SSD SATA'],
+            },
+            {
+                title: 'Ổ cứng HDD',
+                items: ['HDD 1TB', 'HDD 2TB'],
+            },
+            {
+                title: 'Ổ cứng di động',
+                items: [],
+            },
+            {
+                title: 'USB',
+                items: [],
+            },
+            {
+                title: 'Chọn theo hãng',
+                items: ['Ổ cứng Silicon Power', 'Ổ cứng Western Digital', 'Ổ cứng Transcend', 'Ổ cứng Toshiba', 'Ổ cứng Team', 'Ổ cứng Seagate', 'Ổ cứng Samsung', 'Ổ cứng Kingspec', 'Ổ cứng Kingmax', 'Ổ cứng Kingston', 'Ổ cứng Gigabyte', 'Ổ cứng Colorful', 'Ổ cứng Apacer', 'Ổ cứng Adata', 'Ổ cứng KIOXIA', 'Ổ cứng AGI', 'Ổ cứng HIKSEMI', 'Ổ cứng Lexar'],
+            },
+            {
+                title: 'Chọn theo dung lượng',
+                items: ['8GB', '16GB', '32GB', '120GB', '128GB', '240GB', '256GB', '480GB', '500GB', '512GB', '1TB', '2TB', '3TB', '4TB', '8TB', '10TB', 'Trên 10TB'],
+            },
+        ],
+    },
+];
+
+const HORIZONTAL_CATEGORIES = [
+    {
+        id: 'pc',
+        name: 'PC',
+        icon: <PcCase className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
+        subcategories: [
+            {
+                title: 'PC Theo Nhu Cầu',
+                items: ['PC Gaming', 'PC Đồ Họa - Render', 'PC Văn Phòng', 'PC Giả Lập - NOX', 'PC Server - Workstation'],
+            },
+            {
+                title: 'PC Theo Giá',
+                items: ['PC Dưới 10 Triệu', 'PC 10 - 20 Triệu', 'PC 20 - 40 Triệu', 'PC Cao Cấp > 50 Triệu'],
             },
         ],
     },
     {
-        id: 'gear',
-        name: 'Phím chuột ghế gear',
-        icon: <Keyboard className="w-4 h-4 text-blue-500" />,
+        id: 'minipc',
+        name: 'Mini PC',
+        icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
         subcategories: [
             {
-                title: 'Gaming Gear & Accessories',
-                items: ['Bàn Phím Cơ Wireless / Custom', 'Chuột Gaming Siêu Nhẹ', 'Tai Nghe Gaming 7.1', 'Ghế Gaming Ergonomics', 'Bàn Di Chuột RGB'],
+                title: 'Dòng Mini PC',
+                items: ['Intel NUC Kit', 'ASUS NUC Series', 'Mac Mini M2/M3', 'Minisforum High Performance'],
+            },
+        ],
+    },
+    {
+        id: 'pcai',
+        name: 'PC AI',
+        icon: <Sparkles className="w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors" />,
+        subcategories: [
+            {
+                title: 'Trạm Xử Lý AI Workstation',
+                items: ['PC AI Deep Learning Dual RTX 4090', 'PC AI Large Language Model (LLM)', 'Workstation NVIDIA RTX 6000 Ada'],
+            },
+        ],
+    },
+    {
+        id: 'linhkien',
+        name: 'Linh Kiện PC',
+        icon: <Cpu className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
+        subcategories: [
+            {
+                title: 'CPU - Bộ Vi Xử Lý',
+                items: ['CPU Intel', 'CPU AMD'],
+            },
+            {
+                title: 'VGA - Card Màn Hình',
+                items: ['VGA NVIDIA', 'VGA AMD', 'RTX 5090', 'RTX 5070', 'RTX 5060'],
+            },
+            {
+                title: 'Mainboard - Bo Mạch Chủ',
+                items: ['Mainboard Asus', 'Mainboard Gigabyte', 'Mainboard MSI', 'Mainboard ASRock'],
+            },
+            {
+                title: 'RAM - Bộ Nhớ Trong',
+                items: ['RAM DDR5', 'RAM DDR4', 'RAM 32GB', 'RAM 16GB'],
+            },
+            {
+                title: 'PSU - Nguồn Máy Tính',
+                items: ['Nguồn ASUS', 'Nguồn Corsair', 'Nguồn Cooler Master', 'Nguồn MSI'],
+            },
+            {
+                title: 'CASE - Vỏ Máy Tính',
+                items: ['Case Asus', 'Case NZXT', 'Case MSI', 'Case Corsair'],
+            },
+        ],
+    },
+    {
+        id: 'storage-device',
+        name: 'Thiết Bị Lưu Trữ',
+        icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
+        subcategories: [
+            {
+                title: 'Ổ cứng SSD',
+                items: ['SSD M.2 PCIe NVMe', 'SSD Gen 5', 'SSD Gen 4', 'SSD 1TB', 'SSD 512GB'],
+            },
+            {
+                title: 'Ổ cứng HDD',
+                items: ['HDD 1TB', 'HDD 2TB'],
+            },
+            {
+                title: 'Chọn theo hãng',
+                items: ['Western Digital', 'Seagate', 'Samsung', 'Kingston'],
+            },
+            {
+                title: 'Chọn theo dung lượng',
+                items: ['256GB', '512GB', '1TB', '2TB', '4TB'],
             },
         ],
     },
@@ -146,6 +251,7 @@ export const Header: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
+    const [activeHorizontalCategory, setActiveHorizontalCategory] = useState<typeof HORIZONTAL_CATEGORIES[0] | null>(null);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -172,8 +278,8 @@ export const Header: React.FC = () => {
 
     return (
         <header className="w-full font-sans select-none sticky top-0 z-50 shadow-md">
-            <div className="bg-gradient-to-r from-[#1752e5] via-[#1a64f0] to-[#1e75fa] text-white">
-                <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 py-2.5 flex items-center justify-between gap-2 md:gap-4">
+            <div className="bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white">
+                <div className="max-w-[1250px] mx-auto px-3 sm:px-4 lg:px-6 py-2.5 flex items-center justify-between gap-2 md:gap-4">
                     <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -185,7 +291,7 @@ export const Header: React.FC = () => {
                         <a href="/" className="flex items-center space-x-2 group">
                             <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10 group-hover:bg-white/20 transition-all duration-300 shadow-inner">
                                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/80 flex items-center justify-center font-extrabold text-xs sm:text-sm tracking-tighter">
-                                    NC
+                                    PC
                                 </div>
                             </div>
                             <div className="flex flex-col justify-center leading-none">
@@ -242,7 +348,7 @@ export const Header: React.FC = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsSearchOpen(true)}
                                 placeholder="Bạn cần tìm gì?"
-                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-10 py-2 sm:py-2.5 rounded-full shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-10 py-2 sm:py-2.5 rounded-2xl shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
                             />
                             {searchQuery ? (
                                 <button
@@ -295,15 +401,14 @@ export const Header: React.FC = () => {
                         )}
                     </div>
 
-                    {/* RIGHT: ACTION UTILITIES (Icon + Label vertical stacked) */}
                     <div className="hidden lg:flex items-center space-x-1 xl:space-x-3 text-xs font-medium">
                         {/* 1. XÂY DỰNG CẤU HÌNH */}
                         <a
                             href="/build-pc"
-                            className="flex flex-col items-center justify-center p-1.5 px-2 rounded-lg hover:bg-white/15 transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
-                            <Cpu className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-medium text-blue-50 group-hover:text-white">
+                            <PcCase className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Xây Dựng Cấu Hình
                             </span>
                         </a>
@@ -311,10 +416,10 @@ export const Header: React.FC = () => {
                         {/* 2. KHÁCH HÀNG LIÊN HỆ */}
                         <a
                             href="/contact"
-                            className="flex flex-col items-center justify-center p-1.5 px-2 rounded-lg hover:bg-white/15 transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
-                            <PhoneCall className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-medium text-blue-50 group-hover:text-white">
+                            <PhoneCall className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Khách Hàng Liên Hệ
                             </span>
                         </a>
@@ -322,10 +427,10 @@ export const Header: React.FC = () => {
                         {/* 3. TIN TỨC CÔNG NGHỆ */}
                         <a
                             href="/news"
-                            className="flex flex-col items-center justify-center p-1.5 px-2 rounded-lg hover:bg-white/15 transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
-                            <Newspaper className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-medium text-blue-50 group-hover:text-white">
+                            <Newspaper className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Tin Tức Công Nghệ
                             </span>
                         </a>
@@ -333,17 +438,17 @@ export const Header: React.FC = () => {
                         {/* 4. GIỎ HÀNG */}
                         <a
                             href="/cart"
-                            className="relative flex flex-col items-center justify-center p-1.5 px-2 rounded-lg hover:bg-white/15 transition-all text-center group"
+                            className="relative flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
                             <div className="relative">
-                                <ShoppingCart className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform" />
-                                {cartCount >= 0 && (
+                                <ShoppingCart className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                                {cartCount > 0 && (
                                     <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600 shadow">
                                         {cartCount}
                                     </span>
                                 )}
                             </div>
-                            <span className="text-[11px] leading-tight font-medium text-blue-50 group-hover:text-white">
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Giỏ Hàng
                             </span>
                         </a>
@@ -351,10 +456,10 @@ export const Header: React.FC = () => {
                         {/* 5. TÀI KHOẢN */}
                         <a
                             href="/account"
-                            className="flex flex-col items-center justify-center p-1.5 px-2 rounded-lg hover:bg-white/15 transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
                         >
-                            <User className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-medium text-blue-50 group-hover:text-white">
+                            <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
                                 Tài Khoản
                             </span>
                         </a>
@@ -362,14 +467,14 @@ export const Header: React.FC = () => {
 
                     {/* MOBILE QUICK CARTS & USER */}
                     <div className="flex lg:hidden items-center space-x-2 shrink-0">
-                        <a href="/cart" className="relative p-1.5 text-white hover:bg-white/15 rounded-lg">
-                            <ShoppingCart className="w-5 h-5" />
+                        <a href="/cart" className="relative p-2 text-white hover: rounded-lg">
+                            <ShoppingCart className="w-6 h-6" />
                             <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600">
                                 {cartCount}
                             </span>
                         </a>
-                        <a href="/account" className="p-1.5 text-white hover:bg-white/15 rounded-lg">
-                            <User className="w-5 h-5" />
+                        <a href="/account" className="p-2 text-white hover: rounded-lg">
+                            <User className="w-6 h-6" />
                         </a>
                     </div>
 
@@ -379,15 +484,24 @@ export const Header: React.FC = () => {
             {/* ========================================================================= */}
             {/* BOTTOM NAV BAR: CATEGORY NAVIGATION ROW */}
             {/* ========================================================================= */}
-            <div className="bg-[#1554d3] border-t border-blue-400/30 text-white hidden lg:block">
-                <div className="max-w-[1400px] mx-auto px-4 lg:px-6 flex items-center">
+            <div
+                className="bg-[#2366EF] border-t border-blue-400/30 text-white hidden lg:block"
+                onMouseLeave={() => setActiveHorizontalCategory(null)}
+            >
+                <div className="max-w-[1250px] mx-auto px-4 lg:px-6 flex items-center relative">
 
                     {/* MEGA MENU CATEGORIES BUTTON */}
                     <div ref={categoryRef} className="relative py-1.5 pr-3">
                         <button
-                            onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-                            onMouseEnter={() => setIsMegaMenuOpen(true)}
-                            className="bg-white text-[#1752e5] hover:bg-gray-100 font-extrabold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider"
+                            onClick={() => {
+                                setIsMegaMenuOpen(!isMegaMenuOpen);
+                                setActiveHorizontalCategory(null);
+                            }}
+                            onMouseEnter={() => {
+                                setIsMegaMenuOpen(true);
+                                setActiveHorizontalCategory(null);
+                            }}
+                            className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider"
                         >
                             <Menu className="w-4 h-4 text-[#1752e5]" />
                             <span>DANH MỤC SẢN PHẨM</span>
@@ -400,10 +514,10 @@ export const Header: React.FC = () => {
                                     setIsMegaMenuOpen(false);
                                     setActiveCategory(null);
                                 }}
-                                className="absolute left-0 top-full mt-1.5 w-[850px] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 flex z-50 overflow-hidden animate-in fade-in duration-150"
+                                className="absolute left-0 top-full mt-1.5 w-[1250px] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 flex z-50 overflow-hidden animate-in fade-in duration-150"
                             >
                                 {/* Left side: Category List */}
-                                <div className="w-1/3 bg-gray-50 border-r border-gray-200 py-2">
+                                <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2">
                                     {CATEGORIES.map((cat) => (
                                         <button
                                             key={cat.id}
@@ -423,14 +537,14 @@ export const Header: React.FC = () => {
                                 </div>
 
                                 {/* Right side: Subcategories Content */}
-                                <div className="w-2/3 p-5 bg-white overflow-y-auto max-h-[420px]">
+                                <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px] w-full">
                                     {activeCategory ? (
                                         <div>
                                             <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700">
                                                 {activeCategory.icon}
                                                 <span>{activeCategory.name}</span>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-4 gap-6">
                                                 {activeCategory.subcategories.map((sub, idx) => (
                                                     <div key={idx} className="space-y-2">
                                                         <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2">
@@ -464,35 +578,66 @@ export const Header: React.FC = () => {
                     </div>
 
                     {/* HORIZONTAL CATEGORIES LINKS */}
-                    <nav className="flex items-center space-x-1 xl:space-x-3 overflow-x-auto no-scrollbar py-2 text-xs font-semibold">
-                        {CATEGORIES.map((cat) => (
-                            <div key={cat.id} className="relative group">
+                    <nav className="flex-1 w-full flex items-center justify-between py-2 text-xs font-semibold ml-4">
+                        {HORIZONTAL_CATEGORIES.map((cat) => (
+                            <div key={cat.id} className="relative">
                                 <a
                                     href={`/category/${cat.id}`}
-                                    className="flex items-center space-x-1 px-2.5 py-1 rounded hover:bg-white/15 text-white whitespace-nowrap transition-colors"
+                                    onMouseEnter={() => {
+                                        setIsMegaMenuOpen(false);
+                                        setActiveHorizontalCategory(cat);
+                                    }}
+                                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-white whitespace-nowrap transition-colors ${activeHorizontalCategory?.id === cat.id ? 'bg-white/20' : 'hover:bg-white/15'
+                                        }`}
                                 >
+                                    {cat.icon}
                                     <span>{cat.name}</span>
-                                    <ChevronDown className="w-3 h-3 text-blue-200 group-hover:rotate-180 transition-transform duration-200" />
+                                    <ChevronDown className={`w-3 h-3 text-blue-200 transition-transform duration-200 ${activeHorizontalCategory?.id === cat.id ? 'rotate-180 text-white' : ''
+                                        }`} />
                                 </a>
-
-                                {/* Submenu Dropdown on Hover */}
-                                <div className="absolute left-0 top-full hidden group-hover:block w-56 bg-white text-gray-800 rounded-lg shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                                    <div className="px-3 py-1 font-bold text-blue-600 border-b border-gray-100 text-[11px] uppercase tracking-wider mb-1">
-                                        {cat.name}
-                                    </div>
-                                    {cat.subcategories.flatMap((sub) => sub.items).slice(0, 6).map((item, i) => (
-                                        <a
-                                            key={i}
-                                            href="#"
-                                            className="block px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                        >
-                                            {item}
-                                        </a>
-                                    ))}
-                                </div>
                             </div>
                         ))}
                     </nav>
+
+                    {/* SHARED DROPDOWN PANEL FOR HORIZONTAL CATEGORIES */}
+                    {activeHorizontalCategory && !isMegaMenuOpen && (
+                        <div
+                            className="absolute left-0 top-full pt-1.5 w-full z-50 animate-in fade-in duration-150"
+                        >
+                            <div className="bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 p-6">
+                                {/* Header matching mega menu right side */}
+                                <div className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700">
+                                    <span className="text-blue-600">{activeHorizontalCategory.icon}</span>
+                                    <span className="text-base">{activeHorizontalCategory.name}</span>
+                                </div>
+
+                                {/* Subcategories grid - matching mega menu right side */}
+                                <div className="grid grid-cols-4 gap-6 max-h-[400px] overflow-y-auto pr-2">
+                                    {activeHorizontalCategory.subcategories.map((sub, idx) => (
+                                        <div key={idx} className="space-y-2">
+                                            <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2">
+                                                {sub.title}
+                                            </h4>
+                                            {sub.items && sub.items.length > 0 && (
+                                                <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                                                    {sub.items.map((item, itemIdx) => (
+                                                        <li key={itemIdx}>
+                                                            <a
+                                                                href="#"
+                                                                className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
+                                                            >
+                                                                {item}
+                                                            </a>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
