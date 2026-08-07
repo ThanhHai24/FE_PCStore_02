@@ -11,18 +11,22 @@ import {
   CheckCircle2,
   Clock,
   Plus,
-  Calendar,
+  Calendar as CalendarIcon,
   Download,
   PieChart as PieChartIcon,
   BarChart3,
-  Filter
+  Filter,
+  ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type TimeRange = 'today' | '7days' | 'this_month' | 'quarter' | 'this_year';
+type TimeRange = 'today' | '7days' | 'this_month' | 'quarter' | 'this_year' | 'custom';
 
 export const Dashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('7days');
+  const [startDate, setStartDate] = useState<string>('2026-08-01');
+  const [endDate, setEndDate] = useState<string>('2026-08-08');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState<boolean>(false);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   // Mock data dynamic based on time range
@@ -74,6 +78,14 @@ export const Dashboard: React.FC = () => {
       totalRevenue: '22.460.000.000 ₫',
       totalOrders: '5.510 đơn',
     },
+    custom: {
+      labels: ['Ngày 1', 'Ngày 2', 'Ngày 3', 'Ngày 4', 'Ngày 5', 'Ngày 6', 'Ngày 7', 'Ngày 8'],
+      revenue: [110, 145, 170, 160, 210, 260, 230, 280],
+      orders: [25, 32, 38, 35, 50, 65, 58, 70],
+      rangeText: `Tùy chọn (${startDate ? startDate.split('-').reverse().join('/') : '01/08/2026'} đến ${endDate ? endDate.split('-').reverse().join('/') : '08/08/2026'})`,
+      totalRevenue: '1.565.000.000 ₫',
+      totalOrders: '373 đơn',
+    },
   };
 
   const currentData = chartDataByRange[timeRange];
@@ -81,10 +93,10 @@ export const Dashboard: React.FC = () => {
 
   // Donut Chart Data (Product Category Breakdown)
   const categoryDistribution = [
-    { name: 'PC Gaming Nguyên Bộ', percentage: 42, amount: '562.800.000 ₫', color: 'bg-blue-600', hex: '#2563EB' },
-    { name: 'Linh Kiện PC (VGA, CPU, RAM)', percentage: 28, amount: '375.200.000 ₫', color: 'bg-indigo-500', hex: '#6366F1' },
-    { name: 'Màn Hình Đồ Họa & Gaming', percentage: 18, amount: '241.200.000 ₫', color: 'bg-amber-400', hex: '#F59E0B' },
-    { name: 'Phụ Kiện (Phím, Chuột, Tai nghe)', percentage: 12, amount: '160.800.000 ₫', color: 'bg-emerald-500', hex: '#10B981' },
+    { name: 'PC Gaming Nguyên Bộ', percentage: 42, color: 'bg-blue-600' },
+    { name: 'Linh Kiện PC (VGA, CPU, RAM)', percentage: 28, color: 'bg-indigo-500' },
+    { name: 'Màn Hình Đồ Họa & Gaming', percentage: 18, color: 'bg-amber-400' },
+    { name: 'Phụ Kiện (Phím, Chuột, Tai nghe)', percentage: 12, color: 'bg-emerald-500' },
   ];
 
   const recentOrders = [
@@ -94,7 +106,6 @@ export const Dashboard: React.FC = () => {
       product: 'PC Gaming RTX 4080 i7-14700K',
       total: '45.990.000 ₫',
       status: 'Đã hoàn thành',
-      date: '10 phút trước',
     },
     {
       id: '#ORD-9481',
@@ -102,7 +113,6 @@ export const Dashboard: React.FC = () => {
       product: 'Màn hình ASUS ROG Swift 32"',
       total: '18.500.000 ₫',
       status: 'Đang xử lý',
-      date: '25 phút trước',
     },
     {
       id: '#ORD-9480',
@@ -110,7 +120,6 @@ export const Dashboard: React.FC = () => {
       product: 'Bàn phím cơ Custom Akko Mod007',
       total: '3.200.000 ₫',
       status: 'Đã hoàn thành',
-      date: '1 giờ trước',
     },
     {
       id: '#ORD-9479',
@@ -118,7 +127,6 @@ export const Dashboard: React.FC = () => {
       product: 'Card màn hình MSI RTX 4070 Ti',
       total: '22.900.000 ₫',
       status: 'Đang vận chuyển',
-      date: '2 giờ trước',
     },
   ];
 
@@ -127,6 +135,12 @@ export const Dashboard: React.FC = () => {
     { name: 'Ram G.Skill Trident Z5 32GB', stock: 4, limit: 15 },
     { name: 'VGA ASUS ROG Strix RTX 4090', stock: 1, limit: 5 },
   ];
+
+  const handleApplyCustomDate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTimeRange('custom');
+    setShowCustomDatePicker(false);
+  };
 
   return (
     <div className="space-y-6 font-sans pb-8">
@@ -142,13 +156,13 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-blue-500" />
-            Thời gian xem: <span className="font-semibold text-gray-800">{currentData.rangeText}</span>
+            <CalendarIcon className="w-3.5 h-3.5 text-blue-500" />
+            Đang hiển thị: <span className="font-bold text-gray-800">{currentData.rangeText}</span>
           </p>
         </div>
 
-        {/* Time Selector Dropdown & Filter Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Time Selector Dropdown & Custom Range Picker Controls */}
+        <div className="flex flex-wrap items-center gap-2 relative">
           <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200/80">
             <Filter className="w-3.5 h-3.5 text-gray-400 ml-2 mr-1" />
             {(['today', '7days', 'this_month', 'quarter', 'this_year'] as TimeRange[]).map((range) => {
@@ -158,11 +172,15 @@ export const Dashboard: React.FC = () => {
                 this_month: 'Tháng này',
                 quarter: 'Quý này',
                 this_year: 'Năm nay',
+                custom: 'Tùy chọn',
               };
               return (
                 <button
                   key={range}
-                  onClick={() => setTimeRange(range)}
+                  onClick={() => {
+                    setTimeRange(range);
+                    setShowCustomDatePicker(false);
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     timeRange === range
                       ? 'bg-white text-blue-600 shadow-sm border border-gray-100 font-bold'
@@ -173,7 +191,83 @@ export const Dashboard: React.FC = () => {
                 </button>
               );
             })}
+
+            {/* Custom Date Range Button Trigger */}
+            <button
+              onClick={() => setShowCustomDatePicker(!showCustomDatePicker)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                timeRange === 'custom'
+                  ? 'bg-blue-600 text-white font-bold shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-200/60'
+              }`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>Khoảng ngày</span>
+            </button>
           </div>
+
+          {/* Custom Date Range Picker Popover Dropdown */}
+          {showCustomDatePicker && (
+            <div className="absolute right-0 top-12 z-50 bg-white border border-gray-200 rounded-2xl shadow-2xl p-4 w-72 sm:w-80 animate-in fade-in slide-in-from-top-2">
+              <div className="flex justify-between items-center pb-2 border-b border-gray-100 mb-3">
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                  <CalendarIcon className="w-4 h-4 text-blue-600" />
+                  Chọn khoảng thời gian
+                </span>
+                <button
+                  onClick={() => setShowCustomDatePicker(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleApplyCustomDate} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                    Từ ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                    Đến ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-gray-50"
+                    required
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomDatePicker(false)}
+                    className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-xl font-semibold"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow flex items-center gap-1"
+                  >
+                    <span>Áp dụng</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           <button
             onClick={() => alert('Xuất báo cáo PDF/Excel')}
@@ -187,10 +281,10 @@ export const Dashboard: React.FC = () => {
 
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Doanh Thu ({currentData.labels.length} mốc)
+              Doanh Thu Kỳ Này
             </span>
             <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
               <DollarSign className="w-5 h-5" />
@@ -282,7 +376,7 @@ export const Dashboard: React.FC = () => {
 
       {/* 2 CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* CHART 1: Biểu đồ Cột Doanh Thu & Đơn Hàng theo thời gian (Bar Chart - 2 Columns wide) */}
+        {/* CHART 1: Biểu đồ Cột Doanh Thu & Đơn Hàng theo thời gian */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
             <div>
@@ -293,11 +387,11 @@ export const Dashboard: React.FC = () => {
                 </h2>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
-                Thống kê số liệu doanh thu (Triệu ₫) và lượng đơn hàng theo {currentData.rangeText}
+                Thống kê số liệu theo <span className="font-semibold text-blue-600">{currentData.rangeText}</span>
               </p>
             </div>
 
-            {/* Legend indicator */}
+            {/* Legend */}
             <div className="flex items-center gap-4 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-sm bg-blue-600"></span>
@@ -332,9 +426,8 @@ export const Dashboard: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Dual Bars Container */}
+                  {/* Dual Bars */}
                   <div className="w-full flex items-end justify-center gap-1 h-full">
-                    {/* Revenue Bar */}
                     <div
                       style={{ height: `${heightPercent}%` }}
                       className={`w-full max-w-[28px] rounded-t-lg transition-all duration-300 ${
@@ -344,14 +437,12 @@ export const Dashboard: React.FC = () => {
                       }`}
                     ></div>
 
-                    {/* Order Bar */}
                     <div
                       style={{ height: `${Math.max(10, Math.round(heightPercent * 0.45))}%` }}
                       className="w-full max-w-[14px] bg-amber-400 hover:bg-amber-500 rounded-t-md transition-all duration-300 hidden sm:block"
                     ></div>
                   </div>
 
-                  {/* Label */}
                   <span className="text-[11px] font-semibold text-gray-500 mt-2 truncate w-full text-center">
                     {currentData.labels[idx]}
                   </span>
@@ -360,14 +451,13 @@ export const Dashboard: React.FC = () => {
             })}
           </div>
 
-          {/* Chart Summary Footer */}
           <div className="mt-4 pt-3 flex items-center justify-between text-xs text-gray-500">
             <span>Đơn vị tính: Triệu VNĐ</span>
             <span className="font-bold text-blue-600">Tổng doanh thu kỳ này: {currentData.totalRevenue}</span>
           </div>
         </div>
 
-        {/* CHART 2: Biểu đồ Tròn Cơ Cấu Doanh Thu Theo Danh Mục (Donut Chart - 1 Column) */}
+        {/* CHART 2: Biểu đồ Tròn Cơ Cấu Doanh Thu */}
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -380,59 +470,19 @@ export const Dashboard: React.FC = () => {
               Cơ cấu đóng góp doanh thu theo nhóm hàng PC Store
             </p>
 
-            {/* Custom SVG Donut Chart Visual */}
             <div className="relative w-44 h-44 mx-auto my-3 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                {/* SVG Segments */}
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="transparent"
-                  stroke="#2563EB"
-                  strokeWidth="3.8"
-                  strokeDasharray="42 58"
-                  strokeDashoffset="0"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="transparent"
-                  stroke="#6366F1"
-                  strokeWidth="3.8"
-                  strokeDasharray="28 72"
-                  strokeDashoffset="-42"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="transparent"
-                  stroke="#F59E0B"
-                  strokeWidth="3.8"
-                  strokeDasharray="18 82"
-                  strokeDashoffset="-70"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="transparent"
-                  stroke="#10B981"
-                  strokeWidth="3.8"
-                  strokeDasharray="12 88"
-                  strokeDashoffset="-88"
-                />
+                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#2563EB" strokeWidth="3.8" strokeDasharray="42 58" strokeDashoffset="0" />
+                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#6366F1" strokeWidth="3.8" strokeDasharray="28 72" strokeDashoffset="-42" />
+                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#F59E0B" strokeWidth="3.8" strokeDasharray="18 82" strokeDashoffset="-70" />
+                <circle cx="18" cy="18" r="15.915" fill="transparent" stroke="#10B981" strokeWidth="3.8" strokeDasharray="12 88" strokeDashoffset="-88" />
               </svg>
-              {/* Inner Donut Text */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="text-lg font-black text-gray-900">100%</span>
                 <span className="text-[10px] text-gray-400 font-semibold uppercase">Danh mục</span>
               </div>
             </div>
 
-            {/* Category Breakdown Progress Bars */}
             <div className="space-y-2.5 mt-4">
               {categoryDistribution.map((cat, idx) => (
                 <div key={idx} className="space-y-1">
@@ -458,7 +508,6 @@ export const Dashboard: React.FC = () => {
 
       {/* Main Content Grid: Recent Orders & Stock Warning */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Orders Table */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -516,7 +565,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Stock Warning Box */}
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-3">
