@@ -10,10 +10,17 @@ import Account from './pages/account/Account';
 import NotFound from './pages/not-found/NotFound';
 import Register from './pages/account/Register';
 
+// Admin Imports
+import AdminLayout from './layouts/AdminLayout';
+import AdminLogin from './pages/admin/AdminLogin';
+import Dashboard from './pages/admin/Dashboard';
+import Products from './pages/admin/Products';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* User Storefront Routes */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
           <Route path="category/:categoryId" element={<ProductList />} />
@@ -25,6 +32,19 @@ function App() {
           <Route path="login" element={<Account />} />
           <Route path="register" element={<Register />} />
           <Route path="*" element={<NotFound />} />
+        </Route>
+
+        {/* Admin Login Route */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Portal Layout & Pages */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="products" element={<Products />} />
+          <Route path="orders" element={<Dashboard />} />
+          <Route path="categories" element={<Products />} />
+          <Route path="customers" element={<Dashboard />} />
+          <Route path="settings" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
