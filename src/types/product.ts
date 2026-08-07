@@ -1,0 +1,46 @@
+export interface SpecItem {
+  key: string; // e.g. "CPU", "VGA", "RAM", "SSD", "MAIN", "PSU", "CASE"
+  name: string; // e.g. "CPU AMD Ryzen 7 9800X3D TRAY NEW (Up to 5.2GHz | 8C / 16T | 96 MB Cache)"
+  warranty: string; // e.g. "36TH"
+  highlightSummary?: string;
+}
+
+export interface Product {
+  id: string;
+  title: string;
+  images: string[];
+  thumbnails?: string[];
+  price: string; // e.g. "136.000.000đ"
+  numericPrice: number;
+  marketPrice?: string;
+  installmentPrice?: string; // e.g. "11.666.533 / tháng"
+  discountPercent?: string;
+  badge?: "HOT" | "NEW" | string;
+  inStock: boolean;
+  warrantyInfo: string; // e.g. "Bảo hành theo từng linh kiện"
+  rating: number; // e.g. 0.0 or 5.0
+  reviewCount: number;
+  viewCount: number;
+  commentCount: number;
+  purchaseCount: number;
+  flashSale?: {
+    endTime?: string;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
+  promotions: string[];
+  quickSpecs?: {
+    cpu?: string;
+    vga?: string;
+    ram?: string;
+  };
+  specsTable: SpecItem[];
+  descriptionHtml?: string;
+  category?: string;
+  categoryName?: string;
+  brand?: string;
+}
+
+export type ProductDetailType = Product;
+
