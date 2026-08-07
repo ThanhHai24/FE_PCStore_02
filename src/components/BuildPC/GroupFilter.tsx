@@ -1,5 +1,3 @@
-import React from "react"
-
 function GroupFilter() {
     return (
         <div className="gr-filter border-b border-[#d9d9d9] pb-2 mb-2">

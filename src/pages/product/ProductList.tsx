@@ -1,6 +1,4 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Filter, SlidersHorizontal } from 'lucide-react';
 
 export const ProductList: React.FC = () => {
 

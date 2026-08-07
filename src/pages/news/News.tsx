@@ -1,5 +1,4 @@
 import React from 'react';
-import { Newspaper } from 'lucide-react';
 
 export const News: React.FC = () => {
   return (
