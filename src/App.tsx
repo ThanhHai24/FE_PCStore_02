@@ -8,6 +8,7 @@ import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
 import NotFound from './pages/not-found/NotFound';
+import Register from './pages/account/Register';
 
 function App() {
   return (
@@ -21,7 +22,8 @@ function App() {
           <Route path="cart" element={<Cart />} />
           <Route path="build-pc" element={<BuildPc />} />
           <Route path="news" element={<News />} />
-          <Route path="account" element={<Account />} />
+          <Route path="login" element={<Account />} />
+          <Route path="register" element={<Register />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
