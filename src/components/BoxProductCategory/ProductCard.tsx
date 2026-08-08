@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import defaultPcImg from "../../assets/images/products/clean_pc.png";
 
@@ -30,6 +31,7 @@ export interface ProductCardProps {
 
 
 export const ProductCard: React.FC<ProductCardProps> = ({
+    id,
     title,
     image = defaultPcImg,
     price,
@@ -39,8 +41,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     banner,
     promotion,
     inStock = true,
-    link = "#",
+    link,
 }) => {
+    const targetLink = link && link !== "#" ? link : `/product/${id || "pc-miku-ryzen7"}`;
+
     return (
         <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-3 border border-gray-200 hover:shadow-lg transition-all duration-300 w-full h-full">
             {/* Top Right Ribbon Badge */}
@@ -60,13 +64,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Product Image Box */}
             <div className="relative w-full pt-[85%] mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center">
 
-                <a href={link} className="absolute inset-0 flex items-center justify-center p-2">
+                <Link to={targetLink} className="absolute inset-0 flex items-center justify-center p-2">
                     <img
                         src={image}
                         alt={title}
                         className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/card:scale-105"
                     />
-                </a>
+                </Link>
 
                 {/* Bottom Overlay Banner Badge */}
                 {banner && (
@@ -97,11 +101,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Product Info */}
             <div className="flex flex-col flex-1 justify-between mt-1">
                 <div>
-                    <a href={link} className="block group/title">
+                    <Link to={targetLink} className="block group/title">
                         <h3 className="text-[#333333] font-medium text-[13px] leading-snug line-clamp-2 min-h-[36px] group-hover/title:text-red-600 transition-colors">
                             {title}
                         </h3>
-                    </a>
+                    </Link>
 
                     {/* Price & Discount */}
                     <div className="mt-2">
