@@ -1,7 +1,7 @@
 import { Flame } from "lucide-react";
 import rtxProductImg from "../../assets/images/products/rtx.png";
 
-interface DealProductCardProps {
+export interface DealProductCardProps {
     image?: string;
     title?: string;
     price?: string;
@@ -28,8 +28,12 @@ export function DealProductCard({
         <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 w-full">
             <a href={link} className="block overflow-hidden mb-3">
                 <img
-                    src={image}
+                    src={image || rtxProductImg}
                     alt={title}
+                    onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = rtxProductImg;
+                    }}
                     className="w-full h-48 object-contain transition-transform duration-300 group-hover/card:scale-105"
                 />
             </a>

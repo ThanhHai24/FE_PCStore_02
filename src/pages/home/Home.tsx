@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import {
@@ -13,11 +13,19 @@ import {
   Tv,
   CircuitBoard,
   MemoryStick,
-  HardDrive
+  HardDrive,
+  Loader2
 } from 'lucide-react';
 import DealProduct from '../../components/DealProduct/DealProduct';
 import BoxProductCategory from '../../components/BoxProductCategory/BoxProductCategory';
 import type { ProductCardProps } from '../../components/BoxProductCategory/ProductCard';
+import type { DealProductCardProps } from '../../components/DealProduct/DealProductCard';
+import {
+  getProducts,
+  formatProductToCardProps,
+  formatProductToDealCardProps
+} from '../../services/productService';
+import type { ApiProduct } from '../../types/apiProduct';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -40,102 +48,84 @@ const slideBanners = [
   banner6, banner7, banner8, banner9, banner10, banner11
 ];
 
-const pcGamingProducts: ProductCardProps[] = [
-  {
-    id: 1,
-    title: "Bộ PC Gaming Intel Core Ultra 9 285K, RAM 64GB DDR5, RTX",
-    marketPrice: "109.990.000đ",
-    discountPercent: "-7%",
-    price: "101.750.000đ",
-    promotion: {
-      prefix: "• Mua thêm màn hình đang được khuyến mại => ",
-      highlight: "TẠI ĐÂY",
-      suffix: " (Giả...",
-      highlightColor: "red"
-    },
-    inStock: true
-  },
-  {
-    id: 2,
-    badge: "HOT",
-    banner: { type: "hot", title: "TẶNG MÀN HÌNH", badgeText: "HOT" },
-    title: "Bộ PC Gaming I5-12400F, RAM 16GB, RTX 5050 8GB [TẶNG",
-    price: "20.890.000đ",
-    promotion: {
-      prefix: "- Tặng Màn Hình ",
-      highlight: "Màn hình VSP IP2408SG",
-      suffix: " Hoặc Màn hình VIOX...",
-      prefixColor: "red",
-      highlightColor: "blue"
-    },
-    inStock: true
-  },
-  {
-    id: 3,
-    banner: { type: "hot", title: "TẶNG MÀN HÌNH", badgeText: "HOT" },
-    title: "Bộ PC Gaming Ryzen 5 5500, Ram 16GB, SSD 256GB, VGA",
-    marketPrice: "16.990.000đ",
-    discountPercent: "-16%",
-    price: "14.290.000đ",
-    promotion: {
-      prefix: "- Tặng Màn Hình: ",
-      highlight: "Màn hình EGM24F120H",
-      suffix: " hoặc Màn...",
-      prefixColor: "red",
-      highlightColor: "blue"
-    },
-    inStock: true
-  },
-  {
-    id: 4,
-    badge: "NEW",
-    banner: { type: "hot", title: "TẶNG MÀN HÌNH", badgeText: "HOT" },
-    title: "Bộ PC NCPC X NVIDIA | VGA RTX 5060 Ti 8GB, Core I5-",
-    marketPrice: "33.990.000đ",
-    discountPercent: "-15%",
-    price: "28.890.000đ",
-    promotion: {
-      prefix: "• Tặng màn hình : ",
-      highlight: "AOC 27B36X",
-      suffix: " hoặc Màn Hình MSI PRO...",
-      prefixColor: "black",
-      highlightColor: "black"
-    },
-    inStock: true
-  },
-  {
-    id: 5,
-    banner: { type: "sale", title: "RẺ QUÁ RẺ", badgeText: "GIÁ" },
-    title: "Bộ PC Gaming Ryzen 5 5500GT, RX Vega 7, RAM 16GB, SSD",
-    price: "9.300.000đ",
-    promotion: {
-      prefix: "• Mua thêm màn hình đang được khuyến mại => ",
-      highlight: "TẠI ĐÂY",
-      suffix: " (Giả...",
-      highlightColor: "red"
-    },
-    inStock: true
-  },
-  {
-    id: 6,
-    badge: "HOT",
-    banner: { type: "hot", title: "TẶNG MÀN HÌNH", badgeText: "HOT" },
-    title: "Bộ PC Gaming Intel Core i7 14700K, RAM 32GB, RTX 4070",
-    marketPrice: "45.990.000đ",
-    discountPercent: "-10%",
-    price: "41.390.000đ",
-    promotion: {
-      prefix: "- Tặng Màn Hình ",
-      highlight: "ASUS VG249Q3A",
-      suffix: " 180Hz 1ms IPS...",
-      prefixColor: "red",
-      highlightColor: "blue"
-    },
-    inStock: true
-  }
-];
-
 export const Home: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [dealProducts, setDealProducts] = useState<DealProductCardProps[]>([]);
+  const [pcGamingProducts, setPcGamingProducts] = useState<ProductCardProps[]>([]);
+  const [pcDoHoaProducts, setPcDoHoaProducts] = useState<ProductCardProps[]>([]);
+  const [pcVanPhongProducts, setPcVanPhongProducts] = useState<ProductCardProps[]>([]);
+  const [pcAiProducts, setPcAiProducts] = useState<ProductCardProps[]>([]);
+  const [ramProducts, setRamProducts] = useState<ProductCardProps[]>([]);
+  const [vgaProducts, setVgaProducts] = useState<ProductCardProps[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchHomeProducts() {
+      try {
+        setLoading(true);
+        const res = await getProducts({ limit: 100 });
+        if (!isMounted) return;
+
+        const products: ApiProduct[] = res.products || [];
+
+        // Format deals for DealProduct bar
+        const formattedDeals = products.map(formatProductToDealCardProps);
+        setDealProducts(formattedDeals);
+
+        // Filter products by category IDs or slugs
+        const pcGaming = products.filter(
+          (p) => p.categoryId === '13' || p.category?.slug === 'pc-gaming'
+        ).map(formatProductToCardProps);
+
+        const pcDoHoa = products.filter(
+          (p) => p.categoryId === '15' || p.category?.slug === 'pc-do-hoa'
+        ).map(formatProductToCardProps);
+
+        const pcVanPhong = products.filter(
+          (p) => p.categoryId === '14' || p.category?.slug === 'pc-van-phong'
+        ).map(formatProductToCardProps);
+
+        const pcAi = products.filter(
+          (p) => p.categoryId === '16' || p.category?.slug === 'pc-ai'
+        ).map(formatProductToCardProps);
+
+        const ramList = products.filter(
+          (p) => p.categoryId === '5' || p.category?.slug === 'ram-bo-nho-trong'
+        ).map(formatProductToCardProps);
+
+        const vgaList = products.filter(
+          (p) => p.categoryId === '4' || p.category?.slug === 'vga-card-do-hoa'
+        ).map(formatProductToCardProps);
+
+        setPcGamingProducts(pcGaming);
+        setPcDoHoaProducts(pcDoHoa);
+        setPcVanPhongProducts(pcVanPhong);
+        setPcAiProducts(pcAi);
+        setRamProducts(ramList);
+        setVgaProducts(vgaList);
+
+      } catch (err) {
+        console.error('Failed to load products from API:', err);
+        if (isMounted) {
+          setPcGamingProducts([]);
+          setPcDoHoaProducts([]);
+          setPcVanPhongProducts([]);
+          setPcAiProducts([]);
+          setRamProducts([]);
+          setVgaProducts([]);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchHomeProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="max-w-[1250px] mx-auto px-4 py-6 space-y-8">
       {/* Banner / Hero Section */}
@@ -199,7 +189,8 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      <DealProduct />
+      {/* Daily Deals Section */}
+      <DealProduct deals={dealProducts} />
 
       {/* Outstanding Categories Bar */}
       <div className="box-category-outstanding space-y-4">
@@ -237,37 +228,64 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Box Product Category - PC GAMING */}
-      <BoxProductCategory
-        title="PC GAMING"
-        tabs={["PC Gaming Theo Game", "Chọn PC Gaming Theo Giá"]}
-        tabContent={pcGamingProducts}
-        viewAllLink="/category/pc-gaming"
-      />
-      <BoxProductCategory
-        title="PC ĐỒ HỌA - LÀM VIỆC"
-        tabs={["Server - Máy Ảo Hóa", "Máy Tính Đồng Bộ", "Máy Tính Đồ Họa", "Build PC Custom"]}
-        tabContent={pcGamingProducts}
-        viewAllLink="/category/pc-gaming"
-      />
-      <BoxProductCategory
-        title="PC VĂN PHÒNG"
-        tabs={["Mini PC"]}
-        tabContent={pcGamingProducts}
-        viewAllLink="/category/pc-gaming"
-      />
-      <BoxProductCategory
-        title="PC AI - TRÍ TUỆ NHÂN TẠO"
-        tabs={[]}
-        tabContent={pcGamingProducts}
-        viewAllLink="/category/pc-gaming"
-      />
-      <BoxProductCategory
-        title="RAM - BỘ NHỚ TRONG"
-        tabs={["RAM DDR5", "RAM DDR4", "RAM 32GB", "RAM 16GB"]}
-        tabContent={pcGamingProducts}
-        viewAllLink="/category/pc-gaming"
-      />
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <span className="text-gray-500 text-sm font-medium">Đang tải danh sách sản phẩm...</span>
+        </div>
+      ) : (
+        <>
+          {/* Box Product Category - PC GAMING */}
+          <BoxProductCategory
+            title="PC GAMING"
+            tabs={["PC Gaming Theo Game", "Chọn PC Gaming Theo Giá"]}
+            tabContent={pcGamingProducts}
+            viewAllLink="/category/pc-gaming"
+          />
+
+          {/* Box Product Category - PC ĐỒ HỌA */}
+          <BoxProductCategory
+            title="PC ĐỒ HỌA - LÀM VIỆC"
+            tabs={["Server - Máy Ảo Hóa", "Máy Tính Đồng Bộ", "Máy Tính Đồ Họa", "Build PC Custom"]}
+            tabContent={pcDoHoaProducts}
+            viewAllLink="/category/pc-do-hoa"
+          />
+
+          {/* Box Product Category - PC VĂN PHÒNG */}
+          <BoxProductCategory
+            title="PC VĂN PHÒNG"
+            tabs={["Mini PC"]}
+            tabContent={pcVanPhongProducts}
+            viewAllLink="/category/pc-van-phong"
+          />
+
+          {/* Box Product Category - PC AI */}
+          <BoxProductCategory
+            title="PC AI - TRÍ TUỆ NHÂN TẠO"
+            tabs={[]}
+            tabContent={pcAiProducts}
+            viewAllLink="/category/pc-ai"
+          />
+
+          {/* Box Product Category - RAM - BỘ NHỚ TRONG */}
+          <BoxProductCategory
+            title="RAM - BỘ NHỚ TRONG"
+            tabs={["RAM DDR5", "RAM DDR4", "RAM 32GB", "RAM 16GB"]}
+            tabContent={ramProducts}
+            viewAllLink="/category/ram"
+          />
+
+          {/* Box Product Category - VGA - CARD ĐỒ HỌA */}
+          {vgaProducts.length > 0 && (
+            <BoxProductCategory
+              title="VGA - CARD ĐỒ HỌA"
+              tabs={["NVIDIA RTX 50 Series", "NVIDIA RTX 40 Series", "AMD Radeon"]}
+              tabContent={vgaProducts}
+              viewAllLink="/category/vga"
+            />
+          )}
+        </>
+      )}
     </div>
   );
 };
