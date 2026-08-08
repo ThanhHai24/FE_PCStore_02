@@ -45,7 +45,7 @@ export const Account: React.FC = () => {
 
         <div className="text-center text-xs text-gray-500">
           Chưa có tài khoản?{' '}
-          <a href="#" className="text-blue-600 font-semibold hover:underline">
+          <a href="register" className="text-blue-600 font-semibold hover:underline">
             Đăng ký ngay
           </a>
         </div>

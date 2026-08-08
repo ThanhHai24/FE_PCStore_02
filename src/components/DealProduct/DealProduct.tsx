@@ -55,7 +55,7 @@ function DealProduct() {
                     }}
                     className="py-1"
                 >
-                    {deals.map((item, index) => (
+                    {deals.map((_, index) => (
                         <SwiperSlide key={index}>
                             <DealProductCard />
                         </SwiperSlide>

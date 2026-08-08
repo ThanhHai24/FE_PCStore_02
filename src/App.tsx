@@ -7,6 +7,7 @@ import Cart from './pages/cart/Cart';
 import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
+import Register from './pages/account/Register';
 import NotFound from './pages/not-found/NotFound';
 import { CartProvider } from './context/CartContext';
 
@@ -24,6 +25,8 @@ function App() {
             <Route path="build-pc" element={<BuildPc />} />
             <Route path="news" element={<News />} />
             <Route path="account" element={<Account />} />
+            <Route path="login" element={<Account />} />
+            <Route path="register" element={<Register />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
@@ -31,6 +34,5 @@ function App() {
     </CartProvider>
   );
 }
-
 
 export default App;
