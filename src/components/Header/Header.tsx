@@ -245,7 +245,10 @@ const SHOWROOMS = [
     { city: 'TP. Hồ Chí Minh', address: '249 Lý Thường Kiệt, Phường 15, Quận 11', phone: '0707.08.6666' },
 ];
 
+import { useCart } from '../../context/CartContext';
+
 export const Header: React.FC = () => {
+    const { totalItems: cartCount } = useCart();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
@@ -253,7 +256,6 @@ export const Header: React.FC = () => {
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [cartCount] = useState(0);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);

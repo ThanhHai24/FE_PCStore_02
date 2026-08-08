@@ -57,49 +57,55 @@ export const BoxProductCategory: React.FC<BoxProductCategoryProps> = ({
             </div>
 
             {/* Slider Section */}
-            <div className="relative group/category-slider">
-                <Swiper
-                    modules={[Autoplay, Navigation]}
-                    spaceBetween={14}
-                    slidesPerView={1}
-                    loop={tabContent.length > 5}
-                    breakpoints={{
-                        480: { slidesPerView: 2, spaceBetween: 14 },
-                        768: { slidesPerView: 3, spaceBetween: 14 },
-                        1024: { slidesPerView: 4, spaceBetween: 14 },
-                        1280: { slidesPerView: 5, spaceBetween: 14 },
-                    }}
-                    autoplay={{
-                        delay: 5000,
-                        disableOnInteraction: false,
-                    }}
-                    navigation={{
-                        prevEl: `.${prevClass}`,
-                        nextEl: `.${nextClass}`,
-                    }}
-                    className="py-1 px-0.5"
-                >
-                    {tabContent.map((product, index) => (
-                        <SwiperSlide key={product.id || index} className="h-auto">
-                            <ProductCard {...product} />
-                        </SwiperSlide>
-                    ))}
-                </Swiper>
+            {tabContent.length === 0 ? (
+                <div className="py-8 text-center text-gray-500 text-sm bg-white rounded-xl border border-gray-100 shadow-xs">
+                    Chưa có sản phẩm nào trong danh mục này.
+                </div>
+            ) : (
+                <div className="relative group/category-slider">
+                    <Swiper
+                        modules={[Autoplay, Navigation]}
+                        spaceBetween={14}
+                        slidesPerView={1}
+                        loop={tabContent.length > 5}
+                        breakpoints={{
+                            480: { slidesPerView: 2, spaceBetween: 14 },
+                            768: { slidesPerView: 3, spaceBetween: 14 },
+                            1024: { slidesPerView: 4, spaceBetween: 14 },
+                            1280: { slidesPerView: 5, spaceBetween: 14 },
+                        }}
+                        autoplay={{
+                            delay: 5000,
+                            disableOnInteraction: false,
+                        }}
+                        navigation={{
+                            prevEl: `.${prevClass}`,
+                            nextEl: `.${nextClass}`,
+                        }}
+                        className="py-1 px-0.5"
+                    >
+                        {tabContent.map((product, index) => (
+                            <SwiperSlide key={product.id || index} className="h-auto">
+                                <ProductCard {...product} />
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
 
-                {/* Custom Left & Right Slider Arrows */}
-                <button
-                    className={`${prevClass} absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 w-9 h-14 rounded-r-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-xs shadow-md transition-all cursor-pointer opacity-70 group-hover/category-slider:opacity-100 disabled:opacity-0 disabled:cursor-default`}
-                    aria-label="Previous Products"
-                >
-                    <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button
-                    className={`${nextClass} absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 w-9 h-14 rounded-l-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-xs shadow-md transition-all cursor-pointer opacity-70 group-hover/category-slider:opacity-100 disabled:opacity-0 disabled:cursor-default`}
-                    aria-label="Next Products"
-                >
-                    <ChevronRight className="w-6 h-6" />
-                </button>
-            </div>
+                    {/* Custom Left & Right Slider Arrows */}
+                    <button
+                        className={`${prevClass} absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 w-9 h-14 rounded-r-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-xs shadow-md transition-all cursor-pointer opacity-70 group-hover/category-slider:opacity-100 disabled:opacity-0 disabled:cursor-default`}
+                        aria-label="Previous Products"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                        className={`${nextClass} absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 w-9 h-14 rounded-l-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-xs shadow-md transition-all cursor-pointer opacity-70 group-hover/category-slider:opacity-100 disabled:opacity-0 disabled:cursor-default`}
+                        aria-label="Next Products"
+                    >
+                        <ChevronRight className="w-6 h-6" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,0 +1,88 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface ProductGalleryProps {
+  images: string[];
+  title: string;
+}
+
+export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, title }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const currentImage = images[selectedIndex] || images[0];
+
+  const handlePrev = () => {
+    setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  // Mock game icons for side thumbnails if available or thumbnail images
+  const defaultGameBadges = [
+    { name: 'Valorant', bg: 'bg-red-500 text-white font-bold text-[10px]' },
+    { name: 'FC ONLINE', bg: 'bg-emerald-600 text-white font-bold text-[9px]' },
+    { name: 'LOL', bg: 'bg-blue-900 text-amber-300 font-black text-[10px]' },
+    { name: 'GENSHIN', bg: 'bg-indigo-900 text-white font-bold text-[9px]' },
+  ];
+
+  return (
+    <div className="flex flex-col md:flex-row items-center md:items-start gap-4 relative">
+      {/* Left Thumbnail Column */}
+      <div className="flex md:flex-col gap-2 shrink-0 overflow-x-auto md:overflow-y-auto max-h-[420px] py-1">
+        {images.map((img, idx) => (
+          <button
+            key={idx}
+            onClick={() => setSelectedIndex(idx)}
+            className={`w-14 h-14 rounded-lg border-2 p-1 bg-white overflow-hidden transition-all flex items-center justify-center ${
+              selectedIndex === idx ? 'border-red-600 shadow-md' : 'border-gray-200 hover:border-gray-400'
+            }`}
+          >
+            <img src={img} alt={`${title} ${idx}`} className="max-h-full max-w-full object-contain" />
+          </button>
+        ))}
+
+        {/* Game Badges demo matching screenshot */}
+        {defaultGameBadges.map((badge, bIdx) => (
+          <div
+            key={bIdx}
+            className={`w-14 h-10 rounded border border-gray-200 ${badge.bg} flex items-center justify-center text-center p-0.5 uppercase tracking-tighter leading-tight shadow-sm`}
+          >
+            {badge.name}
+          </div>
+        ))}
+      </div>
+
+      {/* Main Image Container */}
+      <div className="relative flex-1 bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-center min-h-[350px] sm:min-h-[420px] w-full group">
+        {/* Navigation Arrow Left */}
+        <button
+          onClick={handlePrev}
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-100/80 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all z-10"
+          aria-label="Previous image"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {/* Main Image */}
+        <img
+          src={currentImage}
+          alt={title}
+          className="max-h-[380px] w-auto object-contain transition-all duration-300 transform group-hover:scale-105"
+        />
+
+        {/* Navigation Arrow Right */}
+        <button
+          onClick={handleNext}
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gray-100/80 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-all z-10"
+          aria-label="Next image"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ProductGallery;

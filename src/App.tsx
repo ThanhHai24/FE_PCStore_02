@@ -7,8 +7,9 @@ import Cart from './pages/cart/Cart';
 import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
-import NotFound from './pages/not-found/NotFound';
 import Register from './pages/account/Register';
+import NotFound from './pages/not-found/NotFound';
+import { CartProvider } from './context/CartContext';
 
 // Admin Imports
 import AdminLayout from './layouts/AdminLayout';
@@ -21,36 +22,39 @@ import Customers from './pages/admin/Customers';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* User Storefront Routes */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Home />} />
-          <Route path="category/:categoryId" element={<ProductList />} />
-          <Route path="products" element={<ProductList />} />
-          <Route path="product/:id" element={<ProductDetail />} />
-          <Route path="cart" element={<Cart />} />
-          <Route path="build-pc" element={<BuildPc />} />
-          <Route path="news" element={<News />} />
-          <Route path="login" element={<Account />} />
-          <Route path="register" element={<Register />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
+    <CartProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* User Storefront Routes */}
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Home />} />
+            <Route path="category/:categoryId" element={<ProductList />} />
+            <Route path="products" element={<ProductList />} />
+            <Route path="product/:id" element={<ProductDetail />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="build-pc" element={<BuildPc />} />
+            <Route path="news" element={<News />} />
+            <Route path="login" element={<Account />} />
+            <Route path="register" element={<Register />} />
+            <Route path="account" element={<Account />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
 
-        {/* Admin Login Route */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+          {/* Admin Login Route */}
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Admin Portal Layout & Pages */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="products" element={<Products />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="settings" element={<Dashboard />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Admin Portal Layout & Pages */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="settings" element={<Dashboard />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   );
 }
 

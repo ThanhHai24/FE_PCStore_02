@@ -5,10 +5,15 @@ import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import DealProductCard from "./DealProductCard";
+import DealProductCard, { type DealProductCardProps } from "./DealProductCard";
 
-function DealProduct() {
-    const deals = [1, 2, 3, 4, 5, 6, 7, 8];
+interface DealProductProps {
+    deals?: DealProductCardProps[];
+}
+
+function DealProduct({ deals }: DealProductProps) {
+    const displayDeals = deals && deals.length > 0 ? deals : undefined;
+    const placeholderDeals = Array.from({ length: 8 });
 
     return (
         <div className="bg-gradient-to-b from-[#fe7112] to-[#ffdb68] rounded-lg p-5">
@@ -55,11 +60,17 @@ function DealProduct() {
                     }}
                     className="py-1"
                 >
-                    {deals.map((_, index) => (
-                        <SwiperSlide key={index}>
-                            <DealProductCard />
-                        </SwiperSlide>
-                    ))}
+                    {displayDeals
+                        ? displayDeals.map((item, index) => (
+                            <SwiperSlide key={item.id || index}>
+                                <DealProductCard {...item} />
+                            </SwiperSlide>
+                        ))
+                        : placeholderDeals.map((_, index) => (
+                            <SwiperSlide key={index}>
+                                <DealProductCard />
+                            </SwiperSlide>
+                        ))}
                 </Swiper>
 
                 {/* Custom Navigation Arrows */}
