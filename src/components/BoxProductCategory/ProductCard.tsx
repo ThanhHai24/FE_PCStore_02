@@ -66,8 +66,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
                 <Link to={targetLink} className="absolute inset-0 flex items-center justify-center p-2">
                     <img
-                        src={image}
+                        src={image || defaultPcImg}
                         alt={title}
+                        onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = defaultPcImg;
+                        }}
                         className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/card:scale-105"
                     />
                 </Link>
