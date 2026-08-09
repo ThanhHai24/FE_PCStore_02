@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin } from 'lucide-react';
+import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin, X } from 'lucide-react';
 
 interface ContactBranch {
   id: number;
@@ -48,6 +48,10 @@ const contactBranches: ContactBranch[] = [
 export const Footer: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showLeftBanner, setShowLeftBanner] = useState(true);
+  const [showRightBanner, setShowRightBanner] = useState(true);
+  const [showChatZalo, setShowChatZalo] = useState(true);
+  const [showChatFacebook, setShowChatFacebook] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -444,32 +448,60 @@ export const Footer: React.FC = () => {
       {/* 4. FLOATING WIDGETS (Zalo, Messenger, Scroll to top) */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col space-y-2.5 items-end">
         {/* Chat Zalo widget */}
-        <a
-          href="#"
-          className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
-        >
-          <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/zalo.png" alt="zalo" />
-          <div className="text-left leading-tight">
-            <div className="text-sm font-bold text-[#0066ff]">
-              Chat Zalo
-            </div>
-            <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
+        {showChatZalo && (
+          <div className="relative group/widget">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setShowChatZalo(false);
+              }}
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gray-800/80 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition-colors z-10"
+              title="Ẩn"
+            >
+              <X className="w-3 h-3" />
+            </button>
+            <a
+              href="#"
+              className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
+            >
+              <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/zalo.png" alt="zalo" />
+              <div className="text-left leading-tight">
+                <div className="text-sm font-bold text-[#0066ff]">
+                  Chat Zalo
+                </div>
+                <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
+              </div>
+            </a>
           </div>
-        </a>
+        )}
 
         {/* Chat Facebook widget */}
-        <a
-          href="#"
-          className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
-        >
-          <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/facebook_messenger.png" alt="messenger" />
-          <div className="text-left leading-tight">
-            <div className="text-sm font-bold text-[#0066ff]">
-              Chat Facebook
-            </div>
-            <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
+        {showChatFacebook && (
+          <div className="relative group/widget">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setShowChatFacebook(false);
+              }}
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-gray-800/80 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition-colors z-10"
+              title="Ẩn"
+            >
+              <X className="w-3 h-3" />
+            </button>
+            <a
+              href="#"
+              className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
+            >
+              <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/facebook_messenger.png" alt="messenger" />
+              <div className="text-left leading-tight">
+                <div className="text-sm font-bold text-[#0066ff]">
+                  Chat Facebook
+                </div>
+                <div className="text-xs font-medium text-[#0066ff] mt-0.5">(8h-22h30)</div>
+              </div>
+            </a>
           </div>
-        </a>
+        )}
 
         {/* Scroll to Top button */}
         {showScrollTop && (
@@ -482,34 +514,62 @@ export const Footer: React.FC = () => {
           </button>
         )}
       </div>
+
       {/* 5. FIXED SIDE BANNERS (Outside 1250px container) */}
       <div className="hidden xl:block">
         {/* Left Banner */}
-        <a
-          href="#"
-          className={`fixed z-40 transition-all duration-300 ease-in-out left-2 2xl:left-[calc(50%-635px)] 2xl:-translate-x-full ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
-            }`}
-        >
-          <img
-            src="src/assets/images/leftbanner.jpg"
-            alt="Left Banner"
-            className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
-          />
-        </a>
+        {showLeftBanner && (
+          <div
+            className={`fixed z-40 transition-all duration-300 ease-in-out left-2 2xl:left-[calc(50%-635px)] 2xl:-translate-x-full ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+              }`}
+          >
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setShowLeftBanner(false);
+              }}
+              className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-gray-900/80 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-colors z-50 group"
+              title="Ẩn"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <a href="#">
+              <img
+                src="src/assets/images/leftbanner.jpg"
+                alt="Left Banner"
+                className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+              />
+            </a>
+          </div>
+        )}
 
         {/* Right Banner */}
-        <a
-          href="#"
-          className={`fixed z-40 transition-all duration-300 ease-in-out right-2 2xl:left-[calc(50%+635px)] 2xl:translate-x-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
-            }`}
-        >
-          <img
-            src="src/assets/images/rightbanner.jpg"
-            alt="Right Banner"
-            className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
-          />
-        </a>
+        {showRightBanner && (
+          <div
+            className={`fixed z-40 transition-all duration-300 ease-in-out right-2 2xl:left-[calc(50%+635px)] 2xl:translate-x-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+              }`}
+          >
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setShowRightBanner(false);
+              }}
+              className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-gray-900/80 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-colors z-50 group"
+              title="Ẩn"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <a href="#">
+              <img
+                src="src/assets/images/rightbanner.jpg"
+                alt="Right Banner"
+                className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+              />
+            </a>
+          </div>
+        )}
       </div>
+
     </footer>
 
   );
