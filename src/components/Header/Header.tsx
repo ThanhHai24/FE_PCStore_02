@@ -17,7 +17,11 @@ import {
     ChevronRight,
     ShieldCheck,
     Phone,
-    PcCase
+    PcCase,
+    LogOut,
+    Shield,
+    Package,
+    Truck
 } from 'lucide-react';
 
 interface CategoryItem {
@@ -246,9 +250,11 @@ const SHOWROOMS = [
 ];
 
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const Header: React.FC = () => {
     const { totalItems: cartCount } = useCart();
+    const { user, logout } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
@@ -256,9 +262,11 @@ export const Header: React.FC = () => {
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);
+    const userDropdownRef = useRef<HTMLDivElement>(null);
 
     // Close search suggestions on click outside & menus on scroll
     useEffect(() => {
@@ -269,6 +277,9 @@ export const Header: React.FC = () => {
             if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
                 setIsMegaMenuOpen(false);
                 setActiveCategory(null);
+            }
+            if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+                setIsUserDropdownOpen(false);
             }
         };
 
@@ -469,15 +480,94 @@ export const Header: React.FC = () => {
                         </Link>
 
                         {/* 5. TÀI KHOẢN */}
-                        <Link
-                            to="/account"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
-                        >
-                            <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
-                                Tài Khoản
-                            </span>
-                        </Link>
+                        {user ? (
+                            <div className="relative" ref={userDropdownRef}>
+                                <button
+                                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                                    className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-blue-700/50 transition-all text-center group"
+                                >
+                                    {user.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt={user.fullName}
+                                            className="w-6 h-6 rounded-full object-cover mb-0.5 border border-blue-200"
+                                        />
+                                    ) : (
+                                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white font-bold text-[10px] flex items-center justify-center mb-0.5 border border-blue-300">
+                                            {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                                        </div>
+                                    )}
+                                    <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white max-w-[80px] truncate">
+                                        {user.fullName || user.username}
+                                    </span>
+                                </button>
+
+                                {/* USER DROPDOWN MENU */}
+                                {isUserDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 text-gray-800 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                                            <p className="text-xs font-bold text-gray-900 truncate">{user.fullName}</p>
+                                            <p className="text-[11px] text-gray-500 font-mono truncate">@{user.username}</p>
+                                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full">
+                                                {user.role}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-1">
+                                            <Link
+                                                to="/account"
+                                                onClick={() => setIsUserDropdownOpen(false)}
+                                                className="flex items-center space-x-2 px-4 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                            >
+                                                <User className="w-4 h-4 text-blue-500" />
+                                                <span>Hồ Sơ Cá Nhân</span>
+                                            </Link>
+
+                                            <Link
+                                                to="/track-order"
+                                                onClick={() => setIsUserDropdownOpen(false)}
+                                                className="flex items-center space-x-2 px-4 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                            >
+                                                <Truck className="w-4 h-4 text-blue-500" />
+                                                <span>Tra Cứu Đơn Hàng</span>
+                                            </Link>
+
+                                            {(user.role === 'ADMIN' || user.role === 'STAFF') && (
+                                                <Link
+                                                    to="/admin"
+                                                    onClick={() => setIsUserDropdownOpen(false)}
+                                                    className="flex items-center space-x-2 px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 transition-colors font-semibold"
+                                                >
+                                                    <Shield className="w-4 h-4 text-amber-600" />
+                                                    <span>Trang Quản Trị</span>
+                                                </Link>
+                                            )}
+
+                                            <button
+                                                onClick={() => {
+                                                    setIsUserDropdownOpen(false);
+                                                    logout();
+                                                }}
+                                                className="w-full flex items-center space-x-2 px-4 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
+                                            >
+                                                <LogOut className="w-4 h-4 text-red-500" />
+                                                <span>Đăng Xuất</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <Link
+                                to="/account"
+                                className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-blue-700/50 transition-all text-center group"
+                            >
+                                <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                                <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
+                                    Tài Khoản
+                                </span>
+                            </Link>
+                        )}
                     </div>
 
                     {/* MOBILE QUICK CARTS & USER */}
@@ -526,7 +616,14 @@ export const Header: React.FC = () => {
                                 className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
                             >
                                 <User className="w-4 h-4 text-blue-600" />
-                                <span>Tài Khoản</span>
+                                <span>{user ? user.fullName : 'Tài Khoản'}</span>
+                            </Link>
+                            <Link
+                                to="/track-order"
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <Truck className="w-4 h-4 text-blue-600" />
+                                <span>Tra Cứu Đơn Hàng</span>
                             </Link>
                         </div>
 

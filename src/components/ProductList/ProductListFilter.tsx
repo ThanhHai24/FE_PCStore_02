@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
+import type { ApiBrand } from '../../types/apiProduct';
 
 export interface PriceRangeOption {
   id: string;
@@ -12,26 +13,28 @@ export interface PriceRangeOption {
 export interface FilterCriteria {
   key: string;
   title: string;
-  options: string[];
+  options: { id: string; name: string }[];
 }
 
 interface ProductListFilterProps {
+  brands?: ApiBrand[];
   selectedPriceRange?: string | null;
   onSelectPriceRange?: (id: string | null) => void;
+  selectedBrandId?: string | null;
+  onSelectBrand?: (brandId: string | null) => void;
   selectedFilters?: Record<string, string>;
   onFilterChange?: (key: string, value: string | null) => void;
   onResetFilters?: () => void;
 }
 
-const defaultPriceRanges: PriceRangeOption[] = [
-  { id: '15-20', label: '15 triệu - 20 triệu', count: 2, minPrice: 15000000, maxPrice: 20000000 },
-  { id: '20-50', label: '20 triệu - 50 triệu', count: 13, minPrice: 20000000, maxPrice: 50000000 },
-  { id: '50-100', label: '50 triệu - 100 triệu', count: 16, minPrice: 50000000, maxPrice: 100000000 },
-  { id: 'gt-100', label: 'Trên 100 triệu', count: 13, minPrice: 100000000, maxPrice: Infinity },
+export const defaultPriceRanges: PriceRangeOption[] = [
+  { id: '15-20', label: '15 triệu - 20 triệu', minPrice: 15000000, maxPrice: 20000000 },
+  { id: '20-50', label: '20 triệu - 50 triệu', minPrice: 20000000, maxPrice: 50000000 },
+  { id: '50-100', label: '50 triệu - 100 triệu', minPrice: 50000000, maxPrice: 100000000 },
+  { id: 'gt-100', label: 'Trên 100 triệu', minPrice: 100000000 },
 ];
 
-const defaultCriteriaList: FilterCriteria[] = [
-  { key: 'brand', title: 'Thương hiệu', options: ['ASUS / ROG', 'Intel', 'AMD', 'MSI', 'Gigabyte'] },
+const defaultCriteriaList: { key: string; title: string; options: string[] }[] = [
   { key: 'threads', title: 'Số luồng', options: ['12 Luồng', '16 Luồng', '24 Luồng', '28 Luồng', '32 Luồng'] },
   { key: 'ramSlots', title: 'Số khe Ram', options: ['2 Khe', '4 Khe'] },
   { key: 'cores', title: 'Số nhân', options: ['8 Nhân', '12 Nhân', '14 Nhân', '20 Nhân', '24 Nhân'] },
@@ -45,8 +48,11 @@ const defaultCriteriaList: FilterCriteria[] = [
 ];
 
 export const ProductListFilter: React.FC<ProductListFilterProps> = ({
+  brands = [],
   selectedPriceRange,
   onSelectPriceRange,
+  selectedBrandId,
+  onSelectBrand,
   selectedFilters = {},
   onFilterChange,
   onResetFilters,
@@ -67,7 +73,11 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
     setOpenDropdownKey(null);
   };
 
-  const activeFiltersCount = Object.keys(selectedFilters).filter((k) => selectedFilters[k]).length + (selectedPriceRange ? 1 : 0);
+  const selectedBrand = brands.find(b => b.id === selectedBrandId);
+  const activeFiltersCount =
+    Object.keys(selectedFilters).filter((k) => selectedFilters[k]).length +
+    (selectedPriceRange ? 1 : 0) +
+    (selectedBrandId ? 1 : 0);
 
   return (
     <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 mb-6 space-y-5">
@@ -98,6 +108,54 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
       <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-gray-100">
         <span className="text-xs font-bold text-gray-800 shrink-0 min-w-[120px] pt-2">Chọn theo tiêu chí:</span>
         <div className="flex flex-wrap items-center gap-2 flex-1">
+          {/* Brand Filter (Dynamic from API if available) */}
+          {brands.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => toggleDropdown('brand')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  selectedBrandId
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span>{selectedBrand ? `Thương hiệu: ${selectedBrand.name}` : 'Thương hiệu'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownKey === 'brand' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {openDropdownKey === 'brand' && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-2 space-y-1 animate-in fade-in zoom-in-95">
+                  <button
+                    onClick={() => {
+                      onSelectBrand?.(null);
+                      setOpenDropdownKey(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-md"
+                  >
+                    Tất cả thương hiệu
+                  </button>
+                  {brands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => {
+                        onSelectBrand?.(selectedBrandId === brand.id ? null : brand.id);
+                        setOpenDropdownKey(null);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors ${
+                        selectedBrandId === brand.id
+                          ? 'bg-blue-600 text-white font-bold'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {brand.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Other Spec Criteria Dropdowns */}
           {defaultCriteriaList.map((crit) => {
             const isOpen = openDropdownKey === crit.key;
             const activeValue = selectedFilters[crit.key];
@@ -143,12 +201,18 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
       {/* Active Filters / Reset row if filters applied */}
       {activeFiltersCount > 0 && (
         <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-          <div className="flex items-center space-x-2 flex-wrap">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
             <span className="font-bold text-gray-500">Đã chọn ({activeFiltersCount}):</span>
             {selectedPriceRange && (
               <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
                 <span>Khoảng giá: {defaultPriceRanges.find(r => r.id === selectedPriceRange)?.label}</span>
                 <button onClick={() => onSelectPriceRange?.(null)}><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {selectedBrand && (
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
+                <span>Thương hiệu: {selectedBrand.name}</span>
+                <button onClick={() => onSelectBrand?.(null)}><X className="w-3 h-3" /></button>
               </span>
             )}
             {Object.entries(selectedFilters).map(([k, v]) => {
@@ -176,3 +240,4 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
 };
 
 export default ProductListFilter;
+
