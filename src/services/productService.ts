@@ -4,6 +4,7 @@ import type {
   ApiProductsResponse,
   ApiCategoriesResponse,
   ApiCategory,
+  ApiBrand,
   ProductQueryParams,
 } from '../types/apiProduct';
 import type { ProductCardProps } from '../components/BoxProductCategory/ProductCard';
@@ -84,6 +85,14 @@ export async function getFeaturedProducts(limit = 10): Promise<{ products: ApiPr
 
 export async function getCategories(tree = false): Promise<ApiCategoriesResponse> {
   return fetchApi<ApiCategoriesResponse>(`/api/categories${tree ? '?tree=true' : ''}`);
+}
+
+export async function getCategoryDetail(idOrSlug: string): Promise<{ category: ApiCategory }> {
+  return fetchApi<{ category: ApiCategory }>(`/api/categories/${idOrSlug}`);
+}
+
+export async function getBrandsByCategory(idOrSlug: string): Promise<{ category: ApiCategory; brands: ApiBrand[] }> {
+  return fetchApi<{ category: ApiCategory; brands: ApiBrand[] }>(`/api/categories/${idOrSlug}/brands`);
 }
 
 export async function getProductDetail(idOrSlug: string): Promise<{ product: ApiProduct }> {

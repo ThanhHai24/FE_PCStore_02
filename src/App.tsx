@@ -7,9 +7,11 @@ import Cart from './pages/cart/Cart';
 import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
+import ProductCompare from './pages/compare/ProductCompare';
 import Register from './pages/account/Register';
 import NotFound from './pages/not-found/NotFound';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
 
 // Admin Imports
 import AdminLayout from './layouts/AdminLayout';
@@ -22,26 +24,29 @@ import Customers from './pages/admin/Customers';
 
 function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* User Storefront Routes */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Home />} />
-            <Route path="category/:categoryId" element={<ProductList />} />
-            <Route path="products" element={<ProductList />} />
-            <Route path="product/:id" element={<ProductDetail />} />
-            <Route path="cart" element={<Cart />} />
-            <Route path="build-pc" element={<BuildPc />} />
-            <Route path="news" element={<News />} />
-            <Route path="login" element={<Account />} />
-            <Route path="register" element={<Register />} />
-            <Route path="account" element={<Account />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* User Storefront Routes */}
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Home />} />
+              <Route path="category/:categoryId" element={<ProductList />} />
+              <Route path="products" element={<ProductList />} />
+              <Route path="product/:id" element={<ProductDetail />} />
+              <Route path="cart" element={<Cart />} />
+              <Route path="build-pc" element={<BuildPc />} />
+              <Route path="news" element={<News />} />
+              <Route path="login" element={<Account />} />
+              <Route path="register" element={<Register />} />
+              <Route path="account" element={<Account />} />
+              <Route path="order" element={<Order />} />
+              <Route path="order/:id" element={<OrderDetail />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
 
-          {/* Admin Login Route */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+            {/* Admin Login Route */}
+            <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* Admin Portal Layout & Pages */}
           <Route path="/admin" element={<AdminLayout />}>
