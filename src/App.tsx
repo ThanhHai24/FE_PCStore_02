@@ -18,8 +18,9 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminLogin from './pages/admin/AdminLogin';
 import Dashboard from './pages/admin/Dashboard';
 import Products from './pages/admin/Products';
-import Order from './pages/order/Order';
-import OrderDetail from './pages/order/OrderDetail';
+import Categories from './pages/admin/Categories';
+import Orders from './pages/admin/Orders';
+import Customers from './pages/admin/Customers';
 
 function App() {
   return (
@@ -47,19 +48,18 @@ function App() {
             {/* Admin Login Route */}
             <Route path="/admin/login" element={<AdminLogin />} />
 
-            {/* Admin Portal Layout & Pages */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="products" element={<Products />} />
-              <Route path="orders" element={<Dashboard />} />
-              <Route path="categories" element={<Products />} />
-              <Route path="customers" element={<Dashboard />} />
-              <Route path="settings" element={<Dashboard />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
+          {/* Admin Portal Layout & Pages */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="products" element={<Products />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="settings" element={<Dashboard />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   );
 }
 
