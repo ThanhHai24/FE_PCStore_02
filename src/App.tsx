@@ -21,6 +21,8 @@ import Products from './pages/admin/Products';
 import Categories from './pages/admin/Categories';
 import Orders from './pages/admin/Orders';
 import Customers from './pages/admin/Customers';
+import Order from './pages/order/Order';
+import OrderDetail from './pages/order/OrderDetail';
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
               <Route path="account" element={<Account />} />
               <Route path="order" element={<Order />} />
               <Route path="order/:id" element={<OrderDetail />} />
+              <Route path="compare" element={<ProductCompare />} />
               <Route path="*" element={<NotFound />} />
             </Route>
 
@@ -60,6 +63,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </CartProvider>
+  </AuthProvider>
   );
 }
 
