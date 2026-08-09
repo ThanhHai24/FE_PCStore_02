@@ -2,6 +2,7 @@ import { Flame } from "lucide-react";
 import rtxProductImg from "../../assets/images/products/rtx.png";
 
 export interface DealProductCardProps {
+    id?: string | number;
     image?: string;
     title?: string;
     price?: string;
