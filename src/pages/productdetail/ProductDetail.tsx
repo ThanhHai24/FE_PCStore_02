@@ -6,6 +6,7 @@ import ProductInfo from '../../components/ProductDetail/ProductInfo';
 import RecentlyViewed from '../../components/ProductDetail/RecentlyViewed';
 import RelatedProducts from '../../components/ProductDetail/RelatedProducts';
 import ProductTabs from '../../components/ProductDetail/ProductTabs';
+import ProductReviews from '../../components/ProductDetail/ProductReviews';
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,8 +59,14 @@ export const ProductDetail: React.FC = () => {
       <div className="pt-2">
         <ProductTabs specsTable={product.specsTable} descriptionHtml={product.descriptionHtml} />
       </div>
+
+      {/* Product Reviews & Q&A Section */}
+      <div className="pt-2">
+        <ProductReviews product={product} />
+      </div>
     </div>
   );
 };
+
 
 export default ProductDetail;

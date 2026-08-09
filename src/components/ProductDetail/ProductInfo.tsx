@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Eye, MessageSquare, ShoppingBag, ShieldCheck, CheckCircle2, RefreshCw, Cpu, Monitor, HardDrive, Plus, Minus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale } from 'lucide-react';
 import type { Product } from '../../types/product';
 import { useCart } from '../../context/CartContext';
 
@@ -142,11 +143,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             <button
               key={option}
               onClick={() => setSelectedStorage(option)}
-              className={`px-3 py-1.5 text-xs rounded-lg border font-semibold transition-all ${
-                selectedStorage === option
-                  ? 'border-red-600 bg-red-50 text-red-600 ring-1 ring-red-500'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-              }`}
+              className={`px-3 py-1.5 text-xs rounded-lg border font-semibold transition-all ${selectedStorage === option
+                ? 'border-red-600 bg-red-50 text-red-600 ring-1 ring-red-500'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
             >
               {option}
             </button>
@@ -229,51 +229,31 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
         {/* Action Buttons Row */}
         <div className="flex flex-wrap items-center gap-2">
-          <button className="flex-1 min-w-[110px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-4 rounded-xl text-center text-xs uppercase shadow transition-colors">
+          <button className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
             TRẢ GÓP
           </button>
-          <button className="flex-1 min-w-[130px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-3 px-4 rounded-xl text-center text-xs uppercase shadow transition-colors">
+          <button className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
             MUA NGAY
           </button>
           <button
             onClick={handleAddToCart}
-            className="bg-white border-2 border-red-600 hover:bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95"
+            className="bg-white border-2 border-red-600 hover:bg-red-50 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95"
           >
             Thêm vào giỏ
           </button>
+          <Link
+            to={`/compare?id1=${product.id}`}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-3 px-3 rounded-xl text-xs flex items-center space-x-1 transition-colors"
+            title="So sánh với sản phẩm khác"
+          >
+            <Scale className="w-4 h-4 text-blue-600" />
+            <span>So sánh</span>
+          </Link>
         </div>
+
       </div>
 
-      {/* Chính sách mua hàng Box */}
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-3">
-        <h4 className="font-bold text-xs text-gray-900 uppercase">Chính sách mua hàng</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-700">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Cam kết giá tốt.</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Sản phẩm mới 100%.</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RefreshCw className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Lỗi 1 đổi 1 ngay lập tức.</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Hỗ trợ trả góp - Thủ tục nhanh gọn.</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Khách hàng vừa mua notification banner matching screenshot */}
-      <div className="flex items-center space-x-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg font-medium">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-        <span>
-          <strong className="font-bold text-emerald-800">Khách hàng Hương (037 964 xxxx)</strong> Đã mua hàng 25 phút trước
-        </span>
-      </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import Cart from './pages/cart/Cart';
 import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
+import ProductCompare from './pages/compare/ProductCompare';
 import Register from './pages/account/Register';
 import NotFound from './pages/not-found/NotFound';
 import { CartProvider } from './context/CartContext';
