@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   Plus,
@@ -12,8 +12,9 @@ import {
   Save,
   AlertTriangle,
   Mail,
-  Phone
+  Phone,
 } from 'lucide-react';
+import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '../../services/userService';
 
 export interface CustomerItem {
   id: string;
@@ -24,53 +25,39 @@ export interface CustomerItem {
   totalSpent: string;
   status: 'Active' | 'Blocked';
   avatar: string;
+  role: 'ADMIN' | 'CUSTOMER';
+  username?: string;
 }
 
 export const Customers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [customers, setCustomers] = useState<CustomerItem[]>([]);
 
-  const [customers, setCustomers] = useState<CustomerItem[]>([
-    {
-      id: 'CUST-001',
-      name: 'Nguyễn Văn An',
-      email: 'an.nguyen@gmail.com',
-      phone: '0987.414.899',
-      ordersCount: 5,
-      totalSpent: '125.490.000 ₫',
-      status: 'Active',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 'CUST-002',
-      name: 'Trần Thị Bình',
-      email: 'binh.tran@yahoo.com',
-      phone: '0912.345.678',
-      ordersCount: 2,
-      totalSpent: '28.500.000 ₫',
-      status: 'Active',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 'CUST-003',
-      name: 'Lê Hoàng Cường',
-      email: 'cuong.lh@outlook.com',
-      phone: '0903.888.999',
-      ordersCount: 8,
-      totalSpent: '210.000.000 ₫',
-      status: 'Active',
-      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 'CUST-004',
-      name: 'Phạm Minh Đức',
-      email: 'duc.pm@hotmail.com',
-      phone: '0977.123.456',
-      ordersCount: 1,
-      totalSpent: '22.900.000 ₫',
-      status: 'Blocked',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    },
-  ]);
+  // Fetch Users from API
+  const fetchUsers = async () => {
+    try {
+      const data = await getUsersApi({ limit: 100, search: searchTerm });
+      const mapped: CustomerItem[] = data.users.map((u) => ({
+        id: u.id,
+        name: u.fullName,
+        username: u.username,
+        email: u.email,
+        phone: u.phone || 'Chưa cập nhật',
+        ordersCount: u.ordersCount || 0,
+        totalSpent: u.totalSpent ? `${u.totalSpent.toLocaleString('vi-VN')} ₫` : '0 ₫',
+        status: u.status === 'BANNED' ? 'Blocked' : 'Active',
+        avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        role: u.role,
+      }));
+      setCustomers(mapped);
+    } catch (err: any) {
+      console.warn('API Get Users failed, fallback to state:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [searchTerm]);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -81,9 +68,12 @@ export const Customers: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerItem | null>(null);
 
   const [formData, setFormData] = useState({
+    username: '',
     name: '',
     email: '',
     phone: '',
+    password: '',
+    role: 'CUSTOMER' as 'ADMIN' | 'CUSTOMER',
     status: 'Active' as 'Active' | 'Blocked',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
   });
@@ -91,9 +81,12 @@ export const Customers: React.FC = () => {
   // Open Add Modal
   const handleOpenAddModal = () => {
     setFormData({
+      username: '',
       name: '',
       email: '',
       phone: '',
+      password: '',
+      role: 'CUSTOMER',
       status: 'Active',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     });
@@ -101,29 +94,35 @@ export const Customers: React.FC = () => {
   };
 
   // Submit Add Customer
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newCust: CustomerItem = {
-      id: `CUST-00${customers.length + 1}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      ordersCount: 0,
-      totalSpent: '0 ₫',
-      status: formData.status,
-      avatar: formData.avatar,
-    };
-    setCustomers([newCust, ...customers]);
-    setIsAddModalOpen(false);
+    try {
+      await createUserApi({
+        username: formData.username || formData.email.split('@')[0],
+        email: formData.email,
+        password: formData.password || '123456',
+        fullName: formData.name,
+        phone: formData.phone,
+        role: formData.role,
+        status: formData.status === 'Blocked' ? 'BANNED' : 'ACTIVE',
+      });
+      await fetchUsers();
+      setIsAddModalOpen(false);
+    } catch (err: any) {
+      alert(`Lỗi tạo tài khoản: ${err.message}`);
+    }
   };
 
   // Open Edit Modal
   const handleOpenEditModal = (cust: CustomerItem) => {
     setSelectedCustomer(cust);
     setFormData({
+      username: cust.username || '',
       name: cust.name,
       email: cust.email,
       phone: cust.phone,
+      password: '',
+      role: cust.role,
       status: cust.status,
       avatar: cust.avatar,
     });
@@ -131,17 +130,21 @@ export const Customers: React.FC = () => {
   };
 
   // Submit Edit Customer
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) return;
-    setCustomers(
-      customers.map((c) =>
-        c.id === selectedCustomer.id
-          ? { ...c, name: formData.name, email: formData.email, phone: formData.phone, status: formData.status }
-          : c
-      )
-    );
-    setIsEditModalOpen(false);
+    try {
+      await updateUserApi(selectedCustomer.id, {
+        fullName: formData.name,
+        phone: formData.phone,
+        role: formData.role,
+        status: formData.status === 'Blocked' ? 'BANNED' : 'ACTIVE',
+      });
+      await fetchUsers();
+      setIsEditModalOpen(false);
+    } catch (err: any) {
+      alert(`Lỗi cập nhật: ${err.message}`);
+    }
   };
 
   // Open Delete Modal
@@ -151,10 +154,15 @@ export const Customers: React.FC = () => {
   };
 
   // Confirm Delete
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!selectedCustomer) return;
-    setCustomers(customers.filter((c) => c.id !== selectedCustomer.id));
-    setIsDeleteModalOpen(false);
+    try {
+      await deleteUserApi(selectedCustomer.id);
+      await fetchUsers();
+      setIsDeleteModalOpen(false);
+    } catch (err: any) {
+      alert(`Lỗi xóa: ${err.message}`);
+    }
   };
 
   // Open View Detail Modal
@@ -303,6 +311,18 @@ export const Customers: React.FC = () => {
 
             <form onSubmit={handleAddSubmit} className="space-y-3">
               <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Tên đăng nhập (Username) *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  placeholder="vd: user123"
+                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Họ và tên *</label>
                 <input
                   type="text"
@@ -327,15 +347,51 @@ export const Customers: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại</label>
                 <input
                   type="text"
-                  required
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="vd: 0988.777.666"
                   className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Mật khẩu *</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Tối thiểu 6 ký tự"
+                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Vai trò (Role)</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold text-blue-600"
+                  >
+                    <option value="CUSTOMER">Khách hàng</option>
+                    <option value="ADMIN">Quản trị viên (Admin)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="Active">Hoạt động</option>
+                    <option value="Blocked">Khóa tài khoản</option>
+                  </select>
+                </div>
               </div>
 
               <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">

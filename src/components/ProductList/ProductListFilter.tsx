@@ -16,7 +16,7 @@ export interface FilterCriteria {
 }
 
 interface ProductListFilterProps {
-  selectedPriceRange?: string;
+  selectedPriceRange?: string | null;
   onSelectPriceRange?: (id: string | null) => void;
   selectedFilters?: Record<string, string>;
   onFilterChange?: (key: string, value: string | null) => void;

@@ -3,7 +3,6 @@ import type {
   ApiProduct,
   ApiProductsResponse,
   ApiCategoriesResponse,
-  ApiCategory,
   ProductQueryParams,
 } from '../types/apiProduct';
 import type { ProductCardProps } from '../components/BoxProductCategory/ProductCard';
