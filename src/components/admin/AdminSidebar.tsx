@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   Users,
   FolderTree,
+  Award,
   Settings,
   LogOut,
   ChevronLeft,
@@ -25,8 +26,11 @@ const navItems = [
   { path: '/admin/products', label: 'Sản phẩm', icon: Package, badge: '128' },
   { path: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '5 mới' },
   { path: '/admin/customers', label: 'Khách hàng', icon: Users },
+  { path: '/admin/categories', label: 'Danh mục', icon: FolderTree },
+  { path: '/admin/brands', label: 'Thương hiệu', icon: Award },
   { path: '/admin/settings', label: 'Cài đặt', icon: Settings },
 ];
+
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
@@ -39,9 +43,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle 
 
   return (
     <aside
-      className={`fixed top-0 left-0 bottom-0 bg-white border-r border-gray-200 z-40 transition-all duration-300 flex flex-col ${
-        collapsed ? 'w-20' : 'w-64'
-      }`}
+      className={`fixed top-0 left-0 bottom-0 bg-white border-r border-gray-200 z-40 transition-all duration-300 flex flex-col ${collapsed ? 'w-20' : 'w-64'
+        }`}
     >
       {/* Brand Header */}
       <div className="h-16 border-b border-gray-100 flex items-center justify-between px-4">
@@ -74,10 +77,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle 
             to={item.path}
             end={item.exact}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
+                ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`
             }
           >

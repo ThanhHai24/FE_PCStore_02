@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getProductById, mockProducts } from '../../data/mockProducts';
-import { getProductDetail, formatPrice, calculateDiscount } from '../../services/productService';
-import { getImageUrl } from '../../services/api';
-import type { Product, SpecItem } from '../../types/product';
+import { getProductDetail, mapApiProductToProduct } from '../../services/productService';
+import type { Product } from '../../types/product';
 import ProductGallery from '../../components/ProductDetail/ProductGallery';
 import ProductInfo from '../../components/ProductDetail/ProductInfo';
 import RecentlyViewed from '../../components/ProductDetail/RecentlyViewed';
@@ -11,69 +10,6 @@ import RelatedProducts from '../../components/ProductDetail/RelatedProducts';
 import ProductTabs from '../../components/ProductDetail/ProductTabs';
 import ProductReviews from '../../components/ProductDetail/ProductReviews';
 import { Loader2 } from 'lucide-react';
-
-function parseSpecsToTable(specifications: unknown): SpecItem[] {
-  if (!specifications) return [];
-
-  if (Array.isArray(specifications)) {
-    return specifications.map((item) => {
-      const key = item?.key || item?.name || '';
-      const rawVal = item?.value || item?.name || '';
-      return parseSingleSpecItem(key, rawVal);
-    });
-  }
-
-  if (typeof specifications === 'object' && specifications !== null) {
-    const result: SpecItem[] = [];
-    for (const [key, rawVal] of Object.entries(specifications)) {
-      if (key === 'importPrice') continue;
-      result.push(parseSingleSpecItem(key, rawVal));
-    }
-    return result;
-  }
-
-  return [];
-}
-
-function parseSingleSpecItem(key: string, rawVal: unknown): SpecItem {
-  let name: string;
-  let productId: string | undefined = undefined;
-  let warranty = 'Chính hãng';
-
-  if (typeof rawVal === 'object' && rawVal !== null) {
-    const obj = rawVal as Record<string, unknown>;
-    name = String(obj.name || obj.title || JSON.stringify(obj));
-    productId = obj.id ? String(obj.id) : obj.productId ? String(obj.productId) : undefined;
-    if (obj.warranty) warranty = String(obj.warranty);
-  } else if (typeof rawVal === 'string') {
-    if (rawVal.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(rawVal);
-        name = parsed.name || parsed.title || rawVal;
-        productId = parsed.id || parsed.productId || undefined;
-        if (parsed.warranty) warranty = String(parsed.warranty);
-      } catch {
-        name = rawVal;
-      }
-    } else if (rawVal.includes('||')) {
-      const parts = rawVal.split('||');
-      name = parts[0];
-      productId = parts[1] || undefined;
-      if (parts[2]) warranty = parts[2];
-    } else {
-      name = rawVal;
-    }
-  } else {
-    name = String(rawVal ?? '');
-  }
-
-  return {
-    key: key.toUpperCase(),
-    name,
-    warranty,
-    productId,
-  };
-}
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -89,44 +25,12 @@ export const ProductDetail: React.FC = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setProduct(mockObj);
 
-
       getProductDetail(id)
         .then((res) => {
           if (!isMounted) return;
           const apiProd = res.product;
           if (apiProd) {
-            const mapped: Product = {
-              id: apiProd.id,
-              title: apiProd.name,
-              images: apiProd.images && apiProd.images.length > 0
-                ? apiProd.images.map((img) => getImageUrl(img))
-                : [getImageUrl(apiProd.image)],
-              price: formatPrice(apiProd.price),
-              numericPrice: apiProd.price || 0,
-              marketPrice: apiProd.originalPrice ? formatPrice(apiProd.originalPrice) : undefined,
-              discountPercent: calculateDiscount(apiProd.price, apiProd.originalPrice),
-              badge: apiProd.isFeatured ? 'HOT' : undefined,
-              inStock: (apiProd.stock ?? 0) > 0,
-              stockQuantity: apiProd.stock ?? 0,
-              warrantyInfo: apiProd.warranty ? `Bảo hành ${apiProd.warranty} tháng` : 'Bảo hành chính hãng',
-
-              rating: 5.0,
-              reviewCount: 12,
-              viewCount: apiProd.viewCount || 100,
-              commentCount: 4,
-              purchaseCount: 10,
-              category: apiProd.category?.slug || 'pc-gaming',
-              categoryName: apiProd.category?.name || 'PC GAMING',
-              brand: apiProd.brand?.name || '',
-              promotions: [
-                'Quý khách có thể tùy chọn nâng cấp lên hoặc xuống cấu hình tương đương với: CPU, RAM, SSD theo nhu cầu.',
-                'Miễn phí giao hàng toàn quốc.',
-                'Tặng Voucher giảm giá 500.000đ cho lần mua tiếp theo.',
-              ],
-              specsTable: parseSpecsToTable(apiProd.specifications),
-              descriptionHtml: apiProd.description || `<p>${apiProd.shortDescription || ''}</p>`,
-            };
-            setProduct(mapped);
+            setProduct(mapApiProductToProduct(apiProd));
           }
         })
         .catch(() => {

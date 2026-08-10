@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminHeader from '../components/admin/AdminHeader';
 import { useAuth } from '../context/AuthContext';
-import { AlertTriangle, LogIn } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { user, loading } = useAuth();
+  const location = useLocation();
 
-  const isNotAdmin = !loading && (!user || user.role !== 'ADMIN');
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center space-y-3 font-sans">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        <p className="text-xs font-semibold text-gray-600">Đang kiểm tra quyền truy cập hệ thống...</p>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'ADMIN') {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 flex transition-colors">
+    <div className="min-h-screen bg-gray-100 text-gray-900 flex transition-colors font-sans">
       {/* Sidebar */}
       <AdminSidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
@@ -24,25 +36,6 @@ export const AdminLayout: React.FC = () => {
       >
         {/* Header Topbar */}
         <AdminHeader onToggleSidebar={() => setCollapsed(!collapsed)} />
-
-        {/* Warning Banner if not logged in as Admin */}
-        {isNotAdmin && (
-          <div className="bg-amber-500 text-white px-4 py-3 flex items-center justify-between shadow-md text-xs font-semibold">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0 animate-bounce" />
-              <span>
-                Bạn chưa đăng nhập bằng tài khoản <strong>Quản trị viên (ADMIN)</strong>. Vui lòng đăng nhập để có quyền thêm/sửa/xóa sản phẩm.
-              </span>
-            </div>
-            <Link
-              to="/admin/login"
-              className="px-3 py-1.5 bg-white text-amber-800 rounded-lg hover:bg-amber-50 transition-all font-bold flex items-center gap-1.5 shadow-sm whitespace-nowrap"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Đăng nhập Admin</span>
-            </Link>
-          </div>
-        )}
 
         {/* Content Body */}
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-100">
@@ -56,4 +49,3 @@ export const AdminLayout: React.FC = () => {
 };
 
 export default AdminLayout;
-

@@ -21,6 +21,7 @@ import Dashboard from './pages/admin/Dashboard';
 import Products from './pages/admin/Products';
 import EditProduct from './pages/admin/EditProduct';
 import Categories from './pages/admin/Categories';
+import Brands from './pages/admin/Brands';
 import Orders from './pages/admin/Orders';
 import AdminOrderDetail from './pages/admin/AdminOrderDetail';
 import Customers from './pages/admin/Customers';
@@ -65,6 +66,7 @@ function App() {
               <Route path="orders" element={<Orders />} />
               <Route path="orders/:id" element={<AdminOrderDetail />} />
               <Route path="categories" element={<Categories />} />
+              <Route path="brands" element={<Brands />} />
               <Route path="customers" element={<Customers />} />
               <Route path="settings" element={<Dashboard />} />
             </Route>
@@ -74,5 +76,6 @@ function App() {
     </AuthProvider>
   );
 }
+
 
 export default App;

@@ -13,9 +13,12 @@ import {
   Save,
   AlertTriangle,
   Package,
-  Loader2
+  Loader2,
+  RotateCcw,
+  FolderTree,
+  Award
 } from 'lucide-react';
-import { getProducts, deleteProduct } from '../../services/productService';
+import { getProducts, getCategories, getBrands, deleteProduct } from '../../services/productService';
 import { getImageUrl } from '../../services/api';
 
 export interface ProductSpec {
@@ -51,17 +54,48 @@ export interface ProductItem {
 export const Products: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [brandFilter, setBrandFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
-  // Initial Product List State
+  const [categoriesList, setCategoriesList] = useState<{ id: string; name: string }[]>([]);
+  const [brandsList, setBrandsList] = useState<{ id: string; name: string }[]>([]);
   const [products, setProducts] = useState<ProductItem[]>([]);
+
+  // Fetch Master Data (Categories & Brands)
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const [catRes, brandRes] = await Promise.all([
+          getCategories(),
+          getBrands()
+        ]);
+        if (catRes && catRes.categories) {
+          setCategoriesList(catRes.categories.map((c: any) => ({ id: c.id.toString(), name: c.name })));
+        }
+        if (brandRes && brandRes.brands) {
+          setBrandsList(brandRes.brands.map((b: any) => ({ id: b.id.toString(), name: b.name })));
+        }
+      } catch (err) {
+        console.warn('Fetch master data error:', err);
+      }
+    };
+    fetchMasterData();
+  }, []);
 
   // Fetch real products from API
   const fetchRealProducts = async () => {
     try {
       setLoading(true);
-      const res = await getProducts({ limit: 100, status: 'ACTIVE' });
+      const res = await getProducts({
+        limit: 100,
+        search: searchTerm || undefined,
+        categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
+        brandId: brandFilter !== 'all' ? brandFilter : undefined,
+        status: 'ALL',
+      });
+
       if (res && res.products && res.products.length > 0) {
         const mapped: ProductItem[] = res.products.map((p) => {
           const formattedSellPrice = p.price ? `${p.price.toLocaleString('vi-VN')} ₫` : '0 ₫';
@@ -97,29 +131,7 @@ export const Products: React.FC = () => {
         });
         setProducts(mapped);
       } else {
-        // Fallback default sample items if backend has no products yet
-        setProducts([
-          {
-            id: 'PROD-001',
-            sku: 'PC-AAA-4090',
-            name: 'PC Gaming Ultra RTX 4090 i9-14900K',
-            category: 'PC Nguyên Bộ',
-            brand: 'ASUS',
-            distributor: 'Phong Vũ Tech',
-            warranty: '36 Tháng',
-            shortDescription: 'Cấu hình khủng chiến game 4K',
-            description: '<p>Cấu hình khủng nhất 2026, chiến mọi tựa game AAA ở độ phân giải 4K 144Hz.</p>',
-            marketPrice: '95.000.000 ₫',
-            sellPrice: '89.990.000 ₫',
-            price: '89.990.000 ₫',
-            stock: 12,
-            minStockAlert: 5,
-            status: 'In Stock',
-            coverImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-            image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
-            specs: [{ name: 'CPU', value: 'Intel Core i9-14900K' }]
-          }
-        ]);
+        setProducts([]);
       }
     } catch (err) {
       console.warn('API getProducts fallback:', err);
@@ -130,246 +142,21 @@ export const Products: React.FC = () => {
 
   useEffect(() => {
     fetchRealProducts();
-  }, []);
+  }, [searchTerm, categoryFilter, brandFilter]);
 
-  // Available Master Data Lists
-  const brandOptions = ['ASUS', 'MSI', 'Gigabyte', 'Dell', 'Logitech', 'Razer', 'Corsair', 'Kingston'];
-  const distributorOptions = ['Synnex FPT', 'Phong Vũ Tech', 'Vĩnh Xuân (SPC)', 'Viễn Sơn', 'Thủy Linh (TLC)'];
-  const warrantyOptions = ['12 Tháng', '24 Tháng', '36 Tháng', '60 Tháng'];
-  const specKeyOptions = ['CPU', 'VGA / Card màn hình', 'RAM', 'Ổ cứng SSD/HDD', 'Kích thước màn hình', 'Độ phân giải', 'Tấm nền', 'Trọng lượng', 'Kết nối', 'Bảo hành'];
+  // Reset Filters
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setCategoryFilter('all');
+    setBrandFilter('all');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
 
   // Modal States
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
-
-  // Form State for Add / Edit
-  const [formData, setFormData] = useState<{
-    sku: string;
-    name: string;
-    category: string;
-    brand: string;
-    distributor: string;
-    warranty: string;
-    shortDescription: string;
-    description: string;
-    marketPrice: string;
-    sellPrice: string;
-    importPrice: string;
-    discountPrice: string;
-    profitMargin: string;
-    stock: number;
-    minStockAlert: number;
-    coverImage: string;
-    productImages: string[];
-    specs: ProductSpec[];
-  }>({
-    sku: '',
-    name: '',
-    category: 'PC Nguyên Bộ',
-    brand: 'ASUS',
-    distributor: 'Synnex FPT',
-    warranty: '36 Tháng',
-    shortDescription: '',
-    description: '',
-    marketPrice: '',
-    sellPrice: '',
-    importPrice: '',
-    discountPrice: '',
-    profitMargin: '',
-    stock: 10,
-    minStockAlert: 5,
-    coverImage: '',
-    productImages: [],
-    specs: [{ name: 'CPU', value: '' }]
-  });
-
-  // Editor toolbar handler simulation
-  const formatText = (command: string, val?: string) => {
-    document.execCommand(command, false, val);
-  };
-
-  // Specs Form Handlers
-  const handleAddSpecRow = () => {
-    setFormData(prev => ({
-      ...prev,
-      specs: [...prev.specs, { name: specKeyOptions[0], value: '' }]
-    }));
-  };
-
-  const handleRemoveSpecRow = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      specs: prev.specs.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSpecChange = (index: number, field: 'name' | 'value', val: string) => {
-    setFormData(prev => {
-      const newSpecs = [...prev.specs];
-      newSpecs[index][field] = val;
-      return { ...prev, specs: newSpecs };
-    });
-  };
-
-  // Image Upload Handlers (Simulation with File Reader)
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, coverImage: url }));
-    }
-  };
-
-  const handleMultipleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
-      setFormData(prev => ({
-        ...prev,
-        productImages: [...prev.productImages, ...newUrls]
-      }));
-    }
-  };
-
-  const handleRemoveProductImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      productImages: prev.productImages.filter((_, i) => i !== index)
-    }));
-  };
-
-  // Auto Profit Margin Calculation
-  const calculateMargin = (sellStr: string, importStr: string) => {
-    const sell = parseFloat(sellStr.replace(/[^0-9]/g, ''));
-    const imp = parseFloat(importStr.replace(/[^0-9]/g, ''));
-    if (sell > 0 && imp > 0 && sell > imp) {
-      const margin = (((sell - imp) / sell) * 100).toFixed(1);
-      return `${margin}% (${(sell - imp).toLocaleString('vi-VN')} ₫)`;
-    }
-    return '';
-  };
-
-  // Open Add Product Page
-  const handleOpenAddModal = () => {
-    navigate('/admin/products/create');
-  };
-
-  // Submit Add Product
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formattedSellPrice = formData.sellPrice.includes('₫') 
-      ? formData.sellPrice 
-      : formData.sellPrice ? `${Number(formData.sellPrice.replace(/[^0-9]/g, '')).toLocaleString('vi-VN')} ₫` : '0 ₫';
-    
-    const formattedMarketPrice = formData.marketPrice.includes('₫') 
-      ? formData.marketPrice 
-      : formData.marketPrice ? `${Number(formData.marketPrice.replace(/[^0-9]/g, '')).toLocaleString('vi-VN')} ₫` : '';
-
-    const newProduct: ProductItem = {
-      id: `PROD-00${products.length + 1}`,
-      sku: formData.sku,
-      name: formData.name,
-      category: formData.category,
-      brand: formData.brand,
-      distributor: formData.distributor,
-      warranty: formData.warranty,
-      shortDescription: formData.shortDescription,
-      description: formData.description,
-      marketPrice: formattedMarketPrice,
-      sellPrice: formattedSellPrice,
-      price: formattedSellPrice,
-      stock: Number(formData.stock),
-      minStockAlert: Number(formData.minStockAlert),
-      importPrice: formData.importPrice,
-      discountPrice: formData.discountPrice,
-      profitMargin: formData.profitMargin,
-      status: Number(formData.stock) === 0 ? 'Out of Stock' : Number(formData.stock) <= 5 ? 'Low Stock' : 'In Stock',
-      coverImage: formData.coverImage || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-      productImages: formData.productImages.length > 0 ? formData.productImages : [formData.coverImage],
-      image: formData.coverImage || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
-      specs: formData.specs.filter(s => s.name && s.value)
-    };
-
-    setProducts([newProduct, ...products]);
-    setIsAddModalOpen(false);
-  };
-
-  // Open Edit Modal
-  const handleOpenEditModal = (product: ProductItem) => {
-    setSelectedProduct(product);
-    setFormData({
-      sku: product.sku || product.id,
-      name: product.name,
-      category: product.category,
-      brand: product.brand || 'ASUS',
-      distributor: product.distributor || 'Synnex FPT',
-      warranty: product.warranty || '36 Tháng',
-      shortDescription: product.shortDescription || '',
-      description: product.description || '',
-      marketPrice: product.marketPrice || '',
-      sellPrice: product.sellPrice || product.price,
-      importPrice: product.importPrice || '',
-      discountPrice: product.discountPrice || '',
-      profitMargin: product.profitMargin || '',
-      stock: product.stock,
-      minStockAlert: product.minStockAlert || 5,
-      coverImage: product.coverImage || product.image,
-      productImages: product.productImages || [product.image],
-      specs: product.specs && product.specs.length > 0 ? product.specs : [{ name: 'CPU', value: '' }]
-    });
-    setIsEditModalOpen(true);
-  };
-
-  // Submit Edit Product
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-
-    const formattedSellPrice = formData.sellPrice.includes('₫') 
-      ? formData.sellPrice 
-      : formData.sellPrice ? `${Number(formData.sellPrice.replace(/[^0-9]/g, '')).toLocaleString('vi-VN')} ₫` : selectedProduct.price;
-
-    const formattedMarketPrice = formData.marketPrice.includes('₫') 
-      ? formData.marketPrice 
-      : formData.marketPrice ? `${Number(formData.marketPrice.replace(/[^0-9]/g, '')).toLocaleString('vi-VN')} ₫` : '';
-
-    const updatedProducts = products.map((prod) => {
-      if (prod.id === selectedProduct.id) {
-        return {
-          ...prod,
-          sku: formData.sku,
-          name: formData.name,
-          category: formData.category,
-          brand: formData.brand,
-          distributor: formData.distributor,
-          warranty: formData.warranty,
-          shortDescription: formData.shortDescription,
-          description: formData.description,
-          marketPrice: formattedMarketPrice,
-          sellPrice: formattedSellPrice,
-          price: formattedSellPrice,
-          stock: Number(formData.stock),
-          minStockAlert: Number(formData.minStockAlert),
-          importPrice: formData.importPrice,
-          discountPrice: formData.discountPrice,
-          profitMargin: formData.profitMargin,
-          status: (Number(formData.stock) === 0 ? 'Out of Stock' : Number(formData.stock) <= 5 ? 'Low Stock' : 'In Stock') as 'In Stock' | 'Out of Stock' | 'Low Stock',
-          coverImage: formData.coverImage,
-          productImages: formData.productImages,
-          image: formData.coverImage || prod.image,
-          specs: formData.specs.filter(s => s.name && s.value)
-        };
-      }
-      return prod;
-    });
-
-    setProducts(updatedProducts);
-    setIsEditModalOpen(false);
-  };
 
   // Open Delete Modal
   const handleOpenDeleteModal = (product: ProductItem) => {
@@ -382,6 +169,7 @@ export const Products: React.FC = () => {
     if (selectedProduct) {
       try {
         await deleteProduct(selectedProduct.id);
+        fetchRealProducts();
       } catch (err) {
         console.warn('Delete product API error fallback:', err);
       }
@@ -399,14 +187,10 @@ export const Products: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // Filter Products
+  // Filter Products by Status on Frontend
   const filteredProducts = products.filter((prod) => {
-    const matchesSearch =
-      prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prod.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (prod.sku && prod.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === 'All' || prod.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesStatus = statusFilter === 'all' || prod.status === statusFilter;
+    return matchesStatus;
   });
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
@@ -415,37 +199,113 @@ export const Products: React.FC = () => {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const hasActiveFilters = searchTerm !== '' || categoryFilter !== 'all' || brandFilter !== 'all' || statusFilter !== 'all';
+
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto font-sans">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quản Lý Sản Phẩm</h1>
-          <p className="text-xs text-gray-500 mt-1">Danh sách sản phẩm, giá bán, tồn kho và thông số kỹ thuật (10 sản phẩm/trang)</p>
+          <p className="text-xs text-gray-500 mt-1">Danh sách sản phẩm PC Store, lọc theo danh mục, thương hiệu và trạng thái tồn kho (10 sản phẩm/trang).</p>
         </div>
         <button
           onClick={() => navigate('/admin/products/create')}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-amber-300" />
           <span>Thêm Sản Phẩm Mới</span>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Tìm theo tên sản phẩm, SKU hoặc Mã SP..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
-          />
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          {/* Search box */}
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Tìm tên sản phẩm, SKU hoặc Mã SP..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
+            />
+          </div>
+
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            {/* Category Filter */}
+            <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+              <FolderTree className="w-3.5 h-3.5 text-gray-400" />
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs text-gray-800 font-medium outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả danh mục</option>
+                {categoriesList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    📁 {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Brand Filter */}
+            <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+              <Award className="w-3.5 h-3.5 text-gray-400" />
+              <select
+                value={brandFilter}
+                onChange={(e) => {
+                  setBrandFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs text-gray-800 font-medium outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả thương hiệu</option>
+                {brandsList.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    🏷️ {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs text-gray-800 font-medium outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả trạng thái kho</option>
+                <option value="In Stock">✅ Còn hàng</option>
+                <option value="Low Stock">⚠️ Sắp hết hàng (&le;5)</option>
+                <option value="Out of Stock">❌ Hết hàng (0)</option>
+              </select>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl border border-gray-200 transition-colors"
+                title="Xóa bộ lọc"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Đặt lại</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -476,7 +336,7 @@ export const Products: React.FC = () => {
               ) : paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
-                    Không tìm thấy sản phẩm nào khớp với tìm kiếm.
+                    Không tìm thấy sản phẩm nào khớp với bộ lọc.
                   </td>
                 </tr>
               ) : (
@@ -495,8 +355,16 @@ export const Products: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-700">{prod.category}</td>
-                    <td className="px-4 py-3 font-semibold text-indigo-600">{prod.brand}</td>
+                    <td className="px-4 py-3 font-medium text-gray-700">
+                      <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-[11px]">
+                        {prod.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-indigo-600">
+                      <span className="inline-block px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px]">
+                        {prod.brand}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-gray-400 line-through text-[11px]">
                       {prod.marketPrice || '-'}
                     </td>
@@ -532,9 +400,9 @@ export const Products: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleOpenViewModal(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
-                        <button onClick={() => navigate(`/admin/products/edit/${prod.id}`)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleOpenDeleteModal(prod)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleOpenViewModal(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Xem chi tiết"><Eye className="w-4 h-4" /></button>
+                        <button onClick={() => navigate(`/admin/products/edit/${prod.id}`)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Sửa sản phẩm"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleOpenDeleteModal(prod)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa sản phẩm"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -543,14 +411,51 @@ export const Products: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500 font-medium">
+            Hiển thị <span className="font-bold text-gray-800">{filteredProducts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> đến{' '}
+            <span className="font-bold text-gray-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)}</span> trên tổng số{' '}
+            <span className="font-bold text-gray-900">{filteredProducts.length}</span> sản phẩm
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang sau
+            </button>
+          </div>
+        </div>
       </div>
-
-
 
       {/* MODAL 3: XÓA */}
       {isDeleteModalOpen && selectedProduct && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95">
             <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto"><AlertTriangle className="w-6 h-6" /></div>
             <div>
               <h2 className="text-base font-bold text-gray-900">Xóa Sản Phẩm Này?</h2>

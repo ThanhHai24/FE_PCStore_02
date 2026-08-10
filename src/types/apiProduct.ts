@@ -4,7 +4,11 @@ export interface ApiBrand {
   slug: string;
   description?: string;
   logo?: string | null;
+  productsCount?: number;
+  categoryIds?: string[];
+  categories?: ApiCategory[];
 }
+
 
 export interface ApiCategory {
   id: string;

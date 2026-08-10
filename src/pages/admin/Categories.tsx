@@ -10,7 +10,9 @@ import {
   X,
   Save,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 import { getCategories, createCategoryApi, updateCategoryApi, deleteCategoryApi } from '../../services/productService';
 
@@ -21,33 +23,49 @@ export interface CategoryItem {
   itemCount: number;
   description: string;
   status: 'Active' | 'Hidden';
+  parentId?: string | null;
+  parentName?: string | null;
 }
 
 export const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [parentFilter, setParentFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const [categories, setCategories] = useState<CategoryItem[]>([
-    { id: 'CAT-01', name: 'PC Nguyên Bộ', slug: 'pc-nguyen-bo', itemCount: 128, description: 'Các cấu hình máy tính nguyên bộ PC Gaming, PC Đồ họa, PC Văn phòng.', status: 'Active' },
-    { id: 'CAT-02', name: 'Linh Kiện PC', slug: 'linh-kien-pc', itemCount: 340, description: 'Card màn hình VGA, CPU Intel/AMD, RAM DDR4/DDR5, Mainboard, SSD/HDD.', status: 'Active' },
-  ]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [parentCategoriesList, setParentCategoriesList] = useState<{ id: string; name: string }[]>([]);
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await getCategories();
-      if (res && res.categories && res.categories.length > 0) {
+      const res = await getCategories({
+        search: searchTerm || undefined,
+        parentId: parentFilter !== 'all' ? parentFilter : undefined,
+      });
+
+      if (res && res.categories) {
         const mapped: CategoryItem[] = res.categories.map((c: any) => ({
           id: c.id.toString(),
           name: c.name,
           slug: c.slug || c.name.toLowerCase().replace(/\s+/g, '-'),
-          itemCount: c._count?.products ?? 0,
-          description: c.description || 'Danh mục hàng sản phẩm PC Store',
-          status: 'Active'
+          itemCount: c.productsCount ?? (c._count?.products ?? 0),
+          description: c.description || 'Danh mục sản phẩm PC Store',
+          status: 'Active',
+          parentId: c.parentId ? c.parentId.toString() : null,
+          parentName: c.parent ? c.parent.name : null,
         }));
         setCategories(mapped);
+
+        // Fetch root categories list for filter and form dropdowns if not filtered
+        if (parentFilter === 'all' && !searchTerm) {
+          const rootCats = res.categories
+            .filter((c: any) => !c.parentId)
+            .map((c: any) => ({ id: c.id.toString(), name: c.name }));
+          setParentCategoriesList(rootCats);
+        }
       }
     } catch (err) {
       console.warn('API getCategories fallback:', err);
@@ -58,7 +76,7 @@ export const Categories: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [searchTerm, parentFilter]);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -72,8 +90,17 @@ export const Categories: React.FC = () => {
     name: '',
     slug: '',
     description: '',
+    parentId: '' as string,
     status: 'Active' as 'Active' | 'Hidden',
   });
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setParentFilter('all');
+    setStatusFilter('all');
+    setCurrentPage(1);
+  };
 
   // Open Add Modal
   const handleOpenAddModal = () => {
@@ -81,6 +108,7 @@ export const Categories: React.FC = () => {
       name: '',
       slug: '',
       description: '',
+      parentId: '',
       status: 'Active',
     });
     setIsAddModalOpen(true);
@@ -93,22 +121,14 @@ export const Categories: React.FC = () => {
       const res = await createCategoryApi({
         name: formData.name,
         slug: formData.slug || undefined,
-        description: formData.description || undefined
+        description: formData.description || undefined,
+        parentId: formData.parentId || undefined,
       });
       if (res && res.category) {
         fetchCategories();
       }
-    } catch (err) {
-      console.warn('createCategoryApi failed fallback:', err);
-      const newCategory: CategoryItem = {
-        id: `CAT-0${categories.length + 1}`,
-        name: formData.name,
-        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
-        itemCount: 0,
-        description: formData.description || 'Danh mục sản phẩm vừa tạo.',
-        status: formData.status,
-      };
-      setCategories([newCategory, ...categories]);
+    } catch (err: any) {
+      alert(`Lỗi tạo danh mục: ${err.message || 'Không thành công'}`);
     }
     setIsAddModalOpen(false);
   };
@@ -120,6 +140,7 @@ export const Categories: React.FC = () => {
       name: cat.name,
       slug: cat.slug,
       description: cat.description,
+      parentId: cat.parentId || '',
       status: cat.status,
     });
     setIsEditModalOpen(true);
@@ -133,17 +154,12 @@ export const Categories: React.FC = () => {
       await updateCategoryApi(selectedCategory.id, {
         name: formData.name,
         slug: formData.slug,
-        description: formData.description
+        description: formData.description,
+        parentId: formData.parentId || null,
       });
       fetchCategories();
-    } catch (err) {
-      console.warn('updateCategoryApi failed fallback:', err);
-      const updated = categories.map((c) =>
-        c.id === selectedCategory.id
-          ? { ...c, name: formData.name, slug: formData.slug, description: formData.description, status: formData.status }
-          : c
-      );
-      setCategories(updated);
+    } catch (err: any) {
+      alert(`Lỗi cập nhật danh mục: ${err.message || 'Không thành công'}`);
     }
     setIsEditModalOpen(false);
   };
@@ -160,9 +176,8 @@ export const Categories: React.FC = () => {
     try {
       await deleteCategoryApi(selectedCategory.id);
       fetchCategories();
-    } catch (err) {
-      console.warn('deleteCategoryApi failed fallback:', err);
-      setCategories(categories.filter((c) => c.id !== selectedCategory.id));
+    } catch (err: any) {
+      alert(`Lỗi xóa danh mục: ${err.message || 'Không thể xóa danh mục chứa sản phẩm'}`);
     }
     setIsDeleteModalOpen(false);
   };
@@ -173,15 +188,19 @@ export const Categories: React.FC = () => {
     setIsViewModalOpen(true);
   };
 
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) || cat.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Client-side filtering for status
+  const filteredCategories = categories.filter((cat) => {
+    const matchesStatus = statusFilter === 'all' || cat.status === statusFilter;
+    return matchesStatus;
+  });
 
   const totalPages = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE) || 1;
   const paginatedCategories = filteredCategories.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const hasActiveFilters = searchTerm !== '' || parentFilter !== 'all' || statusFilter !== 'all';
 
   return (
     <div className="space-y-6 font-sans">
@@ -191,8 +210,8 @@ export const Categories: React.FC = () => {
           <h1 className="text-xl font-bold text-gray-900 tracking-tight">
             Quản Lý Danh Mục Sản Phẩm
           </h1>
-          <p className="text-xs text-gray-500">
-            Quản lý và thực hiện các thao tác Thêm, Sửa, Xóa danh mục ngành hàng PC Store.
+          <p className="text-xs text-gray-500 mt-0.5">
+            Quản lý, phân loại danh mục sản phẩm PC Store và lọc theo danh mục cha / trạng thái.
           </p>
         </div>
 
@@ -205,17 +224,72 @@ export const Categories: React.FC = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm tên hoặc mã danh mục..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
-          />
+      {/* Filter Bar */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          {/* Search box */}
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Tìm tên, mã hoặc mô tả danh mục..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
+            />
+          </div>
+
+          {/* Filter dropdowns */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+              <Filter className="w-3.5 h-3.5 text-gray-400" />
+              <select
+                value={parentFilter}
+                onChange={(e) => {
+                  setParentFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs text-gray-800 font-medium outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả danh mục ({categories.length})</option>
+                <option value="root">📁 Chỉ danh mục gốc (Parent)</option>
+                {parentCategoriesList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    📂 Thuộc: {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs text-gray-800 font-medium outline-none cursor-pointer"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="Active">✅ Đang hiển thị</option>
+                <option value="Hidden">🔒 Đang ẩn</option>
+              </select>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl border border-gray-200 transition-colors"
+                title="Xóa bộ lọc"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Đặt lại</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -226,6 +300,7 @@ export const Categories: React.FC = () => {
             <thead className="bg-gray-50 text-gray-500 font-semibold uppercase border-b border-gray-100">
               <tr>
                 <th className="px-4 py-3.5">Mã & Tên Danh Mục</th>
+                <th className="px-4 py-3.5">Danh mục cha</th>
                 <th className="px-4 py-3.5">Slug URL</th>
                 <th className="px-4 py-3.5">Số SP</th>
                 <th className="px-4 py-3.5">Mô tả</th>
@@ -236,15 +311,15 @@ export const Categories: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
                     Đang nạp danh mục từ máy chủ...
                   </td>
                 </tr>
               ) : paginatedCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
-                    Không tìm thấy danh mục nào.
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy danh mục nào khớp với bộ lọc.
                   </td>
                 </tr>
               ) : (
@@ -257,9 +332,20 @@ export const Categories: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">{cat.name}</p>
-                          <p className="text-[11px] text-blue-600 font-semibold">{cat.id}</p>
+                          <p className="text-[11px] text-blue-600 font-semibold">ID: {cat.id}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {cat.parentName ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                          📁 {cat.parentName}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-600">
+                          📂 Danh mục gốc
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-gray-600 font-mono text-[11px]">{cat.slug}</td>
                     <td className="px-4 py-3.5 font-bold text-gray-900">{cat.itemCount} sản phẩm</td>
@@ -373,6 +459,22 @@ export const Categories: React.FC = () => {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Danh mục cha (Parent Category)</label>
+                <select
+                  value={formData.parentId}
+                  onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium text-gray-800"
+                >
+                  <option value="">📂 Là Danh mục gốc (Gốc / Không có danh mục cha)</option>
+                  {parentCategoriesList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      📁 Thuộc danh mục: {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Slug URL (Tùy chọn)</label>
                 <input
                   type="text"
@@ -438,6 +540,24 @@ export const Categories: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Danh mục cha (Parent Category)</label>
+                <select
+                  value={formData.parentId}
+                  onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium text-gray-800"
+                >
+                  <option value="">📂 Là Danh mục gốc (Gốc / Không có danh mục cha)</option>
+                  {parentCategoriesList
+                    .filter((p) => p.id !== selectedCategory.id)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        📁 Thuộc danh mục: {p.name}
+                      </option>
+                    ))}
+                </select>
               </div>
 
               <div>
@@ -529,6 +649,7 @@ export const Categories: React.FC = () => {
 
             <div className="space-y-2 text-xs text-gray-700">
               <p><span className="font-semibold text-gray-900">Tên danh mục:</span> {selectedCategory.name}</p>
+              <p><span className="font-semibold text-gray-900">Danh mục cha:</span> {selectedCategory.parentName || 'Không có (Danh mục gốc)'}</p>
               <p><span className="font-semibold text-gray-900">Slug đường dẫn:</span> <code className="bg-gray-100 px-2 py-0.5 rounded">{selectedCategory.slug}</code></p>
               <p><span className="font-semibold text-gray-900">Số sản phẩm đang có:</span> {selectedCategory.itemCount} sản phẩm</p>
               <p><span className="font-semibold text-gray-900">Mô tả:</span> {selectedCategory.description}</p>

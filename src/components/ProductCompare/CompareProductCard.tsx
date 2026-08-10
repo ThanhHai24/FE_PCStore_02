@@ -1,25 +1,28 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Package, ShoppingCart } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, X, Package, ShoppingCart, Loader2 } from 'lucide-react';
 import type { Product } from '../../types/product';
+import { getProducts, mapApiProductToProduct } from '../../services/productService';
 
 interface CompareProductCardProps {
   slotNumber: 1 | 2;
   product: Product | null;
+  loading?: boolean;
   onSelectProduct: (product: Product) => void;
   onClearProduct: () => void;
   onAddToCart: (product: Product) => void;
-  availableProducts: Product[];
 }
 
 export const CompareProductCard: React.FC<CompareProductCardProps> = ({
   slotNumber,
   product,
+  loading = false,
   onSelectProduct,
   onClearProduct,
   onAddToCart,
-  availableProducts,
 }) => {
   const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,12 +37,38 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter products by keyword
-  const filteredProducts = useMemo(() => {
-    if (!search.trim()) return availableProducts;
-    const term = search.toLowerCase();
-    return availableProducts.filter((p) => p.title.toLowerCase().includes(term));
-  }, [search, availableProducts]);
+  // Fetch search results from API when dropdown is open or search query changes
+  useEffect(() => {
+    if (!openDropdown) return;
+
+    let active = true;
+    setIsSearching(true);
+
+    const timer = setTimeout(() => {
+      getProducts({
+        search: search.trim() || undefined,
+        limit: 15,
+        status: 'ACTIVE',
+      })
+        .then((res) => {
+          if (!active) return;
+          const mapped = (res.products || []).map(mapApiProductToProduct);
+          setSearchResults(mapped);
+        })
+        .catch((err) => {
+          console.error('Error fetching compare search products:', err);
+          if (active) setSearchResults([]);
+        })
+        .finally(() => {
+          if (active) setIsSearching(false);
+        });
+    }, 250);
+
+  return () => {
+    active = false;
+    clearTimeout(timer);
+  };
+}, [search, openDropdown]);
 
   const handleChoose = (p: Product) => {
     onSelectProduct(p);
@@ -50,7 +79,7 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
   return (
     <div
       ref={containerRef}
-      className="space-y-3 bg-gray-50/70 p-4 rounded-xl border border-gray-100 flex flex-col justify-between relative"
+      className="space-y-3 bg-gray-50/70 p-4 rounded-xl border border-gray-100 flex flex-col justify-between relative min-h-[220px]"
     >
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -82,14 +111,23 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
               placeholder={product ? product.title : `Nhập từ khóa tìm kiếm sản phẩm ${slotNumber}...`}
               className="w-full border border-gray-300 rounded-xl py-2 pl-3 pr-8 text-xs font-medium bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             />
-            <Search className="w-4 h-4 text-gray-400 absolute right-2.5 pointer-events-none" />
+            {isSearching ? (
+              <Loader2 className="w-4 h-4 text-blue-600 animate-spin absolute right-2.5 pointer-events-none" />
+            ) : (
+              <Search className="w-4 h-4 text-gray-400 absolute right-2.5 pointer-events-none" />
+            )}
           </div>
 
           {/* Custom Floating Dropdown Menu with fixed height & scrolling */}
           {openDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 max-h-[220px] overflow-y-auto divide-y divide-gray-100 p-1">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((p) => (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 max-h-[240px] overflow-y-auto divide-y divide-gray-100 p-1">
+              {isSearching ? (
+                <div className="p-4 text-center text-xs text-gray-500 flex items-center justify-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  <span>Đang tìm kiếm sản phẩm...</span>
+                </div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((p) => (
                   <div
                     key={p.id}
                     onClick={() => handleChoose(p)}
@@ -119,8 +157,13 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
           )}
         </div>
 
-        {/* Selected Product Card / Empty State */}
-        {product ? (
+        {/* Selected Product Card / Loading / Empty State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-8 space-x-2 text-xs text-gray-500">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <span>Đang tải thông tin sản phẩm...</span>
+          </div>
+        ) : product ? (
           <div className="flex items-center space-x-3 pt-2">
             <img
               src={product.images[0]}
@@ -144,7 +187,7 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
         )}
       </div>
 
-      {product && (
+      {product && !loading && (
         <button
           onClick={() => onAddToCart(product)}
           className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 px-3 rounded-lg text-xs font-extrabold flex items-center justify-center space-x-1.5 shadow transition-colors mt-2"

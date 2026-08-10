@@ -9,6 +9,7 @@ import type {
 } from '../types/apiProduct';
 import type { ProductCardProps } from '../components/BoxProductCategory/ProductCard';
 import type { DealProductCardProps } from '../components/DealProduct/DealProductCard';
+import type { Product, SpecItem } from '../types/product';
 
 export function formatPrice(amount?: number | null): string {
   if (amount == null || isNaN(amount)) return '0đ';
@@ -56,6 +57,102 @@ export function formatProductToDealCardProps(product: ApiProduct): DealProductCa
   };
 }
 
+export function parseSingleSpecItem(key: string, rawVal: unknown): SpecItem {
+  let name: string;
+  let productId: string | undefined = undefined;
+  let warranty = 'Chính hãng';
+
+  if (typeof rawVal === 'object' && rawVal !== null) {
+    const obj = rawVal as Record<string, unknown>;
+    name = String(obj.name || obj.title || JSON.stringify(obj));
+    productId = obj.id ? String(obj.id) : obj.productId ? String(obj.productId) : undefined;
+    if (obj.warranty) warranty = String(obj.warranty);
+  } else if (typeof rawVal === 'string') {
+    if (rawVal.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(rawVal);
+        name = parsed.name || parsed.title || rawVal;
+        productId = parsed.id || parsed.productId || undefined;
+        if (parsed.warranty) warranty = String(parsed.warranty);
+      } catch {
+        name = rawVal;
+      }
+    } else if (rawVal.includes('||')) {
+      const parts = rawVal.split('||');
+      name = parts[0];
+      productId = parts[1] || undefined;
+      if (parts[2]) warranty = parts[2];
+    } else {
+      name = rawVal;
+    }
+  } else {
+    name = String(rawVal ?? '');
+  }
+
+  return {
+    key: key.toUpperCase(),
+    name,
+    warranty,
+    productId,
+  };
+}
+
+export function parseSpecsToTable(specifications: unknown): SpecItem[] {
+  if (!specifications) return [];
+
+  if (Array.isArray(specifications)) {
+    return specifications.map((item) => {
+      const key = item?.key || item?.name || '';
+      const rawVal = item?.value || item?.name || '';
+      return parseSingleSpecItem(key, rawVal);
+    });
+  }
+
+  if (typeof specifications === 'object' && specifications !== null) {
+    const result: SpecItem[] = [];
+    for (const [key, rawVal] of Object.entries(specifications)) {
+      if (key === 'importPrice') continue;
+      result.push(parseSingleSpecItem(key, rawVal));
+    }
+    return result;
+  }
+
+  return [];
+}
+
+export function mapApiProductToProduct(apiProd: ApiProduct): Product {
+  return {
+    id: apiProd.id,
+    title: apiProd.name,
+    images: apiProd.images && apiProd.images.length > 0
+      ? apiProd.images.map((img) => getImageUrl(img))
+      : [getImageUrl(apiProd.image)],
+    price: formatPrice(apiProd.price),
+    numericPrice: apiProd.price || 0,
+    marketPrice: apiProd.originalPrice ? formatPrice(apiProd.originalPrice) : undefined,
+    discountPercent: calculateDiscount(apiProd.price, apiProd.originalPrice),
+    badge: apiProd.isFeatured ? 'HOT' : undefined,
+    inStock: (apiProd.stock ?? 0) > 0,
+    stockQuantity: apiProd.stock ?? 0,
+    warrantyInfo: apiProd.warranty ? `Bảo hành ${apiProd.warranty} tháng` : 'Bảo hành chính hãng',
+    rating: 5.0,
+    reviewCount: 12,
+    viewCount: apiProd.viewCount || 100,
+    commentCount: 4,
+    purchaseCount: 10,
+    category: apiProd.category?.slug || 'pc-gaming',
+    categoryName: apiProd.category?.name || 'PC GAMING',
+    brand: apiProd.brand?.name || '',
+    promotions: [
+      'Quý khách có thể tùy chọn nâng cấp lên hoặc xuống cấu hình tương đương với: CPU, RAM, SSD theo nhu cầu.',
+      'Miễn phí giao hàng toàn quốc.',
+      'Tặng Voucher giảm giá 500.000đ cho lần mua tiếp theo.',
+    ],
+    specsTable: parseSpecsToTable(apiProd.specifications),
+    descriptionHtml: apiProd.description || `<p>${apiProd.shortDescription || ''}</p>`,
+  };
+}
+
 export async function getProducts(params?: ProductQueryParams): Promise<ApiProductsResponse> {
   const searchParams = new URLSearchParams();
 
@@ -83,9 +180,21 @@ export async function getFeaturedProducts(limit = 10): Promise<{ products: ApiPr
   return fetchApi<{ products: ApiProduct[] }>(`/api/products/featured?limit=${limit}`);
 }
 
-export async function getCategories(tree = false): Promise<ApiCategoriesResponse> {
-  return fetchApi<ApiCategoriesResponse>(`/api/categories${tree ? '?tree=true' : ''}`);
+export async function getCategories(
+  paramsOrTree?: boolean | { tree?: boolean; search?: string; parentId?: string }
+): Promise<ApiCategoriesResponse> {
+  const query = new URLSearchParams();
+  if (typeof paramsOrTree === 'boolean') {
+    if (paramsOrTree) query.append('tree', 'true');
+  } else if (paramsOrTree) {
+    if (paramsOrTree.tree) query.append('tree', 'true');
+    if (paramsOrTree.search) query.append('search', paramsOrTree.search);
+    if (paramsOrTree.parentId) query.append('parentId', paramsOrTree.parentId);
+  }
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchApi<ApiCategoriesResponse>(`/api/categories${queryString}`);
 }
+
 
 export async function getCategoryDetail(idOrSlug: string): Promise<{ category: ApiCategory }> {
   return fetchApi<{ category: ApiCategory }>(`/api/categories/${idOrSlug}`);
@@ -95,9 +204,46 @@ export async function getBrandsByCategory(idOrSlug: string): Promise<{ category:
   return fetchApi<{ category: ApiCategory; brands: ApiBrand[] }>(`/api/categories/${idOrSlug}/brands`);
 }
 
-export async function getBrands(): Promise<{ brands: ApiBrand[] }> {
-  return fetchApi<{ brands: ApiBrand[] }>('/api/brands');
+export async function getBrands(search?: string): Promise<{ brands: ApiBrand[] }> {
+  const query = search ? `?search=${encodeURIComponent(search)}` : '';
+  return fetchApi<{ brands: ApiBrand[] }>(`/api/brands${query}`);
 }
+
+export async function createBrandApi(data: {
+  name: string;
+  slug?: string;
+  description?: string;
+  logo?: string;
+  categoryIds?: string[];
+}): Promise<{ message: string; brand: ApiBrand }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string; brand: ApiBrand }>('/api/brands', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateBrandApi(
+  id: string | number,
+  data: { name?: string; slug?: string; description?: string; logo?: string; categoryIds?: string[] }
+): Promise<{ message: string; brand: ApiBrand }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string; brand: ApiBrand }>(`/api/brands/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteBrandApi(id: string | number): Promise<{ message: string }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string }>(`/api/brands/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 
 export async function getProductDetail(idOrSlug: string): Promise<{ product: ApiProduct }> {
   return fetchApi<{ product: ApiProduct }>(`/api/products/${idOrSlug}`);
@@ -127,6 +273,7 @@ export async function createCategoryApi(data: {
   name: string;
   slug?: string;
   description?: string;
+  parentId?: string | null;
 }): Promise<{ message: string; category: ApiCategory }> {
   const token = localStorage.getItem('token');
   return fetchApi<{ message: string; category: ApiCategory }>('/api/categories', {
@@ -138,7 +285,7 @@ export async function createCategoryApi(data: {
 
 export async function updateCategoryApi(
   id: string | number,
-  data: { name?: string; slug?: string; description?: string }
+  data: { name?: string; slug?: string; description?: string; parentId?: string | null }
 ): Promise<{ message: string; category: ApiCategory }> {
   const token = localStorage.getItem('token');
   return fetchApi<{ message: string; category: ApiCategory }>(`/api/categories/${id}`, {
@@ -147,6 +294,7 @@ export async function updateCategoryApi(
     body: JSON.stringify(data),
   });
 }
+
 
 export async function deleteCategoryApi(id: string | number): Promise<{ message: string }> {
   const token = localStorage.getItem('token');

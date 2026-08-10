@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user, login, logout, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('admin@pcstore.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Auto redirect to /admin if already logged in as ADMIN
+  useEffect(() => {
+    if (!authLoading && user && user.role === 'ADMIN') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +29,13 @@ export const AdminLogin: React.FC = () => {
 
     setLoading(true);
     try {
-      await login({ email, password });
-      navigate('/admin');
+      const loggedUser = await login({ email, password });
+      if (loggedUser.role !== 'ADMIN') {
+        logout();
+        setError('Tài khoản này không có quyền truy cập hệ thống Quản trị viên (ADMIN).');
+        return;
+      }
+      navigate('/admin', { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Đăng nhập quản trị thất bại';
       setError(msg);

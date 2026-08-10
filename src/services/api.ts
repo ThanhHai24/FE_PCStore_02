@@ -9,13 +9,14 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
   const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   const response = await fetch(url, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...authHeaders,
-      ...options?.headers,
+      ...(options?.headers as Record<string, string>),
     },
-    ...options,
   });
+
 
   if (!response.ok) {
     const errorText = await response.text();

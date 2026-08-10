@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { mockProducts, getProductById } from '../../data/mockProducts';
+import { getProductDetail, mapApiProductToProduct } from '../../services/productService';
 import type { Product } from '../../types/product';
 import { useCart } from '../../context/CartContext';
 import { Scale, ArrowLeftRight } from 'lucide-react';
@@ -15,15 +15,70 @@ export const ProductCompare: React.FC = () => {
   const id1Param = searchParams.get('id1');
   const id2Param = searchParams.get('id2');
 
-  const [product1, setProduct1] = useState<Product | null>(() => (id1Param ? getProductById(id1Param) : null));
-  const [product2, setProduct2] = useState<Product | null>(() => (id2Param ? getProductById(id2Param) : null));
+  const [product1, setProduct1] = useState<Product | null>(null);
+  const [product2, setProduct2] = useState<Product | null>(null);
+  const [loading1, setLoading1] = useState<boolean>(false);
+  const [loading2, setLoading2] = useState<boolean>(false);
 
-  // Sync state with URL params
+  // Fetch product 1 details from API
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (id1Param) setProduct1(getProductById(id1Param));
-    if (id2Param) setProduct2(getProductById(id2Param));
-  }, [id1Param, id2Param]);
+    let isMounted = true;
+    if (id1Param) {
+      setLoading1(true);
+      getProductDetail(id1Param)
+        .then((res) => {
+          if (!isMounted) return;
+          if (res.product) {
+            setProduct1(mapApiProductToProduct(res.product));
+          } else {
+            setProduct1(null);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching product 1 for compare:', err);
+          if (isMounted) setProduct1(null);
+        })
+        .finally(() => {
+          if (isMounted) setLoading1(false);
+        });
+    } else {
+      setProduct1(null);
+      setLoading1(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [id1Param]);
+
+  // Fetch product 2 details from API
+  useEffect(() => {
+    let isMounted = true;
+    if (id2Param) {
+      setLoading2(true);
+      getProductDetail(id2Param)
+        .then((res) => {
+          if (!isMounted) return;
+          if (res.product) {
+            setProduct2(mapApiProductToProduct(res.product));
+          } else {
+            setProduct2(null);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching product 2 for compare:', err);
+          if (isMounted) setProduct2(null);
+        })
+        .finally(() => {
+          if (isMounted) setLoading2(false);
+        });
+    } else {
+      setProduct2(null);
+      setLoading2(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [id2Param]);
 
   const updateUrlParams = (p1: Product | null, p2: Product | null) => {
     const params: { id1?: string; id2?: string } = {};
@@ -76,7 +131,7 @@ export const ProductCompare: React.FC = () => {
             <span>So Sánh Cấu Hình & Thông Số Kỹ Thuật</span>
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            Nhập tên để chọn 2 sản phẩm bất kỳ và đối chiếu thông số kỹ thuật chi tiết.
+            Nhập tên để chọn 2 sản phẩm bất kỳ từ hệ thống và đối chiếu thông số kỹ thuật chi tiết.
           </p>
         </div>
 
@@ -97,10 +152,10 @@ export const ProductCompare: React.FC = () => {
             <CompareProductCard
               slotNumber={1}
               product={product1}
+              loading={loading1}
               onSelectProduct={handleSelectProduct1}
               onClearProduct={handleClearProduct1}
               onAddToCart={(p) => addToCart(p, 1)}
-              availableProducts={mockProducts}
             />
           </div>
 
@@ -117,10 +172,10 @@ export const ProductCompare: React.FC = () => {
             <CompareProductCard
               slotNumber={2}
               product={product2}
+              loading={loading2}
               onSelectProduct={handleSelectProduct2}
               onClearProduct={handleClearProduct2}
               onAddToCart={(p) => addToCart(p, 1)}
-              availableProducts={mockProducts}
             />
           </div>
         </div>

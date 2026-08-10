@@ -19,7 +19,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   updateProfile: (payload: UpdateProfilePayload) => Promise<User>;
@@ -54,12 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (payload: LoginPayload) => {
+  const login = async (payload: LoginPayload): Promise<User> => {
     const res = await loginApi(payload);
     if (res.token && res.user) {
       localStorage.setItem('token', res.token);
       setToken(res.token);
       setUser(res.user);
+      return res.user;
     } else {
       throw new Error(res.message || 'Đăng nhập không thành công');
     }
