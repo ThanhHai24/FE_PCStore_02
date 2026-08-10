@@ -3,6 +3,7 @@ export type OrderStatus =
   | 'CONFIRMED'
   | 'PROCESSING'
   | 'SHIPPING'
+  | 'SHIPPED'
   | 'DELIVERED'
   | 'CANCELLED';
 
@@ -84,6 +85,7 @@ export const ORDER_STATUS_MAP: Record<OrderStatus, { label: string; color: strin
   CONFIRMED: { label: 'Đã xác nhận', color: 'text-blue-700', bgColor: 'bg-blue-50 border-blue-200' },
   PROCESSING: { label: 'Đang đóng gói', color: 'text-purple-700', bgColor: 'bg-purple-50 border-purple-200' },
   SHIPPING: { label: 'Đang giao hàng', color: 'text-indigo-700', bgColor: 'bg-indigo-50 border-indigo-200' },
+  SHIPPED: { label: 'Đã vận chuyển', color: 'text-indigo-700', bgColor: 'bg-indigo-50 border-indigo-200' },
   DELIVERED: { label: 'Đã giao hàng', color: 'text-emerald-700', bgColor: 'bg-emerald-50 border-emerald-200' },
   CANCELLED: { label: 'Đã hủy', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200' },
 };

@@ -30,3 +30,26 @@ export async function cancelOrderApi(id: string, reason?: string): Promise<{ mes
     body: JSON.stringify({ reason }),
   });
 }
+
+export interface CreateOrderItemPayload {
+  productId: string | number;
+  quantity: number;
+}
+
+export interface CreateOrderPayload {
+  customerName: string;
+  customerPhone: string;
+  shippingAddress: string;
+  paymentMethod?: 'COD' | 'VNPAY' | 'MOMO' | 'STRIPE' | 'MOCK';
+  notes?: string;
+  couponCode?: string;
+  shippingFee?: number;
+  items?: CreateOrderItemPayload[];
+}
+
+export async function createOrderApi(payload: CreateOrderPayload): Promise<{ message: string; order: Order }> {
+  return fetchApi<{ message: string; order: Order }>('/api/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

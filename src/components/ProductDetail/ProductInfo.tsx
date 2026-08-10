@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale } from 'lucide-react';
 import type { Product } from '../../types/product';
 import { useCart } from '../../context/CartContext';
@@ -9,6 +9,7 @@ interface ProductInfoProps {
 }
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedStorage] = useState<string>('');
@@ -51,6 +52,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     setTimeout(() => setAddedToast(false), 3000);
   };
 
+  const handleBuyNow = () => {
+    addToCart(product, quantity, selectedStorage || undefined);
+    navigate('/cart');
+  };
 
   return (
     <div className="space-y-4 text-gray-800 relative">
@@ -233,8 +238,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             TRẢ GÓP
           </button>
           <button
+            onClick={handleBuyNow}
             disabled={!product.inStock || product.stockQuantity === 0}
-            className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed"
+            className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed cursor-pointer"
           >
             {!product.inStock || product.stockQuantity === 0 ? 'HẾT HÀNG' : 'MUA NGAY'}
           </button>
