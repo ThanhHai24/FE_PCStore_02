@@ -8,6 +8,7 @@ import BuildPc from './pages/build-pc/BuildPc';
 import News from './pages/news/News';
 import Account from './pages/account/Account';
 import ProductCompare from './pages/compare/ProductCompare';
+import PaymentResult from './pages/cart/PaymentResult';
 import Register from './pages/account/Register';
 import NotFound from './pages/not-found/NotFound';
 import { CartProvider } from './context/CartContext';
@@ -37,6 +38,7 @@ function App() {
               <Route path="category/:categoryId" element={<ProductList />} />
               <Route path="products" element={<ProductList />} />
               <Route path="product/:id" element={<ProductDetail />} />
+              <Route path="vnpay-return" element={<PaymentResult />} />
               <Route path="cart" element={<Cart />} />
               <Route path="build-pc" element={<BuildPc />} />
               <Route path="news" element={<News />} />
