@@ -39,26 +39,48 @@ export const Dashboard: React.FC = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
     const fetchStats = async () => {
       try {
         const [prodRes, orderRes, catRes, userRes] = await Promise.allSettled([
-          getProducts({ limit: 1 }),
-          getAdminOrdersApi({ limit: 1 }),
+          getProducts({ limit: 100 }),
+          getAdminOrdersApi({ limit: 100 }),
           getCategories(),
-          getUsersApi({ limit: 1 }),
+          getUsersApi({ limit: 100 }),
         ]);
 
+        if (!isMounted) return;
+
+        let totalP = 12;
+        let totalO = 8;
+        let totalC = 15;
+        let totalCat = 5;
+
+        if (prodRes.status === 'fulfilled' && prodRes.value && Array.isArray((prodRes.value as any).products)) {
+          totalP = (prodRes.value as any).products.length;
+        }
+        if (orderRes.status === 'fulfilled' && orderRes.value && Array.isArray((orderRes.value as any).orders)) {
+          totalO = (orderRes.value as any).orders.length;
+        }
+        if (userRes.status === 'fulfilled' && userRes.value && (userRes.value as any).pagination) {
+          totalC = (userRes.value as any).pagination.total || ((userRes.value as any).users ? (userRes.value as any).users.length : 15);
+        }
+        if (catRes.status === 'fulfilled' && catRes.value && Array.isArray((catRes.value as any).categories)) {
+          totalCat = (catRes.value as any).categories.length;
+        }
+
         setRealStats({
-          totalProducts: prodRes.status === 'fulfilled' && prodRes.value.products ? prodRes.value.products.length : 12,
-          totalOrders: orderRes.status === 'fulfilled' && orderRes.value.orders ? orderRes.value.orders.length : 8,
-          totalCustomers: userRes.status === 'fulfilled' && userRes.value.pagination ? userRes.value.pagination.total : 15,
-          totalCategories: catRes.status === 'fulfilled' && catRes.value.categories ? catRes.value.categories.length : 5,
+          totalProducts: totalP,
+          totalOrders: totalO,
+          totalCustomers: totalC,
+          totalCategories: totalCat,
         });
       } catch (err) {
         console.warn('Dashboard fetchStats fallback:', err);
       }
     };
     fetchStats();
+    return () => { isMounted = false; };
   }, []);
 
   // Mock data dynamic based on time range
