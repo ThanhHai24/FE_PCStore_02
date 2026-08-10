@@ -4,7 +4,7 @@
  * https://ckeditor.com/ckeditor-5/builder/
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { CKEditor, useCKEditorCloud } from '@ckeditor/ckeditor5-react';
 
 const LICENSE_KEY =
@@ -27,16 +27,11 @@ export default function CKEditor5Component({
     placeholder = 'Nhập nội dung tại đây...',
     minHeight = '150px',
 }: CKEditor5Props) {
-    const [isLayoutReady, setIsLayoutReady] = useState(false);
-    // Capture the initial value only once — do NOT pass `value` as a reactive
-    // `data` prop or CKEditor will reset the editor on every keystroke.
-    const initialValueRef = useRef(value);
+    const [isLayoutReady] = useState(true);
+    // Capture the initial value only once via lazy state initialization
+    const [initialData] = useState(() => value);
     const cloud = useCKEditorCloud({ version: '48.4.0' });
 
-    useEffect(() => {
-        setIsLayoutReady(true);
-        return () => setIsLayoutReady(false);
-    }, []);
 
     const { ClassicEditor, editorConfig } = useMemo(() => {
         if (cloud.status !== 'success' || !isLayoutReady) {
@@ -283,9 +278,11 @@ export default function CKEditor5Component({
             `}</style>
             <CKEditor
                 editor={ClassicEditor}
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
                 config={editorConfig as any}
-                data={initialValueRef.current}
+                data={initialData}
                 onReady={(editor) => {
+
                     console.log('CKEditor ready:', editor);
                     editor.editing.view.focus();
                 }}
