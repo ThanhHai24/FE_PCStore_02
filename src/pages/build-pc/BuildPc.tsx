@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import Modal from '../../components/BuildPC/Modal';
 import ItemDrive from '../../components/BuildPC/ItemDrive';
-import { Image, Printer, RotateCcw, Sheet, ShoppingCart } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Image, Printer, RotateCcw, Sheet, ShoppingCart, Zap } from 'lucide-react';
 import { BUILDER_PRODUCTS, type BuilderProduct } from '../../data/builderProducts';
+import {
+  calculateRecommendedPsu,
+  calculateTotalTdp,
+  validatePcBuild,
+} from '../../utils/pcBuilderValidator';
 
 const driveItems = [
   { index: 1, title: 'CPU - Bộ Vi Xử Lý', description: 'Chọn CPU - Bộ Vi Xử Lý', specialOffer: 'Sale CPU sập sàn' },
@@ -76,6 +81,22 @@ export const BuildPc: React.FC = () => {
     0
   );
 
+  // Validate hardware compatibility
+  const compatibilityIssues = validatePcBuild(selectedItems);
+  const totalTdp = calculateTotalTdp(selectedItems);
+  const recommendedPsu = calculateRecommendedPsu(selectedItems);
+
+  // Group issues by slotIndex for ItemDrive mapping
+  const slotIssuesMap: Record<number, string[]> = {};
+  compatibilityIssues.forEach((issue) => {
+    issue.affectedSlots.forEach((slot) => {
+      if (!slotIssuesMap[slot]) slotIssuesMap[slot] = [];
+      if (!slotIssuesMap[slot].includes(issue.message)) {
+        slotIssuesMap[slot].push(issue.message);
+      }
+    });
+  });
+
   const activeSlot = driveItems.find((item) => item.index === activeSlotIndex);
   const filteredProducts = activeSlotIndex
     ? BUILDER_PRODUCTS.filter((p) => p.slotIndex === activeSlotIndex)
@@ -142,6 +163,50 @@ export const BuildPc: React.FC = () => {
           </li>
         </ul>
 
+        {/* System Power & Compatibility Status Bar */}
+        <div className="mb-4 space-y-2">
+          {/* Compatibility Alert Banner */}
+          {compatibilityIssues.length > 0 ? (
+            <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded shadow-sm">
+              <div className="flex items-center gap-2 text-red-800 font-bold text-base mb-1">
+                <AlertTriangle size={20} className="text-red-600 shrink-0" />
+                <span>Cảnh báo không tương thích ({compatibilityIssues.length} lỗi):</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 pl-1 text-sm text-red-700 font-medium">
+                {compatibilityIssues.map((issue) => (
+                  <li key={issue.id}>
+                    <span className="font-bold text-red-800">[{issue.ruleName}]:</span> {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : Object.keys(selectedItems).length > 0 ? (
+            <div className="bg-emerald-50 border border-emerald-300 p-3 rounded text-emerald-800 flex items-center gap-2 font-medium text-sm">
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <span>Cấu hình hoàn toàn tương thích! Các linh kiện hoạt động tốt cùng nhau.</span>
+            </div>
+          ) : null}
+
+          {/* Stats Bar */}
+          {Object.keys(selectedItems).length > 0 && (
+            <div className="bg-gray-100 p-3 rounded border border-gray-300 flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-gray-700">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <Zap size={16} className="text-amber-500" />
+                  Tổng công suất tiêu thụ (TDP): <strong className="text-black text-sm">{totalTdp}W</strong>
+                </span>
+                <span className="text-gray-400">|</span>
+                <span>
+                  Công suất nguồn đề xuất: <strong className="text-[#0f5b99] text-sm">≥ {recommendedPsu}W</strong>
+                </span>
+              </div>
+              <div className="text-gray-500">
+                Đã chọn: <span className="font-bold text-black">{Object.keys(selectedItems).length}</span> linh kiện
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end mb-4">
           <p className="text-[18px] text-[#d00] font-semibold">
             Chi phí dự tính: <span>{totalCost.toLocaleString('vi-VN')} đ</span>
@@ -158,6 +223,7 @@ export const BuildPc: React.FC = () => {
               specialOffer={item.specialOffer}
               selectedProduct={selectedItems[item.index]?.product}
               quantity={selectedItems[item.index]?.quantity}
+              issues={slotIssuesMap[item.index] || []}
               onOpenModal={() => handleOpenModal(item.index)}
               onUpdateQuantity={(qty) => handleUpdateQuantity(item.index, qty)}
               onRemoveItem={() => handleRemoveItem(item.index)}
@@ -204,6 +270,8 @@ export const BuildPc: React.FC = () => {
         onClose={handleCloseModal}
         categoryTitle={activeSlot ? activeSlot.description : 'Chọn linh kiện'}
         products={filteredProducts}
+        activeSlotIndex={activeSlotIndex}
+        selectedItems={selectedItems}
         onSelectProduct={handleSelectProduct}
       />
     </div>
@@ -211,4 +279,5 @@ export const BuildPc: React.FC = () => {
 };
 
 export default BuildPc;
+
 

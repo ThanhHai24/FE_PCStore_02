@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Package, ChevronLeft, ChevronRight, Loader2, ShoppingBag, LogIn } from 'lucide-react';
 import OrderCard from '../../components/order/OrderCard';
 import { getMyOrdersApi } from '../../services/orderService';
-import type { Order, OrderStatus } from '../../types/order';
+import type { Order as OrderType, OrderStatus } from '../../types/order';
 import { useAuth } from '../../context/AuthContext';
 
 const STATUS_TABS: { label: string; value: string; status?: OrderStatus }[] = [
@@ -22,7 +22,7 @@ function Order() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderType[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);

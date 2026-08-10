@@ -517,9 +517,5 @@ export function detectCategoryType(categoryName: string): CategoryType {
   if (n.includes('psu') || (n.includes('nguồn') && !n.includes('sản phẩm'))) return 'PSU';
   if (n.includes('case') || n.includes('vỏ máy') || n.includes('thùng máy')) return 'Case';
   if (n.includes('tản nhiệt') || n.includes('cooler') || n.includes('cooling')) return 'Cooler';
-  if (n.includes('màn hình') || n.includes('monitor')) return 'Monitor';
-  if (n.includes('bàn phím') || n.includes('keyboard')) return 'Keyboard';
-  if (n.includes('chuột') || n.includes('mouse')) return 'Mouse';
-  if (n.includes('tai nghe') || n.includes('headset') || n.includes('headphone')) return 'Headset';
   return 'Generic';
 }
