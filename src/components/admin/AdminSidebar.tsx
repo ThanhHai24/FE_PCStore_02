@@ -24,7 +24,6 @@ const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/admin/products', label: 'Sản phẩm', icon: Package, badge: '128' },
   { path: '/admin/orders', label: 'Đơn hàng', icon: ShoppingCart, badge: '5 mới' },
-  { path: '/admin/categories', label: 'Danh mục', icon: FolderTree },
   { path: '/admin/customers', label: 'Khách hàng', icon: Users },
   { path: '/admin/settings', label: 'Cài đặt', icon: Settings },
 ];
