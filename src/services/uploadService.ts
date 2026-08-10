@@ -89,3 +89,17 @@ export async function createProductApi(payload: {
     });
 }
 
+/**
+ * Update an existing product via API.
+ */
+export async function updateProductApi(
+    id: string | number,
+    payload: Record<string, unknown>
+): Promise<{ message: string; product: Record<string, unknown> }> {
+    return fetchApi(`/api/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+    });
+}
+
+

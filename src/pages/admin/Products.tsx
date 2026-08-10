@@ -411,7 +411,7 @@ export const Products: React.FC = () => {
           <p className="text-xs text-gray-500 mt-1">Danh sách sản phẩm, giá bán, tồn kho và thông số kỹ thuật</p>
         </div>
         <button
-          onClick={handleOpenAddModal}
+          onClick={() => navigate('/admin/products/create')}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
@@ -520,7 +520,7 @@ export const Products: React.FC = () => {
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => handleOpenViewModal(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => handleOpenEditModal(prod)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => navigate(`/admin/products/edit/${prod.id}`)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
                       <button onClick={() => handleOpenDeleteModal(prod)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
