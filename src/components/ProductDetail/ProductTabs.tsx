@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { SpecItem } from '../../types/product';
 
 interface ProductTabsProps {
@@ -54,10 +55,22 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({ specsTable, descriptio
                       {item.key}
                     </td>
                     <td className="border border-gray-300 px-4 py-3 text-red-600 font-semibold text-center leading-relaxed">
-                      {item.name}
+                      {item.productId ? (
+                        <Link
+                          to={`/product/${item.productId}`}
+                          className="text-red-600 hover:text-blue-600 hover:underline transition-colors font-semibold flex items-center justify-center gap-1"
+                        >
+                          <span>{item.name}</span>
+                          <span className="text-[10px] text-blue-500 font-normal bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
+                            Xem chi tiết ↗
+                          </span>
+                        </Link>
+                      ) : (
+                        item.name
+                      )}
                     </td>
                     <td className="border border-gray-300 px-3 py-3 text-gray-700 font-medium text-center">
-                      {item.warranty}
+                      {item.warranty || 'Chính hãng'}
                     </td>
                   </tr>
                 ))}

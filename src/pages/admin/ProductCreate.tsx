@@ -204,6 +204,7 @@ const ProductCreate: React.FC = () => {
             ...prev,
             categoryId: id,
             categoryName: cat?.name ?? '',
+            specs: {},
         }));
         if (cat) {
             setSkuLoading(true);

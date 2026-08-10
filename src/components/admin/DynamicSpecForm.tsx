@@ -91,27 +91,31 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
     }, []);
 
     const search = (q: string) => {
-        if (!q.trim() && matchedCategoryIds.length === 0) {
-            setResults([]);
-            return;
-        }
         setLoading(true);
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(async () => {
             try {
                 const catId = matchedCategoryIds[0];
-                const res = await getProducts({
+                let res = await getProducts({
                     q: q.trim() || undefined,
                     categoryId: catId,
-                    limit: 8,
+                    limit: 10,
                 });
-                setResults(res.products ?? []);
+                let prods = res.products ?? [];
+                if (prods.length === 0) {
+                    res = await getProducts({
+                        q: q.trim() || keywords[0] || undefined,
+                        limit: 10,
+                    });
+                    prods = res.products ?? [];
+                }
+                setResults(prods);
             } catch {
                 setResults([]);
             } finally {
                 setLoading(false);
             }
-        }, 350);
+        }, 300);
     };
 
     const handleOpen = () => {
@@ -295,13 +299,47 @@ const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
     // PC component selections (product objects)
     const [pcComponents, setPcComponents] = useState<Partial<Record<PcComponentKey, ApiProduct | null>>>({});
 
+    /* ── Initial load of existing specs into pcComponents ── */
+    useEffect(() => {
+        if (catType !== 'PC' || !specs) return;
+        const initial: Partial<Record<PcComponentKey, ApiProduct | null>> = {};
+        PC_COMPONENT_TYPES.forEach(({ key, label }) => {
+            const val = specs[label];
+            if (val && typeof val === 'string' && val.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(val);
+                    if (parsed.id && parsed.name) {
+                        initial[key] = {
+                            id: parsed.id,
+                            name: parsed.name,
+                            sku: parsed.sku || '',
+                            price: 0,
+                            stock: 1,
+                            slug: '',
+                        } as ApiProduct;
+                    }
+                } catch {}
+            }
+        });
+        if (Object.keys(initial).length > 0) {
+            setPcComponents((prev) => ({ ...initial, ...prev }));
+        }
+    }, [catType]);
+
     /* ── PC mode — build specs from selected components ── */
     useEffect(() => {
         if (catType !== 'PC') return;
         const derived: SpecRecord = {};
         PC_COMPONENT_TYPES.forEach(({ key, label }) => {
             const p = pcComponents[key];
-            if (p) derived[label] = `${p.name} (SKU: ${p.sku})`;
+            if (p) {
+                derived[label] = JSON.stringify({
+                    id: p.id,
+                    name: p.name,
+                    sku: p.sku,
+                    warranty: p.warranty ? `${p.warranty} Tháng` : '36 Tháng'
+                });
+            }
         });
         onChange(derived);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -367,6 +405,21 @@ const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
         );
     }
 
+    const getFieldValue = (field: SpecField) => {
+        if (specs[field.key] !== undefined && specs[field.key] !== '') return specs[field.key];
+        if (specs[field.label] !== undefined && specs[field.label] !== '') return specs[field.label];
+        const shortKey = field.key.split(' (')[0];
+        if (specs[shortKey] !== undefined && specs[shortKey] !== '') return specs[shortKey];
+        for (const [k, v] of Object.entries(specs)) {
+            if (!v) continue;
+            if (k === 'importPrice') continue;
+            if (shortKey.includes(k) || k.includes(shortKey) || field.label.includes(k)) {
+                return v;
+            }
+        }
+        return '';
+    };
+
     /* ─── Normal mode: structured fields ─── */
     return (
         <div className="space-y-6">
@@ -382,7 +435,7 @@ const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                         <SpecFieldRow
                             key={field.key}
                             field={field}
-                            value={specs[field.key] ?? ''}
+                            value={getFieldValue(field)}
                             onChange={handleFieldChange}
                         />
                     ))}
