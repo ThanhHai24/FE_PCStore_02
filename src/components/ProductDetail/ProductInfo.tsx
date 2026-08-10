@@ -11,7 +11,7 @@ interface ProductInfoProps {
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedStorage, setSelectedStorage] = useState<string>('1TB');
+  const [selectedStorage] = useState<string>('1TB');
   const [addedToast, setAddedToast] = useState<boolean>(false);
 
   // Live countdown timer state
@@ -135,24 +135,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
       </div>
 
-      {/* Variant Selection Option */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-gray-700">Tùy chọn dung lượng SSD:</label>
-        <div className="flex flex-wrap gap-2">
-          {['1TB NVMe Gen4', '2TB NVMe Gen4 (+1.800.000đ)'].map((option) => (
-            <button
-              key={option}
-              onClick={() => setSelectedStorage(option)}
-              className={`px-3 py-1.5 text-xs rounded-lg border font-semibold transition-all ${selectedStorage === option
-                ? 'border-red-600 bg-red-50 text-red-600 ring-1 ring-red-500'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Khuyến mại & Quà tặng khác Box */}
       <div className="border border-red-200 rounded-xl overflow-hidden bg-red-50/20">

@@ -186,8 +186,13 @@ export const ProductDetail: React.FC = () => {
 
       {/* Bottom Tabs Section (Thông số kỹ thuật / Mô tả sản phẩm) */}
       <div className="pt-2">
-        <ProductTabs specsTable={product.specsTable} descriptionHtml={product.descriptionHtml} />
+        <ProductTabs
+          specsTable={product.specsTable}
+          descriptionHtml={product.descriptionHtml}
+          categoryName={product.categoryName}
+        />
       </div>
+
 
       {/* Product Reviews Section */}
       <div className="pt-2">
