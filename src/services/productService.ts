@@ -98,3 +98,24 @@ export async function getBrandsByCategory(idOrSlug: string): Promise<{ category:
 export async function getProductDetail(idOrSlug: string): Promise<{ product: ApiProduct }> {
   return fetchApi<{ product: ApiProduct }>(`/api/products/${idOrSlug}`);
 }
+
+export async function createProduct(data: any): Promise<{ message: string; product: ApiProduct }> {
+  return fetchApi<{ message: string; product: ApiProduct }>('/api/products', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProduct(id: string | number, data: any): Promise<{ message: string; product: ApiProduct }> {
+  return fetchApi<{ message: string; product: ApiProduct }>(`/api/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProduct(id: string | number): Promise<{ message: string }> {
+  return fetchApi<{ message: string }>(`/api/products/${id}`, {
+    method: 'DELETE',
+  });
+}
+

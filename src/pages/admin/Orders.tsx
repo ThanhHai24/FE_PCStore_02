@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -28,6 +29,7 @@ export interface OrderItem {
 }
 
 export const Orders: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
@@ -203,7 +205,7 @@ export const Orders: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3.5 font-bold text-blue-600">{ord.id}</td>
+                  <td className="px-4 py-3.5 font-bold text-blue-600 cursor-pointer hover:underline" onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}>{ord.id}</td>
                   <td className="px-4 py-3.5">
                     <p className="font-bold text-gray-900">{ord.customerName}</p>
                     <p className="text-[11px] text-gray-500">{ord.customerPhone}</p>
@@ -239,16 +241,16 @@ export const Orders: React.FC = () => {
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => handleOpenViewModal(ord)}
+                        onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Xem chi tiết đơn hàng"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleOpenEditStatusModal(ord)}
+                        onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}
                         className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="Đổi trạng thái đơn"
+                        title="Chỉnh sửa & xử lý đơn hàng"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
