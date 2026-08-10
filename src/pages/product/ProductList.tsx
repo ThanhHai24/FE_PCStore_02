@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import SubCategoryHeader from '../../components/ProductList/SubCategoryHeader';
 import type { SubCategory } from '../../components/ProductList/SubCategoryHeader';
+
 import ProductListFilter, { defaultPriceRanges } from '../../components/ProductList/ProductListFilter';
 import ProductSortBar from '../../components/ProductList/ProductSortBar';
 import type { SortOptionKey, ViewMode } from '../../components/ProductList/ProductSortBar';
@@ -24,7 +24,7 @@ export const ProductList: React.FC = () => {
   const searchParamCategory = searchParams.get('categoryId') || routeCategoryId || null;
   const searchParamBrand = searchParams.get('brandId') || null;
 
-  const [categories, setCategories] = useState<SubCategory[]>([]);
+  const [, setCategories] = useState<SubCategory[]>([]);
   const [brands, setBrands] = useState<ApiBrand[]>([]);
   const [categoryName, setCategoryName] = useState<string>('');
 
@@ -50,11 +50,12 @@ export const ProductList: React.FC = () => {
   // Sync categoryId from route or query params
   useEffect(() => {
     if (searchParamCategory !== selectedSubCategory) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSubCategory(searchParamCategory);
     }
-  }, [searchParamCategory]);
+  }, [searchParamCategory, selectedSubCategory]);
 
-  // Load categories for SubCategoryHeader
+  // Load categories
   useEffect(() => {
     let isMounted = true;
     getCategories(true)
@@ -101,7 +102,9 @@ export const ProductList: React.FC = () => {
           if (isMounted) setBrands([]);
         });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoryName('');
+
       setBrands([]);
     }
     return () => {
@@ -180,6 +183,7 @@ export const ProductList: React.FC = () => {
   }, [page, selectedSubCategory, selectedBrandId, selectedPriceRange, currentSort, searchParamQuery]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProductsList();
   }, [fetchProductsList]);
 
@@ -204,15 +208,11 @@ export const ProductList: React.FC = () => {
     }
   };
 
-  const handleSelectCategory = (catId: string | null) => {
-    setSelectedSubCategory(catId);
-    setPage(1);
-  };
-
   const handleSelectPriceRange = (rangeId: string | null) => {
     setSelectedPriceRange(rangeId);
     setPage(1);
   };
+
 
   const handleSelectBrand = (brandId: string | null) => {
     setSelectedBrandId(brandId);
@@ -246,120 +246,123 @@ export const ProductList: React.FC = () => {
         )}
       </nav>
 
-      {/* Sub-Category Icon Header */}
-      <SubCategoryHeader
-        categories={categories}
-        activeId={selectedSubCategory}
-        onSelectCategory={handleSelectCategory}
-      />
 
-      {/* Filter Section */}
-      <ProductListFilter
-        brands={brands}
-        selectedPriceRange={selectedPriceRange}
-        onSelectPriceRange={handleSelectPriceRange}
-        selectedBrandId={selectedBrandId}
-        onSelectBrand={handleSelectBrand}
-        selectedFilters={selectedFilters}
-        onFilterChange={handleFilterChange}
-        onResetFilters={handleResetFilters}
-      />
 
-      {/* Sort & View Mode Bar */}
-      <ProductSortBar
-        currentSort={currentSort}
-        onSortChange={(sortKey) => {
-          setCurrentSort(sortKey);
-          setPage(1);
-        }}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        totalProducts={pagination.total}
-      />
-
-      {/* Loading Skeleton / State */}
-      {loading ? (
-        <div className="py-16 text-center bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center space-y-3">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-xs font-semibold text-gray-600">Đang tải danh sách sản phẩm...</p>
+      {/* Main 2-Column Grid Layout: Left Sidebar + Right Products List */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left Column: Product Filter Sidebar */}
+        <div className="w-full lg:w-72 shrink-0">
+          <ProductListFilter
+            brands={brands}
+            selectedPriceRange={selectedPriceRange}
+            onSelectPriceRange={handleSelectPriceRange}
+            selectedBrandId={selectedBrandId}
+            onSelectBrand={handleSelectBrand}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            onResetFilters={handleResetFilters}
+          />
         </div>
-      ) : error ? (
-        <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-100 space-y-3">
-          <h3 className="text-sm font-bold text-red-700">Đã xảy ra lỗi khi kết nối máy chủ</h3>
-          <p className="text-xs text-red-500">{error}</p>
-          <button
-            onClick={fetchProductsList}
-            className="mt-2 inline-block bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
-          >
-            Thử lại
-          </button>
-        </div>
-      ) : products.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 space-y-3">
-          <div className="text-4xl">🔍</div>
-          <h3 className="text-base font-bold text-gray-800">Không tìm thấy sản phẩm phù hợp</h3>
-          <p className="text-xs text-gray-500">Vui lòng thử bỏ bớt tiêu chí lọc hoặc chọn khoảng giá khác.</p>
-          <button
-            onClick={handleResetFilters}
-            className="mt-2 inline-block bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            Xóa tất cả bộ lọc
-          </button>
-        </div>
-      ) : (
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5'
-              : 'space-y-4'
-          }
-        >
-          {products.map((product) => {
-            const cardProps = formatProductToCardProps(product);
-            return (
-              <ProductCard
-                key={product.id}
-                {...cardProps}
-              />
-            );
-          })}
-        </div>
-      )}
 
-      {/* Pagination Bar */}
-      {!loading && !error && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-2 pt-6">
-          <button
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1}
-            className="px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Trước
-          </button>
+        {/* Right Column: Sort Bar & Product Cards */}
+        <div className="flex-1 min-w-0 w-full space-y-4">
+          {/* Sort & View Mode Bar */}
+          <ProductSortBar
+            currentSort={currentSort}
+            onSortChange={(sortKey) => {
+              setCurrentSort(sortKey);
+              setPage(1);
+            }}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            totalProducts={pagination.total}
+          />
 
-          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pNum) => (
-            <button
-              key={pNum}
-              onClick={() => handlePageChange(pNum)}
-              className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors ${
-                pNum === page
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
+          {/* Loading Skeleton / State */}
+          {loading ? (
+            <div className="py-16 text-center bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <p className="text-xs font-semibold text-gray-600">Đang tải danh sách sản phẩm...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-100 space-y-3">
+              <h3 className="text-sm font-bold text-red-700">Đã xảy ra lỗi khi kết nối máy chủ</h3>
+              <p className="text-xs text-red-500">{error}</p>
+              <button
+                onClick={fetchProductsList}
+                className="mt-2 inline-block bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 space-y-3">
+              <div className="text-4xl">🔍</div>
+              <h3 className="text-base font-bold text-gray-800">Không tìm thấy sản phẩm phù hợp</h3>
+              <p className="text-xs text-gray-500">Vui lòng thử bỏ bớt tiêu chí lọc hoặc chọn khoảng giá khác.</p>
+              <button
+                onClick={handleResetFilters}
+                className="mt-2 inline-block bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+          ) : (
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5'
+                  : 'space-y-4'
+              }
             >
-              {pNum}
-            </button>
-          ))}
+              {products.map((product) => {
+                const cardProps = formatProductToCardProps(product);
+                return (
+                  <ProductCard
+                    key={product.id}
+                    {...cardProps}
+                  />
+                );
+              })}
+            </div>
+          )}
 
-          <button
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === pagination.totalPages}
-            className="px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Sau
-          </button>
+          {/* Pagination Bar */}
+          {!loading && !error && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 pt-6">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className="px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Trước
+              </button>
+
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pNum) => (
+                <button
+                  key={pNum}
+                  onClick={() => handlePageChange(pNum)}
+                  className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors ${pNum === page
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  {pNum}
+                </button>
+              ))}
+
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === pagination.totalPages}
+                className="px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Sau
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
     </div>
   );
 };
