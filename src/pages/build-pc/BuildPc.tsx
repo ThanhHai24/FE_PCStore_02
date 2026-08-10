@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/BuildPC/Modal';
 import ItemDrive from '../../components/BuildPC/ItemDrive';
-import { Image, Printer, RotateCcw, Sheet, ShoppingCart } from 'lucide-react';
-import { BUILDER_PRODUCTS, type BuilderProduct } from '../../data/builderProducts';
+import { AlertTriangle, CheckCircle2, Image, Printer, RotateCcw, Sheet, ShoppingCart, Zap } from 'lucide-react';
+import type { BuilderProduct } from '../../data/builderProducts';
+import { fetchApiBuilderProducts } from '../../utils/pcBuilderApiAdapter';
+import { useCart } from '../../context/CartContext';
+import type { Product } from '../../types/product';
+import {
+  calculateRecommendedPsu,
+  calculateTotalTdp,
+  validatePcBuild,
+} from '../../utils/pcBuilderValidator';
 
 const driveItems = [
   { index: 1, title: 'CPU - Bộ Vi Xử Lý', description: 'Chọn CPU - Bộ Vi Xử Lý', specialOffer: 'Sale CPU sập sàn' },
@@ -18,11 +26,37 @@ const driveItems = [
 ];
 
 export const BuildPc: React.FC = () => {
-  const [selectedItems, setSelectedItems] = useState<
-    Record<number, { product: BuilderProduct; quantity: number }>
-  >({});
+  const { addToCart } = useCart();
+
+  // Multi-configuration slots (Configs 1 to 5)
+  const [configs, setConfigs] = useState<
+    Record<number, Record<number, { product: BuilderProduct; quantity: number }>>
+  >({
+    1: {},
+    2: {},
+    3: {},
+    4: {},
+    5: {},
+  });
+  const [activeConfigId, setActiveConfigId] = useState<number>(1);
+
+  const selectedItems = configs[activeConfigId] || {};
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+
+  // API builder products state
+  const [builderProducts, setBuilderProducts] = useState<BuilderProduct[]>([]);
+
+  useEffect(() => {
+    fetchApiBuilderProducts().then((products) => {
+      setBuilderProducts(products);
+    });
+  }, []);
+
+  const handleSwitchConfig = (configId: number) => {
+    setActiveConfigId(configId);
+  };
 
   const handleOpenModal = (slotIndex: number) => {
     setActiveSlotIndex(slotIndex);
@@ -36,39 +70,114 @@ export const BuildPc: React.FC = () => {
 
   const handleSelectProduct = (product: BuilderProduct) => {
     if (activeSlotIndex !== null) {
-      setSelectedItems((prev) => ({
+      setConfigs((prev) => ({
         ...prev,
-        [activeSlotIndex]: {
-          product,
-          quantity: prev[activeSlotIndex]?.quantity || 1,
+        [activeConfigId]: {
+          ...(prev[activeConfigId] || {}),
+          [activeSlotIndex]: {
+            product,
+            quantity: prev[activeConfigId]?.[activeSlotIndex]?.quantity || 1,
+          },
         },
       }));
     }
   };
 
   const handleUpdateQuantity = (slotIndex: number, quantity: number) => {
-    setSelectedItems((prev) => {
-      if (!prev[slotIndex]) return prev;
+    setConfigs((prev) => {
+      const currentConfig = prev[activeConfigId] || {};
+      if (!currentConfig[slotIndex]) return prev;
       return {
         ...prev,
-        [slotIndex]: {
-          ...prev[slotIndex],
-          quantity,
+        [activeConfigId]: {
+          ...currentConfig,
+          [slotIndex]: {
+            ...currentConfig[slotIndex],
+            quantity,
+          },
         },
       };
     });
   };
 
   const handleRemoveItem = (slotIndex: number) => {
-    setSelectedItems((prev) => {
-      const next = { ...prev };
-      delete next[slotIndex];
-      return next;
+    setConfigs((prev) => {
+      const currentConfig = { ...(prev[activeConfigId] || {}) };
+      delete currentConfig[slotIndex];
+      return {
+        ...prev,
+        [activeConfigId]: currentConfig,
+      };
     });
   };
 
   const handleReset = () => {
-    setSelectedItems({});
+    setConfigs((prev) => ({
+      ...prev,
+      [activeConfigId]: {},
+    }));
+  };
+
+  // Add active configuration items to Cart
+  const handleAddToCart = () => {
+    const itemsList = Object.values(selectedItems);
+    if (itemsList.length === 0) {
+      alert(`Vui lòng chọn ít nhất 1 linh kiện trong Cấu hình ${activeConfigId} trước khi thêm vào giỏ hàng!`);
+      return;
+    }
+
+    itemsList.forEach(({ product, quantity }) => {
+      const cartProduct: Product = {
+        id: String(product.id),
+        title: product.title,
+        images: product.image ? [product.image] : [],
+        price: `${product.price.toLocaleString('vi-VN')}đ`,
+        numericPrice: product.price,
+        marketPrice: product.marketPrice ? `${product.marketPrice.toLocaleString('vi-VN')}đ` : undefined,
+        discountPercent: product.discountPercent,
+        inStock: product.stockStatus === 'Còn hàng',
+        warrantyInfo: product.warranty || '36 tháng',
+        rating: 5,
+        reviewCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        purchaseCount: 0,
+        promotions: [],
+        specsTable: [],
+      };
+      addToCart(cartProduct, quantity);
+    });
+
+    alert(`🎉 Đã thêm ${itemsList.length} linh kiện của Cấu hình ${activeConfigId} vào giỏ hàng thành công!`);
+  };
+
+  // Export Excel CSV
+  const handleExportExcel = () => {
+    const itemsList = Object.values(selectedItems);
+    if (itemsList.length === 0) {
+      alert(`Chưa có linh kiện nào trong Cấu hình ${activeConfigId} để xuất Excel!`);
+      return;
+    }
+    let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+    csvContent += 'STT,Tên linh kiện,Mã sản phẩm,Bảo hành,Số lượng,Đơn giá (VNĐ),Thành tiền (VNĐ)\n';
+    itemsList.forEach(({ product, quantity }, idx) => {
+      const line = `${idx + 1},"${product.title.replace(/"/g, '""')}","${product.productCode}","${product.warranty || ''}",${quantity},${product.price},${product.price * quantity}`;
+      csvContent += line + '\n';
+    });
+    csvContent += `,,,,,,TỔNG CỘNG: ${totalCost.toLocaleString('vi-VN')} VNĐ\n`;
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `PC_Builder_CauHinh_${activeConfigId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Print view
+  const handlePrint = () => {
+    window.print();
   };
 
   const totalCost = Object.values(selectedItems).reduce(
@@ -76,9 +185,25 @@ export const BuildPc: React.FC = () => {
     0
   );
 
+  // Validate hardware compatibility
+  const compatibilityIssues = validatePcBuild(selectedItems);
+  const totalTdp = calculateTotalTdp(selectedItems);
+  const recommendedPsu = calculateRecommendedPsu(selectedItems);
+
+  // Group issues by slotIndex for ItemDrive mapping
+  const slotIssuesMap: Record<number, string[]> = {};
+  compatibilityIssues.forEach((issue) => {
+    issue.affectedSlots.forEach((slot) => {
+      if (!slotIssuesMap[slot]) slotIssuesMap[slot] = [];
+      if (!slotIssuesMap[slot].includes(issue.message)) {
+        slotIssuesMap[slot].push(issue.message);
+      }
+    });
+  });
+
   const activeSlot = driveItems.find((item) => item.index === activeSlotIndex);
   const filteredProducts = activeSlotIndex
-    ? BUILDER_PRODUCTS.filter((p) => p.slotIndex === activeSlotIndex)
+    ? builderProducts.filter((p) => p.slotIndex === activeSlotIndex)
     : [];
 
   return (
@@ -105,31 +230,23 @@ export const BuildPc: React.FC = () => {
           Chọn linh kiện xây dựng cấu hình - Tự build PC
         </h2>
         <ul className="list-btn-action flex flex-wrap gap-[5px] mb-4">
-          <li className="text-[16px] text-white font-bold text-center py-0.5">
-            <span className="bg-[#ff9f00] block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer">
-              Cấu hình 1
-            </span>
-          </li>
-          <li className="text-[16px] text-white font-bold text-center py-0.5">
-            <span className="bg-[#0f5b99] block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer">
-              Cấu hình 2
-            </span>
-          </li>
-          <li className="text-[16px] text-white font-bold text-center py-0.5">
-            <span className="bg-[#0f5b99] block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer">
-              Cấu hình 3
-            </span>
-          </li>
-          <li className="text-[16px] text-white font-bold text-center py-0.5">
-            <span className="bg-[#0f5b99] block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer">
-              Cấu hình 4
-            </span>
-          </li>
-          <li className="text-[16px] text-white font-bold text-center py-0.5">
-            <span className="bg-[#0f5b99] block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer">
-              Cấu hình 5
-            </span>
-          </li>
+          {[1, 2, 3, 4, 5].map((configNum) => {
+            const count = Object.keys(configs[configNum] || {}).length;
+            const isActive = activeConfigId === configNum;
+            return (
+              <li key={configNum} className="text-[16px] text-white font-bold text-center py-0.5">
+                <span
+                  onClick={() => handleSwitchConfig(configNum)}
+                  className={`${isActive
+                      ? 'bg-[#ff9f00] font-extrabold shadow-md'
+                      : 'bg-[#0f5b99] hover:bg-[#0c4a7d]'
+                    } transition-all block uppercase leading-[40px] text-[14px] px-[20px] rounded-sm cursor-pointer`}
+                >
+                  Cấu hình {configNum} {count > 0 && `(${count})`}
+                </span>
+              </li>
+            );
+          })}
         </ul>
         <ul className="actions flex gap-[5px] mb-4">
           <li className="text-[16px] text-white font-bold text-center py-0.5">
@@ -141,6 +258,50 @@ export const BuildPc: React.FC = () => {
             </span>
           </li>
         </ul>
+
+        {/* System Power & Compatibility Status Bar */}
+        <div className="mb-4 space-y-2">
+          {/* Compatibility Alert Banner */}
+          {compatibilityIssues.length > 0 ? (
+            <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded shadow-sm">
+              <div className="flex items-center gap-2 text-red-800 font-bold text-base mb-1">
+                <AlertTriangle size={20} className="text-red-600 shrink-0" />
+                <span>Cảnh báo không tương thích ({compatibilityIssues.length} lỗi):</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 pl-1 text-sm text-red-700 font-medium">
+                {compatibilityIssues.map((issue) => (
+                  <li key={issue.id}>
+                    <span className="font-bold text-red-800">[{issue.ruleName}]:</span> {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : Object.keys(selectedItems).length > 0 ? (
+            <div className="bg-emerald-50 border border-emerald-300 p-3 rounded text-emerald-800 flex items-center gap-2 font-medium text-sm">
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <span>Cấu hình hoàn toàn tương thích! Các linh kiện hoạt động tốt cùng nhau.</span>
+            </div>
+          ) : null}
+
+          {/* Stats Bar */}
+          {Object.keys(selectedItems).length > 0 && (
+            <div className="bg-gray-100 p-3 rounded border border-gray-300 flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-gray-700">
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <Zap size={16} className="text-amber-500" />
+                  Tổng công suất tiêu thụ (TDP): <strong className="text-black text-sm">{totalTdp}W</strong>
+                </span>
+                <span className="text-gray-400">|</span>
+                <span>
+                  Công suất nguồn đề xuất: <strong className="text-[#0f5b99] text-sm">≥ {recommendedPsu}W</strong>
+                </span>
+              </div>
+              <div className="text-gray-500">
+                Đã chọn: <span className="font-bold text-black">{Object.keys(selectedItems).length}</span> linh kiện
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end mb-4">
           <p className="text-[18px] text-[#d00] font-semibold">
@@ -158,6 +319,7 @@ export const BuildPc: React.FC = () => {
               specialOffer={item.specialOffer}
               selectedProduct={selectedItems[item.index]?.product}
               quantity={selectedItems[item.index]?.quantity}
+              issues={slotIssuesMap[item.index] || []}
               onOpenModal={() => handleOpenModal(item.index)}
               onUpdateQuantity={(qty) => handleUpdateQuantity(item.index, qty)}
               onRemoveItem={() => handleRemoveItem(item.index)}
@@ -173,25 +335,37 @@ export const BuildPc: React.FC = () => {
 
         <ul className="list-btn-action flex flex-wrap gap-3">
           <li>
-            <span className="flex items-center gap-2 bg-[#0f5b99] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer">
+            <span
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-[#0f5b99] hover:bg-[#0c4a7d] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer transition-colors"
+            >
               Tải ảnh cấu hình
               <Image size={18} />
             </span>
           </li>
           <li>
-            <span className="flex items-center gap-2 bg-[#0f5b99] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer">
+            <span
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 bg-[#0f5b99] hover:bg-[#0c4a7d] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer transition-colors"
+            >
               Tải file Excel cấu hình
               <Sheet size={18} />
             </span>
           </li>
           <li>
-            <span className="flex items-center gap-2 bg-[#0f5b99] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer">
+            <span
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-[#0f5b99] hover:bg-[#0c4a7d] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer transition-colors"
+            >
               Xem & In
               <Printer size={18} />
             </span>
           </li>
           <li>
-            <span className="flex items-center gap-2 bg-[#d00] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer">
+            <span
+              onClick={handleAddToCart}
+              className="flex items-center gap-2 bg-[#d00] hover:bg-[#b00] text-white py-2 px-4 rounded text-sm font-semibold cursor-pointer transition-colors shadow-sm"
+            >
               Thêm vào giỏ hàng
               <ShoppingCart size={18} />
             </span>
@@ -204,6 +378,8 @@ export const BuildPc: React.FC = () => {
         onClose={handleCloseModal}
         categoryTitle={activeSlot ? activeSlot.description : 'Chọn linh kiện'}
         products={filteredProducts}
+        activeSlotIndex={activeSlotIndex}
+        selectedItems={selectedItems}
         onSelectProduct={handleSelectProduct}
       />
     </div>
@@ -211,4 +387,5 @@ export const BuildPc: React.FC = () => {
 };
 
 export default BuildPc;
+
 

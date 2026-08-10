@@ -47,7 +47,7 @@ function App() {
               <Route path="login" element={<Account />} />
               <Route path="register" element={<Register />} />
               <Route path="account" element={<Account />} />
-              <Route path="order" element={<Order />} />
+              <Route path="orders" element={<Order />} />
               <Route path="order/:id" element={<OrderDetail />} />
               <Route path="compare" element={<ProductCompare />} />
               <Route path="*" element={<NotFound />} />

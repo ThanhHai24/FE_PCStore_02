@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale } from 'lucide-react';
 import type { Product } from '../../types/product';
 import { useCart } from '../../context/CartContext';
@@ -9,10 +9,13 @@ interface ProductInfoProps {
 }
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedStorage, setSelectedStorage] = useState<string>('1TB');
+  const [selectedStorage] = useState<string>('');
   const [addedToast, setAddedToast] = useState<boolean>(false);
+
+  const maxStock = product.stockQuantity ?? 10;
 
   // Live countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -38,13 +41,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   };
 
   const handleIncreaseQuantity = () => {
-    setQuantity(quantity + 1);
+    if (quantity < maxStock) {
+      setQuantity(quantity + 1);
+    }
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedStorage);
+    addToCart(product, quantity, selectedStorage || undefined);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 3000);
+  };
+
+  const handleBuyNow = () => {
+    addToCart(product, quantity, selectedStorage || undefined);
+    navigate('/cart');
   };
 
   return (
@@ -91,9 +101,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
         <div>
           <span className="text-gray-500">Tình trạng: </span>
-          <span className="text-emerald-600 font-bold">{product.inStock ? 'Còn hàng' : 'Hết hàng'}</span>
+          <span className={product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0) ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold'}>
+            {product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0)
+              ? `Còn hàng ${product.stockQuantity !== undefined ? `(Còn ${product.stockQuantity} sản phẩm)` : ''}`
+              : 'Hết hàng (0 sản phẩm)'}
+          </span>
         </div>
       </div>
+
 
       {/* FLASH SALE Box */}
       <div className="border-2 border-red-500 rounded-2xl overflow-hidden bg-white shadow-sm">
@@ -135,24 +150,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
       </div>
 
-      {/* Variant Selection Option */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-bold text-gray-700">Tùy chọn dung lượng SSD:</label>
-        <div className="flex flex-wrap gap-2">
-          {['1TB NVMe Gen4', '2TB NVMe Gen4 (+1.800.000đ)'].map((option) => (
-            <button
-              key={option}
-              onClick={() => setSelectedStorage(option)}
-              className={`px-3 py-1.5 text-xs rounded-lg border font-semibold transition-all ${selectedStorage === option
-                ? 'border-red-600 bg-red-50 text-red-600 ring-1 ring-red-500'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Khuyến mại & Quà tặng khác Box */}
       <div className="border border-red-200 rounded-xl overflow-hidden bg-red-50/20">
@@ -219,28 +216,42 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             </span>
             <button
               onClick={handleIncreaseQuantity}
-              className="px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
+              disabled={quantity >= maxStock}
+              className="px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Tăng số lượng"
+              title={quantity >= maxStock ? `Số lượng tồn kho tối đa: ${maxStock}` : ''}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
+          <span className="text-[11px] text-gray-500 font-normal">
+            (Tồn kho: {product.stockQuantity !== undefined ? product.stockQuantity : 'Sẵn hàng'})
+          </span>
         </div>
 
         {/* Action Buttons Row */}
         <div className="flex flex-wrap items-center gap-2">
-          <button className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
+          <button
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed"
+          >
             TRẢ GÓP
           </button>
-          <button className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
-            MUA NGAY
+          <button
+            onClick={handleBuyNow}
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed cursor-pointer"
+          >
+            {!product.inStock || product.stockQuantity === 0 ? 'HẾT HÀNG' : 'MUA NGAY'}
           </button>
           <button
             onClick={handleAddToCart}
-            className="bg-white border-2 border-red-600 hover:bg-red-50 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95"
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="bg-white border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed"
           >
             Thêm vào giỏ
           </button>
+
           <Link
             to={`/compare?id1=${product.id}`}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-3 px-3 rounded-xl text-xs flex items-center space-x-1 transition-colors"

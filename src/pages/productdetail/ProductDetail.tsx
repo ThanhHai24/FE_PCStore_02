@@ -12,18 +12,18 @@ import ProductTabs from '../../components/ProductDetail/ProductTabs';
 import ProductReviews from '../../components/ProductDetail/ProductReviews';
 import { Loader2 } from 'lucide-react';
 
-export function parseSpecsToTable(specifications: any): SpecItem[] {
+function parseSpecsToTable(specifications: unknown): SpecItem[] {
   if (!specifications) return [];
 
   if (Array.isArray(specifications)) {
     return specifications.map((item) => {
-      const key = item.key || item.name || '';
-      const rawVal = item.value || item.name || '';
+      const key = item?.key || item?.name || '';
+      const rawVal = item?.value || item?.name || '';
       return parseSingleSpecItem(key, rawVal);
     });
   }
 
-  if (typeof specifications === 'object') {
+  if (typeof specifications === 'object' && specifications !== null) {
     const result: SpecItem[] = [];
     for (const [key, rawVal] of Object.entries(specifications)) {
       if (key === 'importPrice') continue;
@@ -35,15 +35,16 @@ export function parseSpecsToTable(specifications: any): SpecItem[] {
   return [];
 }
 
-function parseSingleSpecItem(key: string, rawVal: any): SpecItem {
-  let name = '';
+function parseSingleSpecItem(key: string, rawVal: unknown): SpecItem {
+  let name: string;
   let productId: string | undefined = undefined;
   let warranty = 'Chính hãng';
 
   if (typeof rawVal === 'object' && rawVal !== null) {
-    name = rawVal.name || rawVal.title || JSON.stringify(rawVal);
-    productId = rawVal.id || rawVal.productId || undefined;
-    if (rawVal.warranty) warranty = String(rawVal.warranty);
+    const obj = rawVal as Record<string, unknown>;
+    name = String(obj.name || obj.title || JSON.stringify(obj));
+    productId = obj.id ? String(obj.id) : obj.productId ? String(obj.productId) : undefined;
+    if (obj.warranty) warranty = String(obj.warranty);
   } else if (typeof rawVal === 'string') {
     if (rawVal.trim().startsWith('{')) {
       try {
@@ -81,12 +82,13 @@ export const ProductDetail: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
 
     if (id) {
       // First set fallback from mock if matches mock ID
       const mockObj = getProductById(id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProduct(mockObj);
+
 
       getProductDetail(id)
         .then((res) => {
@@ -105,7 +107,9 @@ export const ProductDetail: React.FC = () => {
               discountPercent: calculateDiscount(apiProd.price, apiProd.originalPrice),
               badge: apiProd.isFeatured ? 'HOT' : undefined,
               inStock: (apiProd.stock ?? 0) > 0,
+              stockQuantity: apiProd.stock ?? 0,
               warrantyInfo: apiProd.warranty ? `Bảo hành ${apiProd.warranty} tháng` : 'Bảo hành chính hãng',
+
               rating: 5.0,
               reviewCount: 12,
               viewCount: apiProd.viewCount || 100,
@@ -186,8 +190,13 @@ export const ProductDetail: React.FC = () => {
 
       {/* Bottom Tabs Section (Thông số kỹ thuật / Mô tả sản phẩm) */}
       <div className="pt-2">
-        <ProductTabs specsTable={product.specsTable} descriptionHtml={product.descriptionHtml} />
+        <ProductTabs
+          specsTable={product.specsTable}
+          descriptionHtml={product.descriptionHtml}
+          categoryName={product.categoryName}
+        />
       </div>
+
 
       {/* Product Reviews Section */}
       <div className="pt-2">

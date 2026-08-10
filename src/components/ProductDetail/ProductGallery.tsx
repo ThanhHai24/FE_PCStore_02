@@ -19,13 +19,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, title })
     setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
-  // Mock game icons for side thumbnails if available or thumbnail images
-  const defaultGameBadges = [
-    { name: 'Valorant', bg: 'bg-red-500 text-white font-bold text-[10px]' },
-    { name: 'FC ONLINE', bg: 'bg-emerald-600 text-white font-bold text-[9px]' },
-    { name: 'LOL', bg: 'bg-blue-900 text-amber-300 font-black text-[10px]' },
-    { name: 'GENSHIN', bg: 'bg-indigo-900 text-white font-bold text-[9px]' },
-  ];
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -37,22 +30,11 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, title })
             <button
               key={idx}
               onClick={() => setSelectedIndex(idx)}
-              className={`w-14 h-14 rounded-lg border-2 p-1 bg-white overflow-hidden transition-all flex items-center justify-center ${
-                selectedIndex === idx ? 'border-red-600 shadow-md' : 'border-gray-200 hover:border-gray-400'
-              }`}
+              className={`w-14 h-14 rounded-lg border-2 p-1 bg-white overflow-hidden transition-all flex items-center justify-center ${selectedIndex === idx ? 'border-red-600 shadow-md' : 'border-gray-200 hover:border-gray-400'
+                }`}
             >
               <img src={img} alt={`${title} ${idx}`} className="max-h-full max-w-full object-contain" />
             </button>
-          ))}
-
-          {/* Game Badges demo matching screenshot */}
-          {defaultGameBadges.map((badge, bIdx) => (
-            <div
-              key={bIdx}
-              className={`w-14 h-10 rounded border border-gray-200 ${badge.bg} flex items-center justify-center text-center p-0.5 uppercase tracking-tighter leading-tight shadow-sm`}
-            >
-              {badge.name}
-            </div>
           ))}
         </div>
 

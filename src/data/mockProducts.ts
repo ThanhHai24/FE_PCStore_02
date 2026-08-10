@@ -193,8 +193,69 @@ export const mockProducts: Product[] = [
     category: 'pc-do-hoa',
     categoryName: 'PC ĐỒ HỌA',
     brand: 'AMD'
+  },
+  {
+    id: 'vga-asus-rtx-4080-super',
+    title: 'Card màn hình ASUS ROG Strix GeForce RTX 4080 Super 16GB GDDR6X OC Edition',
+    images: [rtxPng, cleanPcImg],
+    price: '33.990.000đ',
+    numericPrice: 33990000,
+    marketPrice: '36.500.000đ',
+    discountPercent: '-7%',
+    badge: 'HOT',
+    inStock: true,
+    warrantyInfo: 'Bảo hành 36 tháng chính hãng',
+    rating: 5.0,
+    reviewCount: 15,
+    viewCount: 18900,
+    commentCount: 6,
+    purchaseCount: 22,
+    category: 'vga',
+    categoryName: 'VGA',
+    brand: 'ASUS / ROG',
+    promotions: ['Tặng giá đỡ VGA ROG cao cấp.'],
+    specsTable: [
+      { key: 'Chipset', name: 'NVIDIA GeForce RTX 4080 Super' },
+      { key: 'Dung lượng VRAM', name: '16GB GDDR6X' },
+      { key: 'Xung nhịp nhân (Boost)', name: '2670 MHz (OC Mode)' },
+      { key: 'Số nhân CUDA', name: '10240 Cores' },
+      { key: 'Băng thông Bus', name: '256-bit' },
+      { key: 'Nguồn khuyến cáo', name: '850W' },
+      { key: 'Cổng kết nối', name: '2x HDMI 2.1a, 3x DisplayPort 1.4a' }
+    ]
+  },
+  {
+    id: 'vga-msi-rtx-4070-ti-super',
+    title: 'Card màn hình MSI GeForce RTX 4070 Ti Super 16GB Gaming X Slim',
+    images: [rtxPng, pcJpg],
+    price: '24.990.000đ',
+    numericPrice: 24990000,
+    marketPrice: '27.000.000đ',
+    discountPercent: '-8%',
+    badge: 'NEW',
+    inStock: true,
+    warrantyInfo: 'Bảo hành 36 tháng',
+    rating: 4.9,
+    reviewCount: 9,
+    viewCount: 14200,
+    commentCount: 3,
+    purchaseCount: 16,
+    category: 'vga',
+    categoryName: 'VGA',
+    brand: 'MSI',
+    promotions: ['Tặng cáp nguồn 12VHPWR bọc lưới.'],
+    specsTable: [
+      { key: 'Chipset', name: 'NVIDIA GeForce RTX 4070 Ti Super' },
+      { key: 'Dung lượng VRAM', name: '16GB GDDR6X' },
+      { key: 'Xung nhịp nhân (Boost)', name: '2685 MHz' },
+      { key: 'Số nhân CUDA', name: '8448 Cores' },
+      { key: 'Băng thông Bus', name: '256-bit' },
+      { key: 'Nguồn khuyến cáo', name: '700W' },
+      { key: 'Cổng kết nối', name: '1x HDMI 2.1a, 3x DisplayPort 1.4a' }
+    ]
   }
 ];
+
 
 export const getProductById = (id?: string): Product => {
   if (!id) return mockProducts[0];

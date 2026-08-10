@@ -21,6 +21,7 @@ import {
     detectCategoryType,
     PC_COMPONENT_TYPES,
     type PcComponentKey,
+    orderSpecifications,
 } from '../../config/specDefinitions';
 import { getProducts } from '../../services/productService';
 import type { ApiProduct } from '../../types/apiProduct';
@@ -346,7 +347,8 @@ const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
     }, [pcComponents, catType]);
 
     const handleFieldChange = (key: string, val: string) => {
-        onChange({ ...specs, [key]: val });
+        const updated = { ...specs, [key]: val };
+        onChange(orderSpecifications(updated, categoryName));
     };
 
     /* ── Group fields by `group` property ── */

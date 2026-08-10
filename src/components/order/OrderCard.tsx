@@ -35,7 +35,11 @@ function OrderCard({ order, onCancelled }: OrderCardProps) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
-  const statusInfo = ORDER_STATUS_MAP[order.status];
+  const statusInfo = ORDER_STATUS_MAP[order.status] ?? {
+    label: order.status || 'Chờ xác nhận',
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-50 border-amber-200',
+  };
   const paymentStatusInfo = PAYMENT_STATUS_MAP[order.paymentStatus] ?? PAYMENT_STATUS_MAP.PENDING;
   const paymentMethodLabel = PAYMENT_METHOD_MAP[order.paymentMethod] ?? order.paymentMethod;
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';

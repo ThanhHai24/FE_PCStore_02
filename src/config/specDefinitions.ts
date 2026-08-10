@@ -508,6 +508,7 @@ export type PcComponentKey = typeof PC_COMPONENT_TYPES[number]['key'];
 export function detectCategoryType(categoryName: string): CategoryType {
   const n = categoryName.toLowerCase();
   if (n.includes('pc') || n.includes('nguyên bộ') || n.includes('nguyen bo') || n.includes('máy tính nguyên bộ')) return 'PC';
+  if (n.includes('tản nhiệt') || n.includes('cooler') || n.includes('cooling')) return 'Cooler';
   if (n.includes('cpu') || n.includes('bộ xử lý') || n.includes('processor')) return 'CPU';
   if (n.includes('mainboard') || n.includes('bo mạch') || n.includes('motherboard')) return 'Mainboard';
   if (n.includes('ram') || (n.includes('bộ nhớ') && !n.includes('ssd'))) return 'RAM';
@@ -516,10 +517,63 @@ export function detectCategoryType(categoryName: string): CategoryType {
   if (n.includes('hdd') || n.includes('ổ cứng cơ')) return 'HDD';
   if (n.includes('psu') || (n.includes('nguồn') && !n.includes('sản phẩm'))) return 'PSU';
   if (n.includes('case') || n.includes('vỏ máy') || n.includes('thùng máy')) return 'Case';
-  if (n.includes('tản nhiệt') || n.includes('cooler') || n.includes('cooling')) return 'Cooler';
-  if (n.includes('màn hình') || n.includes('monitor')) return 'Monitor';
-  if (n.includes('bàn phím') || n.includes('keyboard')) return 'Keyboard';
-  if (n.includes('chuột') || n.includes('mouse')) return 'Mouse';
-  if (n.includes('tai nghe') || n.includes('headset') || n.includes('headphone')) return 'Headset';
   return 'Generic';
 }
+
+/** Re-orders a specifications object to match the exact field sequence in SPEC_TEMPLATES */
+export function orderSpecifications(specs: Record<string, string>, categoryName: string): Record<string, string> {
+  if (!specs || typeof specs !== 'object') return {};
+
+  const catType = detectCategoryType(categoryName);
+  const ordered: Record<string, string> = {};
+  const processedKeys = new Set<string>();
+
+  if (catType === 'PC') {
+    for (const comp of PC_COMPONENT_TYPES) {
+      const targetLabel = comp.label;
+      const foundKey = Object.keys(specs).find(
+        (k) => !processedKeys.has(k) && (k.toLowerCase() === targetLabel.toLowerCase() || k.toLowerCase() === comp.key.toLowerCase())
+      );
+      if (foundKey && specs[foundKey] !== undefined && specs[foundKey] !== '') {
+        ordered[targetLabel] = specs[foundKey];
+        processedKeys.add(foundKey);
+      }
+    }
+  } else {
+    const template = SPEC_TEMPLATES[catType] ?? SPEC_TEMPLATES.Generic;
+
+    for (const field of template) {
+      const shortKey = field.key.split(' (')[0];
+      let matchedKey: string | undefined = undefined;
+
+      if (specs[field.key] !== undefined && specs[field.key] !== '') {
+        matchedKey = field.key;
+      } else if (specs[field.label] !== undefined && specs[field.label] !== '') {
+        matchedKey = field.label;
+      } else if (specs[shortKey] !== undefined && specs[shortKey] !== '') {
+        matchedKey = shortKey;
+      } else {
+        matchedKey = Object.keys(specs).find((k) => {
+          if (processedKeys.has(k) || k === 'importPrice' || specs[k] === undefined || specs[k] === '') return false;
+          return shortKey.includes(k) || k.includes(shortKey) || field.label.includes(k);
+        });
+      }
+
+      if (matchedKey !== undefined && specs[matchedKey] !== undefined && specs[matchedKey] !== '') {
+        const finalKey = field.key;
+        ordered[finalKey] = specs[matchedKey];
+        processedKeys.add(matchedKey);
+      }
+    }
+  }
+
+  // Preserve any remaining custom or unmapped keys at the end
+  for (const [k, v] of Object.entries(specs)) {
+    if (!processedKeys.has(k) && v !== undefined && v !== '') {
+      ordered[k] = v;
+    }
+  }
+
+  return ordered;
+}
+

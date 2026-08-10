@@ -16,6 +16,7 @@ import { getCategories, getBrandsByCategory, getProducts } from '../../services/
 import { uploadProductCoverImage, uploadProductGalleryImages, createProductApi } from '../../services/uploadService';
 import type { ApiCategory, ApiBrand } from '../../types/apiProduct';
 import DynamicSpecForm, { type SpecRecord } from '../../components/admin/DynamicSpecForm';
+import { orderSpecifications } from '../../config/specDefinitions';
 import CKEditor5Component from '../../components/admin/CKEditor5';
 
 /* ─────────────────────────── constants ─────────────────────────── */
@@ -23,13 +24,13 @@ import CKEditor5Component from '../../components/admin/CKEditor5';
 /** Map category slug/keyword → SKU prefix */
 const SKU_PREFIX_MAP: { keywords: string[]; prefix: string }[] = [
     { keywords: ['pc', 'máy tính', 'nguyen-bo', 'nguyen bo', 'bộ pc', 'nguyên bộ'], prefix: 'PC' },
+    { keywords: ['tản nhiệt', 'cooler', 'cooling'], prefix: 'CLR' },
     { keywords: ['cpu', 'bộ xử lý', 'processor'], prefix: 'CPU' },
     { keywords: ['vga', 'card', 'màn hình rời', 'gpu'], prefix: 'GPU' },
     { keywords: ['ram', 'bộ nhớ'], prefix: 'RAM' },
     { keywords: ['ssd', 'hdd', 'ổ cứng', 'storage'], prefix: 'STO' },
     { keywords: ['mainboard', 'main', 'bo mạch'], prefix: 'MB' },
     { keywords: ['nguồn', 'psu', 'power'], prefix: 'PSU' },
-    { keywords: ['tản nhiệt', 'cooler', 'cooling'], prefix: 'CLR' },
     { keywords: ['case', 'vỏ máy', 'thùng máy'], prefix: 'CAS' },
 ];
 
@@ -87,7 +88,7 @@ const DISTRIBUTOR_OPTIONS = [
     'Long Trần',
 ];
 
-const WARRANTY_OPTIONS = ['12 Tháng', '24 Tháng', '36 Tháng', '60 Tháng'];
+const WARRANTY_OPTIONS = ['12 Tháng', '24 Tháng', '36 Tháng', '60 Tháng', '72 Tháng', '96 Tháng', 'Theo từng linh kiện'];
 
 
 /* ─────────────────────────── component ─────────────────────────── */
@@ -310,6 +311,7 @@ const ProductCreate: React.FC = () => {
             const importNum = parseFloat(formData.importPrice.replace(/[^0-9]/g, '')) || undefined;
 
             const specsRecord = formData.specs as SpecRecord;
+            const orderedSpecs = orderSpecifications(specsRecord, formData.categoryName);
 
             // Parse warranty: "36 Tháng" → 36
             const warrantyNum = formData.warranty
@@ -329,7 +331,7 @@ const ProductCreate: React.FC = () => {
                 stock: formData.stock,
                 image: coverImage.serverUrl || undefined,
                 images: galleryImages.filter((g) => g.serverUrl).map((g) => g.serverUrl),
-                specifications: Object.keys(specsRecord).length > 0 ? specsRecord : undefined,
+                specifications: Object.keys(orderedSpecs).length > 0 ? orderedSpecs : undefined,
                 warranty: warrantyNum,
                 status: formData.status,
             });
@@ -420,9 +422,8 @@ const ProductCreate: React.FC = () => {
                                 if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: '' }));
                             }}
                             placeholder="VD: Laptop Gaming ASUS ROG Strix G16 / PC RTX 4090"
-                            className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all ${
-                                fieldErrors.name ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
-                            }`}
+                            className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all ${fieldErrors.name ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+                                }`}
                         />
                         {fieldErrors.name && (
                             <p className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
@@ -468,9 +469,8 @@ const ProductCreate: React.FC = () => {
                                         handleCategoryChange(e.target.value);
                                         if (fieldErrors.categoryId) setFieldErrors((p) => ({ ...p, categoryId: '' }));
                                     }}
-                                    className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-gray-700 font-medium ${
-                                        fieldErrors.categoryId ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
-                                    }`}
+                                    className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-gray-700 font-medium ${fieldErrors.categoryId ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+                                        }`}
                                 >
                                     <option value="">-- Chọn danh mục --</option>
                                     {categories.map((c) => (
@@ -501,9 +501,8 @@ const ProductCreate: React.FC = () => {
                                         setFormData({ ...formData, brandId: e.target.value });
                                         if (fieldErrors.brandId) setFieldErrors((p) => ({ ...p, brandId: '' }));
                                     }}
-                                    className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-gray-700 font-medium ${
-                                        fieldErrors.brandId ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
-                                    }`}
+                                    className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-gray-700 font-medium ${fieldErrors.brandId ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+                                        }`}
                                     disabled={brands.length === 0}
                                 >
                                     <option value="">{
@@ -570,29 +569,25 @@ const ProductCreate: React.FC = () => {
                                     key={value}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, status: value })}
-                                    className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${
-                                        formData.status === value
+                                    className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center ${formData.status === value
                                             ? color === 'emerald'
                                                 ? 'border-emerald-500 bg-emerald-50 shadow-sm shadow-emerald-100'
                                                 : color === 'amber'
-                                                ? 'border-amber-400 bg-amber-50 shadow-sm shadow-amber-100'
-                                                : 'border-red-400 bg-red-50 shadow-sm shadow-red-100'
+                                                    ? 'border-amber-400 bg-amber-50 shadow-sm shadow-amber-100'
+                                                    : 'border-red-400 bg-red-50 shadow-sm shadow-red-100'
                                             : 'border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-gray-100/50'
-                                    }`}
+                                        }`}
                                 >
-                                    <span className={`w-2.5 h-2.5 rounded-full ${
-                                        color === 'emerald' ? 'bg-emerald-500' : color === 'amber' ? 'bg-amber-400' : 'bg-red-500'
-                                    } ${formData.status === value ? 'ring-2 ring-offset-1 ' + (color === 'emerald' ? 'ring-emerald-300' : color === 'amber' ? 'ring-amber-300' : 'ring-red-300') : ''}`} />
-                                    <span className={`text-[11px] font-bold ${
-                                        formData.status === value
+                                    <span className={`w-2.5 h-2.5 rounded-full ${color === 'emerald' ? 'bg-emerald-500' : color === 'amber' ? 'bg-amber-400' : 'bg-red-500'
+                                        } ${formData.status === value ? 'ring-2 ring-offset-1 ' + (color === 'emerald' ? 'ring-emerald-300' : color === 'amber' ? 'ring-amber-300' : 'ring-red-300') : ''}`} />
+                                    <span className={`text-[11px] font-bold ${formData.status === value
                                             ? color === 'emerald' ? 'text-emerald-700' : color === 'amber' ? 'text-amber-700' : 'text-red-700'
                                             : 'text-gray-600'
-                                    }`}>{label}</span>
+                                        }`}>{label}</span>
                                     <span className="text-[9px] text-gray-400 leading-tight">{desc}</span>
                                     {formData.status === value && (
-                                        <div className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center ${
-                                            color === 'emerald' ? 'bg-emerald-500' : color === 'amber' ? 'bg-amber-400' : 'bg-red-500'
-                                        }`}>
+                                        <div className={`absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center ${color === 'emerald' ? 'bg-emerald-500' : color === 'amber' ? 'bg-amber-400' : 'bg-red-500'
+                                            }`}>
                                             <CheckCircle className="w-3 h-3 text-white" />
                                         </div>
                                     )}
@@ -806,9 +801,8 @@ const ProductCreate: React.FC = () => {
                                     if (fieldErrors.sellPrice) setFieldErrors((p) => ({ ...p, sellPrice: '' }));
                                 }}
                                 placeholder="VD: 34990000"
-                                className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all font-bold text-blue-600 ${
-                                    fieldErrors.sellPrice ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
-                                }`}
+                                className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all font-bold text-blue-600 ${fieldErrors.sellPrice ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+                                    }`}
                             />
                             {fieldErrors.sellPrice && (
                                 <p className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
@@ -892,9 +886,9 @@ const ProductCreate: React.FC = () => {
                         )}
                         <span>{
                             saving ? 'Đang lưu...'
-                            : saveSuccess ? 'Đã lưu thành công!'
-                            : skuLoading ? 'Đang tạo SKU...'
-                            : 'Lưu Sản Phẩm'
+                                : saveSuccess ? 'Đã lưu thành công!'
+                                    : skuLoading ? 'Đang tạo SKU...'
+                                        : 'Lưu Sản Phẩm'
                         }</span>
                     </button>
                 </div>

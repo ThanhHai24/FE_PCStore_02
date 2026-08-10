@@ -95,6 +95,10 @@ export async function getBrandsByCategory(idOrSlug: string): Promise<{ category:
   return fetchApi<{ category: ApiCategory; brands: ApiBrand[] }>(`/api/categories/${idOrSlug}/brands`);
 }
 
+export async function getBrands(): Promise<{ brands: ApiBrand[] }> {
+  return fetchApi<{ brands: ApiBrand[] }>('/api/brands');
+}
+
 export async function getProductDetail(idOrSlug: string): Promise<{ product: ApiProduct }> {
   return fetchApi<{ product: ApiProduct }>(`/api/products/${idOrSlug}`);
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, RotateCcw, X } from 'lucide-react';
 import type { ApiBrand } from '../../types/apiProduct';
 
 export interface PriceRangeOption {
@@ -8,12 +8,6 @@ export interface PriceRangeOption {
   count?: number;
   minPrice?: number;
   maxPrice?: number;
-}
-
-export interface FilterCriteria {
-  key: string;
-  title: string;
-  options: { id: string; name: string }[];
 }
 
 interface ProductListFilterProps {
@@ -27,24 +21,23 @@ interface ProductListFilterProps {
   onResetFilters?: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const defaultPriceRanges: PriceRangeOption[] = [
-  { id: '15-20', label: '15 triệu - 20 triệu', minPrice: 15000000, maxPrice: 20000000 },
-  { id: '20-50', label: '20 triệu - 50 triệu', minPrice: 20000000, maxPrice: 50000000 },
-  { id: '50-100', label: '50 triệu - 100 triệu', minPrice: 50000000, maxPrice: 100000000 },
-  { id: 'gt-100', label: 'Trên 100 triệu', minPrice: 100000000 },
+  { id: 'lt-15', label: 'Dưới 15 triệu', minPrice: 0, maxPrice: 15000000 },
+  { id: '15-20', label: '15 - 20 triệu', minPrice: 15000000, maxPrice: 20000000 },
+  { id: '20-50', label: '20 - 50 triệu', minPrice: 20000000, maxPrice: 50000000 },
+  { id: '50-100', label: '50 - 100 triệu', minPrice: 50000000, maxPrice: 100000000 },
+  { id: 'gt-100', label: 'Trên 100 triệu', minPrice: 100000000, maxPrice: 200000000 },
 ];
 
 const defaultCriteriaList: { key: string; title: string; options: string[] }[] = [
-  { key: 'threads', title: 'Số luồng', options: ['12 Luồng', '16 Luồng', '24 Luồng', '28 Luồng', '32 Luồng'] },
-  { key: 'ramSlots', title: 'Số khe Ram', options: ['2 Khe', '4 Khe'] },
-  { key: 'cores', title: 'Số nhân', options: ['8 Nhân', '12 Nhân', '14 Nhân', '20 Nhân', '24 Nhân'] },
-  { key: 'chipset', title: 'Main Chipset', options: ['Z790', 'B760', 'X870E', 'B650', 'Z890'] },
-  { key: 'ramSize', title: 'Bộ nhớ của ram', options: ['16GB', '32GB', '64GB', '128GB'] },
-  { key: 'gpu', title: 'GPU', options: ['RTX 4060', 'RTX 4070 Super', 'RTX 4080 Super', 'RTX 4090', 'RTX 5080'] },
-  { key: 'storage', title: 'Dung lượng lưu trữ', options: ['512GB SSD', '1TB NVMe', '2TB NVMe', '4TB NVMe'] },
-  { key: 'socket', title: 'Loại Socket', options: ['LGA1700', 'LGA1851', 'AM5'] },
   { key: 'cpuLine', title: 'Dòng CPU', options: ['Core i5', 'Core i7', 'Core Ultra 9', 'Ryzen 7', 'Ryzen 9'] },
-  { key: 'coolerType', title: 'Kiểu tản nhiệt', options: ['Tản nhiệt khí', 'Tản nhiệt nước AIO 240mm', 'Tản nhiệt nước AIO 360mm'] },
+  { key: 'gpu', title: 'VGA / Card đồ họa', options: ['RTX 4060', 'RTX 4070 Super', 'RTX 4080 Super', 'RTX 4090', 'RTX 5080'] },
+  { key: 'ramSize', title: 'Dung lượng RAM', options: ['16GB', '32GB', '64GB', '128GB'] },
+  { key: 'chipset', title: 'Mainboard Chipset', options: ['Z790', 'B760', 'X870E', 'B650', 'Z890'] },
+  { key: 'socket', title: 'Loại Socket', options: ['LGA1700', 'LGA1851', 'AM5'] },
+  { key: 'storage', title: 'Ổ cứng SSD', options: ['512GB SSD', '1TB NVMe', '2TB NVMe', '4TB NVMe'] },
+  { key: 'cores', title: 'Số nhân CPU', options: ['8 Nhân', '12 Nhân', '14 Nhân', '20 Nhân', '24 Nhân'] },
 ];
 
 export const ProductListFilter: React.FC<ProductListFilterProps> = ({
@@ -57,187 +50,201 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
   onFilterChange,
   onResetFilters,
 }) => {
-  const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null);
+  // Slider state (in Millions VND)
+  const [sliderMax, setSliderMax] = useState<number>(100); // 100M VND max by default
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    price: true,
+    brand: true,
+    cpuLine: true,
+    gpu: true,
+    ramSize: true,
+  });
 
-  const toggleDropdown = (key: string) => {
-    setOpenDropdownKey((prev) => (prev === key ? null : key));
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSelectOption = (key: string, optionValue: string) => {
-    const currentValue = selectedFilters[key];
-    if (currentValue === optionValue) {
-      onFilterChange?.(key, null);
-    } else {
-      onFilterChange?.(key, optionValue);
-    }
-    setOpenDropdownKey(null);
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setSliderMax(val);
+    // Find closest range or apply custom filter
+    if (val <= 15) onSelectPriceRange?.('lt-15');
+    else if (val <= 20) onSelectPriceRange?.('15-20');
+    else if (val <= 50) onSelectPriceRange?.('20-50');
+    else if (val <= 100) onSelectPriceRange?.('50-100');
+    else onSelectPriceRange?.('gt-100');
   };
 
-  const selectedBrand = brands.find(b => b.id === selectedBrandId);
   const activeFiltersCount =
     Object.keys(selectedFilters).filter((k) => selectedFilters[k]).length +
     (selectedPriceRange ? 1 : 0) +
     (selectedBrandId ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 mb-6 space-y-5">
-      {/* Row 1: Khoảng giá Quick Tags */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <span className="text-xs font-bold text-gray-800 shrink-0 min-w-[90px]">Khoảng giá:</span>
-        <div className="flex flex-wrap items-center gap-2">
-          {defaultPriceRanges.map((range) => {
-            const isSelected = selectedPriceRange === range.id;
-            return (
-              <button
-                key={range.id}
-                onClick={() => onSelectPriceRange?.(isSelected ? null : range.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  isSelected
-                    ? 'border-red-600 bg-red-50 text-red-600 ring-1 ring-red-500 font-bold'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {range.label} {range.count !== undefined && <span className="text-gray-400 font-normal">({range.count})</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Row 2: Chọn theo tiêu chí Dropdowns */}
-      <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-gray-100">
-        <span className="text-xs font-bold text-gray-800 shrink-0 min-w-[120px] pt-2">Chọn theo tiêu chí:</span>
-        <div className="flex flex-wrap items-center gap-2 flex-1">
-          {/* Brand Filter (Dynamic from API if available) */}
-          {brands.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => toggleDropdown('brand')}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                  selectedBrandId
-                    ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <span>{selectedBrand ? `Thương hiệu: ${selectedBrand.name}` : 'Thương hiệu'}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openDropdownKey === 'brand' ? 'rotate-180' : ''}`} />
-              </button>
-
-              {openDropdownKey === 'brand' && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-2 space-y-1 animate-in fade-in zoom-in-95">
-                  <button
-                    onClick={() => {
-                      onSelectBrand?.(null);
-                      setOpenDropdownKey(null);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded-md"
-                  >
-                    Tất cả thương hiệu
-                  </button>
-                  {brands.map((brand) => (
-                    <button
-                      key={brand.id}
-                      onClick={() => {
-                        onSelectBrand?.(selectedBrandId === brand.id ? null : brand.id);
-                        setOpenDropdownKey(null);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors ${
-                        selectedBrandId === brand.id
-                          ? 'bg-blue-600 text-white font-bold'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {brand.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Other Spec Criteria Dropdowns */}
-          {defaultCriteriaList.map((crit) => {
-            const isOpen = openDropdownKey === crit.key;
-            const activeValue = selectedFilters[crit.key];
-
-            return (
-              <div key={crit.key} className="relative">
-                <button
-                  onClick={() => toggleDropdown(crit.key)}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                    activeValue
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <span>{activeValue ? `${crit.title}: ${activeValue}` : crit.title}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown Options Popup */}
-                {isOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-2 space-y-1 animate-in fade-in zoom-in-95">
-                    {crit.options.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => handleSelectOption(crit.key, opt)}
-                        className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors ${
-                          activeValue === opt
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Active Filters / Reset row if filters applied */}
-      {activeFiltersCount > 0 && (
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-            <span className="font-bold text-gray-500">Đã chọn ({activeFiltersCount}):</span>
-            {selectedPriceRange && (
-              <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
-                <span>Khoảng giá: {defaultPriceRanges.find(r => r.id === selectedPriceRange)?.label}</span>
-                <button onClick={() => onSelectPriceRange?.(null)}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedBrand && (
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
-                <span>Thương hiệu: {selectedBrand.name}</span>
-                <button onClick={() => onSelectBrand?.(null)}><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {Object.entries(selectedFilters).map(([k, v]) => {
-              if (!v) return null;
-              const crit = defaultCriteriaList.find((c) => c.key === k);
-              return (
-                <span key={k} className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-semibold flex items-center space-x-1">
-                  <span>{crit?.title || k}: {v}</span>
-                  <button onClick={() => onFilterChange?.(k, null)}><X className="w-3 h-3" /></button>
-                </span>
-              );
-            })}
-          </div>
-
+    <aside className="w-full bg-white rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm space-y-6 text-xs">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <h2 className="font-black text-sm text-gray-900 uppercase flex items-center space-x-2 tracking-wider">
+          <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+          <span>BỘ LỌC SẢN PHẨM</span>
+        </h2>
+        {activeFiltersCount > 0 && (
           <button
             onClick={onResetFilters}
-            className="text-red-600 font-bold hover:underline shrink-0 ml-auto"
+            className="text-red-600 font-bold hover:underline flex items-center space-x-1 text-[11px]"
           >
-            Xóa tất cả bộ lọc
+            <RotateCcw className="w-3 h-3" />
+            <span>Xóa tất cả</span>
           </button>
+        )}
+      </div>
+
+      {/* 1. KHOẢNG GIÁ - SLIDER & PRESETS */}
+      <div className="border-b border-gray-100 pb-5 space-y-3">
+        <button
+          onClick={() => toggleSection('price')}
+          className="w-full flex items-center justify-between font-extrabold text-gray-900 uppercase tracking-wider text-xs"
+        >
+          <span>1. KHOẢNG GIÁ</span>
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform ${expandedSections['price'] ? 'rotate-180' : ''
+              }`}
+          />
+        </button>
+
+        {expandedSections['price'] && (
+          <div className="space-y-4 pt-1">
+            {/* Interactive Dual Slider Range Bar */}
+            <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+              <div className="flex justify-between items-center text-xs font-bold text-gray-700">
+                <span>0đ</span>
+                <span className="text-red-600 font-black text-sm">
+                  Đến {sliderMax.toLocaleString('vi-VN')} triệu đ
+                </span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="150"
+                step="5"
+                value={sliderMax}
+                onChange={handleSliderChange}
+                className="w-full accent-blue-600 h-2 bg-gray-200 rounded-lg cursor-pointer"
+              />
+            </div>
+
+            {/* Quick Price Range Buttons */}
+            <div className="grid grid-cols-1 gap-1.5">
+              {defaultPriceRanges.map((range) => {
+                const isSelected = selectedPriceRange === range.id;
+                return (
+                  <button
+                    key={range.id}
+                    onClick={() => onSelectPriceRange?.(isSelected ? null : range.id)}
+                    className={`w-full text-left px-3 py-2 rounded-xl border transition-all text-xs font-semibold flex items-center justify-between ${isSelected
+                        ? 'border-red-600 bg-red-50 text-red-600 font-bold shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    <span>{range.label}</span>
+                    {isSelected && <X className="w-3.5 h-3.5 text-red-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2. HÃNG SẢN XUẤT (THƯƠNG HIỆU) */}
+      {brands.length > 0 && (
+        <div className="border-b border-gray-100 pb-5 space-y-3">
+          <button
+            onClick={() => toggleSection('brand')}
+            className="w-full flex items-center justify-between font-extrabold text-gray-900 uppercase tracking-wider text-xs"
+          >
+            <span>2. HÃNG SẢN XUẤT</span>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-400 transition-transform ${expandedSections['brand'] ? 'rotate-180' : ''
+                }`}
+            />
+          </button>
+
+          {expandedSections['brand'] && (
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {brands.map((brand) => {
+                const isSelected = selectedBrandId === brand.id;
+                return (
+                  <button
+                    key={brand.id}
+                    onClick={() => onSelectBrand?.(isSelected ? null : brand.id)}
+                    className={`px-3 py-2 rounded-xl border text-center font-bold text-xs transition-all ${isSelected
+                        ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-sm'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    {brand.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
-    </div>
+
+      {/* 3. TIÊU CHÍ KỸ THUẬT (CPU, GPU, RAM, SOCKET...) */}
+      {defaultCriteriaList.map((crit, idx) => {
+        const isExpanded = expandedSections[crit.key];
+        const activeValue = selectedFilters[crit.key];
+
+        return (
+          <div key={crit.key} className="border-b border-gray-100 pb-4 space-y-2">
+            <button
+              onClick={() => toggleSection(crit.key)}
+              className="w-full flex items-center justify-between font-extrabold text-gray-900 uppercase tracking-wider text-xs"
+            >
+              <div className="flex items-center space-x-1.5">
+                <span>{`${idx + 3}. ${crit.title}`}</span>
+                {activeValue && (
+                  <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                    1
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''
+                  }`}
+              />
+            </button>
+
+            {isExpanded && (
+              <div className="space-y-1 pt-1">
+                {crit.options.map((opt) => {
+                  const isChecked = activeValue === opt;
+                  return (
+                    <label
+                      key={opt}
+                      onClick={() => onFilterChange?.(crit.key, isChecked ? null : opt)}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? 'bg-blue-50 text-blue-700 font-bold' : 'hover:bg-gray-50 text-gray-700 font-medium'
+                        }`}
+                    >
+                      <span className="text-xs">{opt}</span>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => { }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </aside>
   );
 };
 
 export default ProductListFilter;
-

@@ -16,6 +16,7 @@ import { getCategories, getBrandsByCategory, getProductDetail } from '../../serv
 import { uploadProductCoverImage, uploadProductGalleryImages, updateProductApi } from '../../services/uploadService';
 import type { ApiCategory, ApiBrand } from '../../types/apiProduct';
 import DynamicSpecForm, { type SpecRecord } from '../../components/admin/DynamicSpecForm';
+import { orderSpecifications } from '../../config/specDefinitions';
 import CKEditor5Component from '../../components/admin/CKEditor5';
 
 const DISTRIBUTOR_OPTIONS = [
@@ -316,6 +317,7 @@ export const EditProduct: React.FC = () => {
             const importNum = parseFloat(formData.importPrice.replace(/[^0-9]/g, '')) || undefined;
 
             const specsRecord = formData.specs as SpecRecord;
+            const orderedSpecs = orderSpecifications(specsRecord, formData.categoryName);
             const warrantyNum = formData.warranty
                 ? parseInt(formData.warranty.replace(/[^0-9]/g, ''), 10) || undefined
                 : undefined;
@@ -333,7 +335,7 @@ export const EditProduct: React.FC = () => {
                 stock: formData.stock,
                 image: coverImage.serverUrl || coverImage.preview || undefined,
                 images: galleryImages.map((g) => g.serverUrl || g.preview).filter(Boolean),
-                specifications: Object.keys(specsRecord).length > 0 ? specsRecord : undefined,
+                specifications: Object.keys(orderedSpecs).length > 0 ? orderedSpecs : undefined,
                 warranty: warrantyNum,
                 status: formData.status,
             };

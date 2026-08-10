@@ -18,14 +18,33 @@ export const CompareTable: React.FC<CompareTableProps> = ({ product1, product2 }
   const getSpecValue = (prod: Product | null, key: string) => {
     if (!prod) return '---';
     const item = prod.specsTable.find((s) => s.key === key);
-    return item ? `${item.name} (Bảo hành: ${item.warranty})` : '---';
+    if (!item) return '---';
+    if (item.warranty && item.warranty !== 'Chính hãng') {
+      return `${item.name} (Bảo hành: ${item.warranty})`;
+    }
+    return item.name;
   };
+
+  const isCategoryMismatch =
+    product1 &&
+    product2 &&
+    product1.categoryName &&
+    product2.categoryName &&
+    product1.categoryName.toLowerCase() !== product2.categoryName.toLowerCase();
 
   return (
     <div className="pt-6 space-y-4">
-      <h2 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider">
-        Bảng so sánh thông số chi tiết
-      </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <h2 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider">
+          Bảng so sánh thông số chi tiết
+        </h2>
+        {isCategoryMismatch && (
+          <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-full font-medium">
+            💡 <strong>Khác danh mục:</strong> {product1.categoryName} vs {product2.categoryName}
+          </span>
+        )}
+      </div>
+
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse border border-gray-200">

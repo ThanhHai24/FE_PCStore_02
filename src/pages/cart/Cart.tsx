@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Plus, Minus, CheckCircle, FileText, Image as ImageIcon, Printer, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { createOrderApi } from '../../services/orderService';
 import type { CustomerInfo } from '../../types/cart';
 
 export const Cart: React.FC = () => {
+  const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
 
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -20,7 +22,7 @@ export const Cart: React.FC = () => {
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr' | 'vnpay'>('vnpay');
   const [orderSuccessModal, setOrderSuccessModal] = useState<boolean>(false);
-
+  const [createdOrderData, setCreatedOrderData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
@@ -39,32 +41,61 @@ export const Cart: React.FC = () => {
     e.preventDefault();
     if (items.length === 0) return;
 
-    if (paymentMethod === 'vnpay' || paymentMethod === 'qr') {
-      setIsSubmitting(true);
-      try {
+    if (!customerInfo.fullName.trim() || !customerInfo.phone.trim() || !customerInfo.address.trim()) {
+      alert('Vui lòng điền đầy đủ thông tin: Họ tên, Số điện thoại, và Địa chỉ!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const fullAddress = `${customerInfo.address.trim()}${customerInfo.district ? `, ${customerInfo.district}` : ''}${customerInfo.city ? `, ${customerInfo.city}` : ''}`;
+      const itemsPayload = items.map((i) => ({
+        productId: i.product.id,
+        quantity: i.quantity,
+      }));
+
+      // Call API to create Order in Database
+      const orderRes = await createOrderApi({
+        customerName: customerInfo.fullName.trim(),
+        customerPhone: customerInfo.phone.trim(),
+        shippingAddress: fullAddress,
+        paymentMethod: paymentMethod === 'cod' ? 'COD' : 'VNPAY',
+        notes: customerInfo.note || undefined,
+        items: itemsPayload,
+      });
+
+      const newOrder = orderRes.order;
+      setCreatedOrderData(newOrder);
+
+      // Handle VNPAY / QR payment redirection
+      if (paymentMethod === 'vnpay' || paymentMethod === 'qr') {
         const res = await fetch('http://localhost:3000/api/payment/vnpay/create_payment_url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: totalPrice,
-            orderInfo: `Thanh toan don hang PCStore: ${customerInfo.fullName || 'Khach hang'}`,
-            orderId: `ORDER_${Date.now()}`,
+            amount: newOrder.totalAmount || totalPrice,
+            orderInfo: `Thanh toan don hang ${newOrder.code}`,
+            orderId: newOrder.code,
             bankCode: 'NCB',
           }),
         });
         const data = await res.json();
         if (data.paymentUrl) {
+          clearCart();
           window.location.href = data.paymentUrl;
           return;
         }
-      } catch (err) {
-        console.error('Error creating VNPAY payment URL:', err);
-      } finally {
-        setIsSubmitting(false);
       }
-    }
 
-    setOrderSuccessModal(true);
+      // COD payment: show success modal & clear cart
+      clearCart();
+      setOrderSuccessModal(true);
+    } catch (err: any) {
+      console.error('Order creation error:', err);
+      alert(err.message || 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatVND = (price: number) => {
@@ -142,11 +173,13 @@ export const Cart: React.FC = () => {
                     >
                       {item.product.title}
                     </Link>
-                    {item.selectedVariant && (
-                      <span className="inline-block text-[11px] text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                        {item.selectedVariant}
-                      </span>
-                    )}
+                    {item.selectedVariant &&
+                      item.selectedVariant !== '1TB' &&
+                      item.selectedVariant !== 'Mặc định' && (
+                        <span className="inline-block text-[11px] text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded mt-1">
+                          {item.selectedVariant}
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -164,12 +197,24 @@ export const Cart: React.FC = () => {
                     <span className="px-3 text-xs font-bold text-gray-800">{item.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                      onClick={() => {
+                        const maxStock = item.product.stockQuantity ?? 10;
+                        if (item.quantity < maxStock) {
+                          updateQuantity(item.product.id, item.quantity + 1);
+                        }
+                      }}
+                      disabled={item.quantity >= (item.product.stockQuantity ?? 10)}
+                      className="px-2 py-1 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={
+                        item.quantity >= (item.product.stockQuantity ?? 10)
+                          ? `Đã đạt giới hạn tồn kho (${item.product.stockQuantity ?? 10} sản phẩm)`
+                          : ''
+                      }
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
+
 
                   {/* Price */}
                   <div className="text-right min-w-[100px]">
@@ -415,18 +460,34 @@ export const Cart: React.FC = () => {
               <CheckCircle className="w-10 h-10" />
             </div>
             <h3 className="text-lg font-black text-gray-900">Đặt hàng thành công!</h3>
+            {createdOrderData?.code && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 text-xs text-blue-800 font-medium">
+                Mã đơn hàng: <strong className="font-extrabold text-blue-900 select-all">{createdOrderData.code}</strong>
+              </div>
+            )}
             <p className="text-xs text-gray-600 leading-relaxed">
               Cảm ơn quý khách <strong className="text-gray-900">{customerInfo.fullName || 'KH'}</strong> đã đặt hàng. Bộ phận CSKH PCStore sẽ liên hệ số điện thoại <strong className="text-blue-600">{customerInfo.phone || 'của quý khách'}</strong> trong thời gian sớm nhất!
             </p>
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              {createdOrderData?.code && (
+                <button
+                  onClick={() => {
+                    setOrderSuccessModal(false);
+                    navigate(`/orders`);
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs uppercase shadow transition-colors"
+                >
+                  Xem đơn hàng của tôi
+                </button>
+              )}
               <button
                 onClick={() => {
                   setOrderSuccessModal(false);
-                  clearCart();
+                  navigate('/');
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs uppercase shadow transition-colors"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition-colors"
               >
-                Hoàn tất & Về trang chủ
+                Trang chủ
               </button>
             </div>
           </div>

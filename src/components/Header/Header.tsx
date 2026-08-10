@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Search,
     MapPin,
@@ -51,7 +51,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'minipc',
+        id: 'pc-van-phong',
         name: 'Mini PC',
         icon: <HardDrive className="w-4 h-4 text-blue-500" />,
         subcategories: [
@@ -62,7 +62,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'pcai',
+        id: 'pc-do-hoa',
         name: 'PC AI',
         icon: <Sparkles className="w-4 h-4 text-amber-500" />,
         subcategories: [
@@ -73,7 +73,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'linhkien',
+        id: 'linh-kien-may-tinh',
         name: 'Linh kiện PC',
         icon: <Cpu className="w-4 h-4 text-blue-500" />,
         subcategories: [
@@ -108,7 +108,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'storage-device',
+        id: 'o-cung-hdd-ssd',
         name: 'Thiết bị lưu trữ',
         icon: <HardDrive className="w-4 h-4 text-blue-500" />,
         subcategories: [
@@ -157,7 +157,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'minipc',
+        id: 'pc-van-phong',
         name: 'Mini PC',
         icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
         subcategories: [
@@ -168,7 +168,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'pcai',
+        id: 'pc-do-hoa',
         name: 'PC AI',
         icon: <Sparkles className="w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors" />,
         subcategories: [
@@ -179,7 +179,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'linhkien',
+        id: 'linh-kien-may-tinh',
         name: 'Linh Kiện PC',
         icon: <Cpu className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
         subcategories: [
@@ -210,7 +210,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'storage-device',
+        id: 'o-cung-hdd-ssd',
         name: 'Thiết Bị Lưu Trữ',
         icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
         subcategories: [
@@ -249,10 +249,60 @@ const SHOWROOMS = [
     { city: 'TP. Hồ Chí Minh', address: '249 Lý Thường Kiệt, Phường 15, Quận 11', phone: '0707.08.6666' },
 ];
 
+const getSubcategoryTitleLink = (title: string, parentCatSlug?: string): string => {
+    const t = title.toLowerCase();
+    if (t.includes('cpu')) return '/category/cpu-bo-vi-xu-ly';
+    if (t.includes('vga')) return '/category/vga-card-do-hoa';
+    if (t.includes('mainboard')) return '/category/mainboard-bo-mach-chu';
+    if (t.includes('ram')) return '/category/ram-bo-nho-trong';
+    if (t.includes('psu') || t.includes('nguồn')) return '/category/psu-nguon-may-tinh';
+    if (t.includes('case') || t.includes('vỏ')) return '/category/case-vo-may-tinh';
+    if (t.includes('tản nhiệt')) return '/category/tan-nhiet-cpu';
+    if (t.includes('ssd') || t.includes('hdd') || t.includes('lưu trữ')) return '/category/o-cung-hdd-ssd';
+    if (t.includes('pc theo nhu cầu')) return '/category/pc';
+    if (t.includes('mini pc')) return '/category/pc-van-phong';
+    if (t.includes('ai workstation')) return '/category/pc-do-hoa';
+
+    if (parentCatSlug) return `/category/${parentCatSlug}`;
+    return '/products';
+};
+
+const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): string => {
+    const itemLower = item.toLowerCase();
+
+    if (itemLower === 'pc gaming') return '/category/pc-gaming';
+    if (itemLower === 'pc đồ họa - render' || itemLower === 'pc đồ họa') return '/category/pc-do-hoa';
+    if (itemLower === 'pc văn phòng') return '/category/pc-van-phong';
+
+    if (itemLower.includes('dưới 10 triệu')) return '/products?categoryId=pc&maxPrice=10000000';
+    if (itemLower.includes('10 - 20 triệu')) return '/products?categoryId=pc&minPrice=10000000&maxPrice=20000000';
+    if (itemLower.includes('20 - 40 triệu')) return '/products?categoryId=pc&minPrice=20000000&maxPrice=40000000';
+    if (itemLower.includes('cao cấp > 50 triệu') || itemLower.includes('trên 50 triệu')) return '/products?categoryId=pc&minPrice=50000000';
+
+    if (subTitle) {
+        const sTitle = subTitle.toLowerCase();
+        if (sTitle.includes('cpu')) return `/category/cpu-bo-vi-xu-ly?search=${encodeURIComponent(item.replace(/^cpu\s+/i, ''))}`;
+        if (sTitle.includes('vga')) return `/category/vga-card-do-hoa?search=${encodeURIComponent(item.replace(/^vga\s+/i, ''))}`;
+        if (sTitle.includes('mainboard')) return `/category/mainboard-bo-mach-chu?search=${encodeURIComponent(item.replace(/^mainboard\s+/i, ''))}`;
+        if (sTitle.includes('ram')) return `/category/ram-bo-nho-trong?search=${encodeURIComponent(item.replace(/^ram\s+/i, ''))}`;
+        if (sTitle.includes('psu') || sTitle.includes('nguồn')) return `/category/psu-nguon-may-tinh?search=${encodeURIComponent(item.replace(/^nguồn\s+/i, ''))}`;
+        if (sTitle.includes('case') || sTitle.includes('vỏ')) return `/category/case-vo-may-tinh?search=${encodeURIComponent(item.replace(/^case\s+/i, ''))}`;
+        if (sTitle.includes('tản nhiệt')) return `/category/tan-nhiet-cpu?search=${encodeURIComponent(item)}`;
+        if (sTitle.includes('ssd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
+        if (sTitle.includes('hdd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
+    }
+
+    if (parentCatSlug) {
+        return `/category/${parentCatSlug}?search=${encodeURIComponent(item)}`;
+    }
+    return `/products?search=${encodeURIComponent(item)}`;
+};
+
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 
 export const Header: React.FC = () => {
+    const navigate = useNavigate();
     const { totalItems: cartCount } = useCart();
     const { user, logout } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
@@ -365,7 +415,13 @@ export const Header: React.FC = () => {
                     </div>
                     <div ref={searchRef} className="relative flex-1 max-w-xl mx-1 sm:mx-2">
                         <form
-                            onSubmit={(e) => e.preventDefault()}
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                if (searchQuery.trim()) {
+                                    navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                                    setIsSearchOpen(false);
+                                }
+                            }}
                             className="relative flex items-center"
                         >
                             <input
@@ -403,9 +459,11 @@ export const Header: React.FC = () => {
                                     {POPULAR_SEARCHES.map((item, idx) => (
                                         <button
                                             key={idx}
+                                            type="button"
                                             onClick={() => {
                                                 setSearchQuery(item);
                                                 setIsSearchOpen(false);
+                                                navigate(`/products?search=${encodeURIComponent(item)}`);
                                             }}
                                             className="px-2.5 py-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-xs font-medium transition-colors border border-gray-200/60"
                                         >
@@ -419,9 +477,13 @@ export const Header: React.FC = () => {
                                         <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
                                         Cam kết chính hãng 100%
                                     </span>
-                                    <span className="text-blue-600 font-semibold cursor-pointer hover:underline">
-                                        Xem tất cả khuyến mãi →
-                                    </span>
+                                    <Link
+                                        to="/products"
+                                        onClick={() => setIsSearchOpen(false)}
+                                        className="text-blue-600 font-semibold cursor-pointer hover:underline"
+                                    >
+                                        Xem tất cả sản phẩm →
+                                    </Link>
                                 </div>
                             </div>
                         )}
@@ -635,21 +697,27 @@ export const Header: React.FC = () => {
                             <div className="space-y-1">
                                 {CATEGORIES.map((cat) => (
                                     <div key={cat.id} className="border-b border-gray-100 pb-1">
-                                        <div className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50">
+                                        <Link
+                                            to={`/category/${cat.id}`}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50 transition-colors"
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 {cat.icon}
                                                 <span>{cat.name}</span>
                                             </div>
-                                        </div>
+                                            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                                        </Link>
                                         <div className="pl-6 space-y-1 pb-1">
-                                            {cat.subcategories.flatMap(s => s.items).slice(0, 3).map((item, idx) => (
-                                                <a
+                                            {cat.subcategories.flatMap(s => s.items.map(item => ({ item, subTitle: s.title }))).slice(0, 5).map((entry, idx) => (
+                                                <Link
                                                     key={idx}
-                                                    href="#"
-                                                    className="block text-[11px] text-gray-600 hover:text-blue-600 py-0.5"
+                                                    to={getItemLink(entry.item, cat.id, entry.subTitle)}
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                    className="block text-[11px] text-gray-600 hover:text-blue-600 py-0.5 transition-colors"
                                                 >
-                                                    • {item}
-                                                </a>
+                                                    • {entry.item}
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>
@@ -698,8 +766,13 @@ export const Header: React.FC = () => {
                                 {/* Left side: Category List */}
                                 <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2">
                                     {CATEGORIES.map((cat) => (
-                                        <button
+                                        <Link
                                             key={cat.id}
+                                            to={`/category/${cat.id}`}
+                                            onClick={() => {
+                                                setIsMegaMenuOpen(false);
+                                                setActiveCategory(null);
+                                            }}
                                             onMouseEnter={() => setActiveCategory(cat)}
                                             className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold transition-colors text-left ${activeCategory?.id === cat.id
                                                 ? 'bg-blue-600 text-white'
@@ -711,7 +784,7 @@ export const Header: React.FC = () => {
                                                 <span>{cat.name}</span>
                                             </div>
                                             <ChevronRight className={`w-3.5 h-3.5 ${activeCategory?.id === cat.id ? 'text-white' : 'text-gray-400'}`} />
-                                        </button>
+                                        </Link>
                                     ))}
                                 </div>
 
@@ -719,25 +792,43 @@ export const Header: React.FC = () => {
                                 <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px] w-full">
                                     {activeCategory ? (
                                         <div>
-                                            <div className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700">
+                                            <Link
+                                                to={`/category/${activeCategory.id}`}
+                                                onClick={() => {
+                                                    setIsMegaMenuOpen(false);
+                                                    setActiveCategory(null);
+                                                }}
+                                                className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
+                                            >
                                                 {activeCategory.icon}
                                                 <span>{activeCategory.name}</span>
-                                            </div>
+                                            </Link>
                                             <div className="grid grid-cols-4 gap-6">
                                                 {activeCategory.subcategories.map((sub, idx) => (
                                                     <div key={idx} className="space-y-2">
-                                                        <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2">
+                                                        <Link
+                                                            to={getSubcategoryTitleLink(sub.title, activeCategory.id)}
+                                                            onClick={() => {
+                                                                setIsMegaMenuOpen(false);
+                                                                setActiveCategory(null);
+                                                            }}
+                                                            className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
+                                                        >
                                                             {sub.title}
-                                                        </h4>
+                                                        </Link>
                                                         <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
                                                             {sub.items.map((item, itemIdx) => (
                                                                 <li key={itemIdx}>
-                                                                    <a
-                                                                        href="#"
+                                                                    <Link
+                                                                        to={getItemLink(item, activeCategory.id, sub.title)}
+                                                                        onClick={() => {
+                                                                            setIsMegaMenuOpen(false);
+                                                                            setActiveCategory(null);
+                                                                        }}
                                                                         className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
                                                                     >
                                                                         {item}
-                                                                    </a>
+                                                                    </Link>
                                                                 </li>
                                                             ))}
                                                         </ul>
@@ -762,6 +853,7 @@ export const Header: React.FC = () => {
                             <div key={cat.id} className="relative">
                                 <Link
                                     to={`/category/${cat.id}`}
+                                    onClick={() => setActiveHorizontalCategory(null)}
                                     onMouseEnter={() => {
                                         setIsMegaMenuOpen(false);
                                         setActiveHorizontalCategory(cat);
@@ -785,28 +877,37 @@ export const Header: React.FC = () => {
                         >
                             <div className="bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 p-6">
                                 {/* Header matching mega menu right side */}
-                                <div className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700">
+                                <Link
+                                    to={`/category/${activeHorizontalCategory.id}`}
+                                    onClick={() => setActiveHorizontalCategory(null)}
+                                    className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
+                                >
                                     <span className="text-blue-600">{activeHorizontalCategory.icon}</span>
                                     <span className="text-base">{activeHorizontalCategory.name}</span>
-                                </div>
+                                </Link>
 
                                 {/* Subcategories grid - matching mega menu right side */}
                                 <div className="grid grid-cols-4 gap-6 max-h-[400px] overflow-y-auto pr-2">
                                     {activeHorizontalCategory.subcategories.map((sub, idx) => (
                                         <div key={idx} className="space-y-2">
-                                            <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2">
+                                            <Link
+                                                to={getSubcategoryTitleLink(sub.title, activeHorizontalCategory.id)}
+                                                onClick={() => setActiveHorizontalCategory(null)}
+                                                className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
+                                            >
                                                 {sub.title}
-                                            </h4>
+                                            </Link>
                                             {sub.items && sub.items.length > 0 && (
                                                 <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
                                                     {sub.items.map((item, itemIdx) => (
                                                         <li key={itemIdx}>
-                                                            <a
-                                                                href="#"
+                                                            <Link
+                                                                to={getItemLink(item, activeHorizontalCategory.id, sub.title)}
+                                                                onClick={() => setActiveHorizontalCategory(null)}
                                                                 className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
                                                             >
                                                                 {item}
-                                                            </a>
+                                                            </Link>
                                                         </li>
                                                     ))}
                                                 </ul>

@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react"
+import { AlertTriangle, ChevronRight } from "lucide-react"
 import pcImg from "../../assets/images/products/pc.jpg"
 import khungSaleCpu from "../../assets/images/khung-sale-cpu.png"
 import type { BuilderProduct } from "../../data/builderProducts"
@@ -14,6 +14,7 @@ interface ModalCardProps {
     price?: string
     marketPrice?: string
     discountPercent?: string
+    incompatibilityReason?: string | null
     onSelect?: () => void
 }
 
@@ -28,6 +29,7 @@ function ModalCard({
     price,
     marketPrice,
     discountPercent,
+    incompatibilityReason,
     onSelect
 }: ModalCardProps) {
     const displayImage = product?.image || image || pcImg;
@@ -39,8 +41,9 @@ function ModalCard({
     const displayPrice = product ? `${product.price.toLocaleString('vi-VN')}đ` : (price || "0đ");
     const displayMarketPrice = product?.marketPrice ? `${product.marketPrice.toLocaleString('vi-VN')}đ` : marketPrice;
     const displayDiscountPercent = product?.discountPercent || discountPercent;
+
     return (
-        <div className="item flex items-start justify-between gap-4 py-4 px-5 border-b border-[#e5e5e5] bg-white">
+        <div className={`item flex items-start justify-between gap-4 py-4 px-5 border-b border-[#e5e5e5] ${incompatibilityReason ? "bg-red-50/50" : "bg-white"}`}>
             {/* Product Image & Sale Frame */}
             <a href="#" className="relative block w-[140px] shrink-0 aspect-square">
                 <img
@@ -65,6 +68,13 @@ function ModalCard({
                 >
                     {displayTitle}
                 </a>
+
+                {incompatibilityReason && (
+                    <div className="mb-2 bg-red-100 border border-red-300 text-red-700 text-xs px-2.5 py-1 rounded inline-flex items-center gap-1.5 font-medium">
+                        <AlertTriangle size={14} className="shrink-0 text-red-600" />
+                        <span>{incompatibilityReason}</span>
+                    </div>
+                )}
 
                 <div className="text-[14px] text-[#222222] space-y-1 mb-2">
                     <div className="flex items-center gap-6">
@@ -101,13 +111,18 @@ function ModalCard({
             <button
                 type="button"
                 onClick={onSelect}
-                className="btn-select shrink-0 self-start bg-[#005aab] hover:bg-[#004788] text-white text-[13px] font-bold px-3.5 py-2 rounded-[3px] uppercase flex items-center gap-0.5 transition-colors cursor-pointer"
+                className={`btn-select shrink-0 self-start text-white text-[13px] font-bold px-3.5 py-2 rounded-[3px] uppercase flex items-center gap-0.5 transition-colors cursor-pointer ${
+                    incompatibilityReason
+                        ? "bg-amber-600 hover:bg-amber-700"
+                        : "bg-[#005aab] hover:bg-[#004788]"
+                }`}
             >
-                Thêm vào cấu hình
+                {incompatibilityReason ? "Vẫn chọn" : "Thêm vào cấu hình"}
                 <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
         </div>
     )
 }
 
-export default ModalCard
+export default ModalCard;
+
