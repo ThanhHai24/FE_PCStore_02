@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CheckCircle2, Search, SlidersHorizontal, X } from "lucide-react"
-import GroupFilter from "./GroupFilter"
+import GroupFilter, { getBrandFromTitle } from "./GroupFilter"
 import ModalCard from "./ModalCard"
 import type { BuilderProduct } from "../../data/builderProducts"
 import { getIncompatibilityReason } from "../../utils/pcBuilderValidator"
@@ -28,7 +28,49 @@ function Modal({
     const [sortOption, setSortOption] = useState("")
     const [onlyCompatible, setOnlyCompatible] = useState(true)
 
+    // Filter states
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([])
+    const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
+    const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({})
+
+    // Reset filters when slot or modal opens
+    useEffect(() => {
+        setSelectedBrands([])
+        setSelectedPriceRanges([])
+        setSelectedSpecs({})
+        setSearchTerm("")
+    }, [activeSlotIndex, isOpen])
+
     if (!isOpen) return null
+
+    const handleToggleBrand = (brand: string) => {
+        setSelectedBrands((prev) =>
+            prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+        )
+    }
+
+    const handleTogglePriceRange = (rangeKey: string) => {
+        setSelectedPriceRanges((prev) =>
+            prev.includes(rangeKey) ? prev.filter((r) => r !== rangeKey) : [...prev, rangeKey]
+        )
+    }
+
+    const handleToggleSpec = (specKey: string, value: string) => {
+        setSelectedSpecs((prev) => {
+            const current = prev[specKey] || []
+            const updated = current.includes(value)
+                ? current.filter((v) => v !== value)
+                : [...current, value]
+            return { ...prev, [specKey]: updated }
+        })
+    }
+
+    const handleResetAllFilters = () => {
+        setSelectedBrands([])
+        setSelectedPriceRanges([])
+        setSelectedSpecs({})
+        setSearchTerm("")
+    }
 
     // Pre-evaluate compatibility for each product in candidate list
     const evaluatedProducts = products.map((p) => {
@@ -46,7 +88,7 @@ function Modal({
     const compatibleCount = evaluatedProducts.filter((item) => item.isCompatible).length
     const totalCount = products.length
 
-    // Filter products by search term & compatibility toggle
+    // Filter products by search term, compatibility toggle, brands, price ranges, and specs
     const filteredProducts = evaluatedProducts.filter(({ product, isCompatible }) => {
         const matchesSearch =
             product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,6 +96,55 @@ function Modal({
 
         if (!matchesSearch) return false
         if (onlyCompatible && !isCompatible) return false
+
+        // Brand filter
+        if (selectedBrands.length > 0) {
+            const productBrand = getBrandFromTitle(product.title)
+            if (!selectedBrands.includes(productBrand)) return false
+        }
+
+        // Price range filter
+        if (selectedPriceRanges.length > 0) {
+            const price = product.price
+            const matchesPrice = selectedPriceRanges.some((rangeKey) => {
+                if (rangeKey === 'under-1m') return price < 1000000
+                if (rangeKey === '1m-3m') return price >= 1000000 && price <= 3000000
+                if (rangeKey === '3m-5m') return price >= 3000000 && price <= 5000000
+                if (rangeKey === '5m-10m') return price >= 5000000 && price <= 10000000
+                if (rangeKey === 'over-10m') return price > 10000000
+                return true
+            })
+            if (!matchesPrice) return false
+        }
+
+        // Spec filters
+        for (const [specKey, selectedVals] of Object.entries(selectedSpecs)) {
+            if (!selectedVals || selectedVals.length === 0) continue
+
+            if (specKey === 'socket') {
+                if (!product.specs?.socket || !selectedVals.includes(product.specs.socket)) return false
+            }
+            if (specKey === 'ramType') {
+                if (!product.specs?.ramType || !selectedVals.includes(product.specs.ramType)) return false
+            }
+            if (specKey === 'formFactor') {
+                if (!product.specs?.formFactor || !selectedVals.includes(product.specs.formFactor)) return false
+            }
+            if (specKey === 'coolerType') {
+                if (!product.specs?.coolerType || !selectedVals.includes(product.specs.coolerType)) return false
+            }
+            if (specKey === 'wattage') {
+                const w = product.specs?.wattage
+                if (!w) return false
+                const matchesW = selectedVals.some((v) => {
+                    if (v === 'under-550w') return w < 550
+                    if (v === '550w-750w') return w >= 550 && w <= 750
+                    if (v === 'over-750w') return w > 750
+                    return true
+                })
+                if (!matchesW) return false
+            }
+        }
 
         return true
     })
@@ -132,7 +223,17 @@ function Modal({
                         </div>
 
                         <div className="list-filter space-y-2">
-                            <GroupFilter />
+                            <GroupFilter
+                                products={products}
+                                activeSlotIndex={activeSlotIndex}
+                                selectedBrands={selectedBrands}
+                                onToggleBrand={handleToggleBrand}
+                                selectedPriceRanges={selectedPriceRanges}
+                                onTogglePriceRange={handleTogglePriceRange}
+                                selectedSpecs={selectedSpecs}
+                                onToggleSpec={handleToggleSpec}
+                                onResetAll={handleResetAllFilters}
+                            />
                         </div>
                     </div>
 
