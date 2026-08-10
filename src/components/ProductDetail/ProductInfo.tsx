@@ -11,8 +11,10 @@ interface ProductInfoProps {
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedStorage] = useState<string>('1TB');
+  const [selectedStorage] = useState<string>('');
   const [addedToast, setAddedToast] = useState<boolean>(false);
+
+  const maxStock = product.stockQuantity ?? 10;
 
   // Live countdown timer state
   const [timeLeft, setTimeLeft] = useState({
@@ -38,14 +40,17 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   };
 
   const handleIncreaseQuantity = () => {
-    setQuantity(quantity + 1);
+    if (quantity < maxStock) {
+      setQuantity(quantity + 1);
+    }
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedStorage);
+    addToCart(product, quantity, selectedStorage || undefined);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 3000);
   };
+
 
   return (
     <div className="space-y-4 text-gray-800 relative">
@@ -91,9 +96,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
         <div>
           <span className="text-gray-500">Tình trạng: </span>
-          <span className="text-emerald-600 font-bold">{product.inStock ? 'Còn hàng' : 'Hết hàng'}</span>
+          <span className={product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0) ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold'}>
+            {product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0)
+              ? `Còn hàng ${product.stockQuantity !== undefined ? `(Còn ${product.stockQuantity} sản phẩm)` : ''}`
+              : 'Hết hàng (0 sản phẩm)'}
+          </span>
         </div>
       </div>
+
 
       {/* FLASH SALE Box */}
       <div className="border-2 border-red-500 rounded-2xl overflow-hidden bg-white shadow-sm">
@@ -201,28 +211,41 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             </span>
             <button
               onClick={handleIncreaseQuantity}
-              className="px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
+              disabled={quantity >= maxStock}
+              className="px-2.5 py-1.5 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Tăng số lượng"
+              title={quantity >= maxStock ? `Số lượng tồn kho tối đa: ${maxStock}` : ''}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
+          <span className="text-[11px] text-gray-500 font-normal">
+            (Tồn kho: {product.stockQuantity !== undefined ? product.stockQuantity : 'Sẵn hàng'})
+          </span>
         </div>
 
         {/* Action Buttons Row */}
         <div className="flex flex-wrap items-center gap-2">
-          <button className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
+          <button
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed"
+          >
             TRẢ GÓP
           </button>
-          <button className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors">
-            MUA NGAY
+          <button
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed"
+          >
+            {!product.inStock || product.stockQuantity === 0 ? 'HẾT HÀNG' : 'MUA NGAY'}
           </button>
           <button
             onClick={handleAddToCart}
-            className="bg-white border-2 border-red-600 hover:bg-red-50 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95"
+            disabled={!product.inStock || product.stockQuantity === 0}
+            className="bg-white border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed"
           >
             Thêm vào giỏ
           </button>
+
           <Link
             to={`/compare?id1=${product.id}`}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-3 px-3 rounded-xl text-xs flex items-center space-x-1 transition-colors"
