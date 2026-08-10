@@ -1,7 +1,8 @@
 export interface SpecItem {
-  key: string; // e.g. "CPU", "VGA", "RAM", "SSD", "MAIN", "PSU", "CASE"
-  name: string; // e.g. "CPU AMD Ryzen 7 9800X3D TRAY NEW (Up to 5.2GHz | 8C / 16T | 96 MB Cache)"
-  warranty: string; // e.g. "36TH"
+  key: string; // e.g. "CPU", "VGA", "RAM", "SSD", "MAINBOARD", "PSU", "CASE", "TẢN NHIỆT", "FAN"
+  name: string; // e.g. "CPU Intel Core i5-12400F"
+  warranty?: string; // e.g. "36 Tháng"
+  productId?: string; // e.g. "12" or "cpu-12400f"
   highlightSummary?: string;
 }
 

@@ -5,9 +5,13 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
     ? endpoint
     : `${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
+  const token = localStorage.getItem('token');
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...options?.headers,
     },
     ...options,
