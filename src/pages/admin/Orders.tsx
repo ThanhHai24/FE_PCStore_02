@@ -291,16 +291,16 @@ export const Orders: React.FC = () => {
                     <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => handleOpenViewModal(ord)}
+                          onClick={() => navigate(`/admin/orders/${ord.rawId || ord.id.replace('#', '')}`)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Xem chi tiết"
+                          title="Xem chi tiết đơn hàng"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleOpenEditStatusModal(ord)}
+                          onClick={() => navigate(`/admin/orders/${ord.rawId || ord.id.replace('#', '')}`)}
                           className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Đổi trạng thái"
+                          title="Chỉnh sửa & xử lý đơn hàng"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
