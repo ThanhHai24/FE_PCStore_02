@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@pcstore.vn');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('admin@pcstore.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -19,14 +21,19 @@ export const AdminLogin: React.FC = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await login({ email, password });
       navigate('/admin');
-    }, 600);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Đăng nhập quản trị thất bại';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fillDemoAccount = () => {
-    setEmail('admin@pcstore.vn');
+    setEmail('admin@pcstore.com');
     setPassword('admin123');
   };
 

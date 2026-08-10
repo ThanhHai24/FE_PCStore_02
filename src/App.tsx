@@ -23,6 +23,7 @@ import Orders from './pages/admin/Orders';
 import Customers from './pages/admin/Customers';
 import Order from './pages/order/Order';
 import OrderDetail from './pages/order/OrderDetail';
+import ProductCreate from './pages/admin/ProductCreate';
 
 function App() {
   return (
@@ -51,19 +52,20 @@ function App() {
             {/* Admin Login Route */}
             <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* Admin Portal Layout & Pages */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<Products />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="settings" element={<Dashboard />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
-  </AuthProvider>
+            {/* Admin Portal Layout & Pages */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<Products />} />
+              <Route path="products/create" element={<ProductCreate />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="settings" element={<Dashboard />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

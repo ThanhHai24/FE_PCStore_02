@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Globe
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface AdminSidebarProps {
   collapsed: boolean;
@@ -29,93 +30,73 @@ const navItems = [
 ];
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle }) => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
+
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen bg-white text-gray-800 border-r border-gray-200/80 shadow-sm transition-all duration-300 ease-in-out flex flex-col justify-between ${
+      className={`fixed top-0 left-0 bottom-0 bg-white border-r border-gray-200 z-40 transition-all duration-300 flex flex-col ${
         collapsed ? 'w-20' : 'w-64'
       }`}
     >
-      <div>
-        {/* Header / Brand Logo matching Customer Header */}
-        <div className="h-16 flex items-center justify-between px-4 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white">
-          <div className="flex items-center space-x-2 overflow-hidden">
-            <div className="relative w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-white/10 shrink-0 shadow-inner">
-              <div className="w-7 h-7 rounded-full border border-white/80 flex items-center justify-center font-extrabold text-xs tracking-tighter">
-                PC
-              </div>
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col leading-tight whitespace-nowrap">
-                <span className="text-base font-black tracking-tight text-white drop-shadow-sm">
-                  PC<span className="text-amber-300 font-extrabold">STORE</span>
-                </span>
-                <span className="text-[10px] text-blue-100 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-amber-300" /> Admin Portal
-                </span>
-              </div>
-            )}
+      {/* Brand Header */}
+      <div className="h-16 border-b border-gray-100 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0">
+            PC
           </div>
-
-          <button
-            onClick={onToggle}
-            className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
-            title={collapsed ? 'Mở rộng' : 'Thu gọn'}
-          >
-            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-          </button>
+          {!collapsed && (
+            <div className="min-w-0 whitespace-nowrap">
+              <h2 className="text-sm font-bold text-gray-900 leading-tight">PC Store</h2>
+              <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-blue-600" /> Admin Portal
+              </span>
+            </div>
+          )}
         </div>
-
-        {/* Navigation Menu */}
-        <nav className="p-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.exact}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 group font-semibold text-xs ${
-                    isActive
-                      ? 'bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white shadow-md shadow-blue-500/20'
-                      : 'hover:bg-blue-50 text-gray-700 hover:text-blue-600'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
-                  {!collapsed && (
-                    <span className="truncate text-xs whitespace-nowrap">{item.label}</span>
-                  )}
-                </div>
-
-                {!collapsed && item.badge && (
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                      item.badge.includes('mới')
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
-        </nav>
+        <button
+          onClick={onToggle}
+          className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
       </div>
 
-      {/* Footer / User Profile & Logout */}
-      <div className="p-3 border-t border-gray-100 bg-gray-50/50">
+      {/* Navigation */}
+      <div className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.exact}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                isActive
+                  ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`
+            }
+          >
+            <item.icon className="w-4 h-4 flex-shrink-0" />
+            {!collapsed && <span className="truncate">{item.label}</span>}
+          </NavLink>
+        ))}
+      </div>
+
+      {/* Footer Info */}
+      <div className="p-3 border-t border-gray-100 space-y-2">
         {!collapsed && (
           <NavLink
             to="/"
-            target="_blank"
-            className="flex items-center justify-center gap-2 mb-3 py-2 px-3 bg-white border border-gray-200 text-blue-600 font-semibold rounded-xl text-xs hover:bg-blue-50 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
           >
-            <Globe className="w-4 h-4 text-blue-500" />
-            <span>Xem Web Bán Hàng</span>
+            <Globe className="w-4 h-4" />
+            <span>Trang bán hàng</span>
           </NavLink>
         )}
 
@@ -123,7 +104,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle 
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+                src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"}
                 alt="Admin Avatar"
                 className="w-8 h-8 rounded-full object-cover border border-gray-200"
               />
@@ -131,19 +112,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle 
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0 whitespace-nowrap">
-                <span className="text-xs font-bold text-gray-900 truncate">Quản trị viên</span>
-                <span className="text-[11px] text-gray-500 truncate">admin@pcstore.vn</span>
+                <span className="text-xs font-bold text-gray-900 truncate">{user?.fullName || 'Quản trị viên'}</span>
+                <span className="text-[11px] text-gray-500 truncate">{user?.email || 'admin@pcstore.com'}</span>
               </div>
             )}
           </div>
 
-          <NavLink
-            to="/admin/login"
+          <button
+            type="button"
+            onClick={handleLogout}
             className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
             title="Đăng xuất"
           >
             <LogOut className="w-4 h-4" />
-          </NavLink>
+          </button>
         </div>
       </div>
     </aside>

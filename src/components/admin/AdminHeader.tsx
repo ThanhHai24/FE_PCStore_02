@@ -10,15 +10,23 @@ import {
   SlidersHorizontal,
   ChevronDown
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
 
   const notifications = [
     { id: 1, title: 'Đơn hàng mới #PC-9842', time: '5 phút trước', unread: true },
@@ -136,8 +144,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => 
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-56 bg-white text-gray-800 border border-gray-100 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
               <div className="px-4 py-2.5 border-b border-gray-100">
-                <p className="text-xs font-bold text-gray-900">Admin PCStore</p>
-                <p className="text-[11px] text-gray-500">admin@pcstore.vn</p>
+                <p className="text-xs font-bold text-gray-900">{user?.fullName || 'Admin PCStore'}</p>
+                <p className="text-[11px] text-gray-500">{user?.email || 'admin@pcstore.com'}</p>
+                {user?.role && (
+                  <span className="inline-block mt-1 text-[9px] font-bold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                    {user.role}
+                  </span>
+                )}
               </div>
               <div className="py-1">
                 <Link
@@ -156,13 +169,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => 
                 </Link>
               </div>
               <div className="border-t border-gray-100 pt-1">
-                <Link
-                  to="/admin/login"
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors text-left"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Đăng xuất</span>
-                </Link>
+                </button>
               </div>
             </div>
           )}
