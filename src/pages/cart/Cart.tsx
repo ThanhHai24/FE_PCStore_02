@@ -142,11 +142,13 @@ export const Cart: React.FC = () => {
                     >
                       {item.product.title}
                     </Link>
-                    {item.selectedVariant && (
-                      <span className="inline-block text-[11px] text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                        {item.selectedVariant}
-                      </span>
-                    )}
+                    {item.selectedVariant &&
+                      item.selectedVariant !== '1TB' &&
+                      item.selectedVariant !== 'Mặc định' && (
+                        <span className="inline-block text-[11px] text-red-600 font-semibold bg-red-50 px-1.5 py-0.5 rounded mt-1">
+                          {item.selectedVariant}
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -164,12 +166,24 @@ export const Cart: React.FC = () => {
                     <span className="px-3 text-xs font-bold text-gray-800">{item.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="px-2 py-1 text-gray-600 hover:bg-gray-100"
+                      onClick={() => {
+                        const maxStock = item.product.stockQuantity ?? 10;
+                        if (item.quantity < maxStock) {
+                          updateQuantity(item.product.id, item.quantity + 1);
+                        }
+                      }}
+                      disabled={item.quantity >= (item.product.stockQuantity ?? 10)}
+                      className="px-2 py-1 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={
+                        item.quantity >= (item.product.stockQuantity ?? 10)
+                          ? `Đã đạt giới hạn tồn kho (${item.product.stockQuantity ?? 10} sản phẩm)`
+                          : ''
+                      }
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
+
 
                   {/* Price */}
                   <div className="text-right min-w-[100px]">

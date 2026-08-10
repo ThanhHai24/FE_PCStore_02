@@ -12,8 +12,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return parsed.map((item: CartItem) => ({
+          ...item,
+          selectedVariant: item.selectedVariant === '1TB' ? undefined : item.selectedVariant,
+        }));
       }
+
     } catch (e) {
       console.error('Failed to load cart from localStorage:', e);
     }
@@ -41,6 +46,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addToCart = (product: Product, quantity: number = 1, selectedVariant?: string) => {
+    const maxStock = product.stockQuantity ?? 10;
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
         (item) => item.product.id === product.id && item.selectedVariant === selectedVariant
@@ -48,10 +55,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (existingIndex > -1) {
         const updated = [...prevItems];
-        updated[existingIndex].quantity += quantity;
+        const newQuantity = updated[existingIndex].quantity + quantity;
+        updated[existingIndex].quantity = Math.min(newQuantity, maxStock);
         return updated;
       } else {
-        return [...prevItems, { product, quantity, selectedVariant: selectedVariant || 'Mặc định' }];
+        const validQuantity = Math.min(quantity, maxStock);
+        return [...prevItems, { product, quantity: validQuantity, selectedVariant }];
       }
     });
   };
@@ -66,9 +75,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     setItems((prevItems) =>
-      prevItems.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
+      prevItems.map((item) => {
+        if (item.product.id === productId) {
+          const maxStock = item.product.stockQuantity ?? 10;
+          return { ...item, quantity: Math.min(quantity, maxStock) };
+        }
+        return item;
+      })
     );
   };
+
 
   const clearCart = () => {
     setItems([]);
