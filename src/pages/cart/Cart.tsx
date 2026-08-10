@@ -18,10 +18,14 @@ export const Cart: React.FC = () => {
     invoiceRequired: false,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr' | 'vnpay'>('vnpay');
   const [orderSuccessModal, setOrderSuccessModal] = useState<boolean>(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -31,9 +35,35 @@ export const Cart: React.FC = () => {
     }
   };
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
+  const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
+
+    if (paymentMethod === 'vnpay' || paymentMethod === 'qr') {
+      setIsSubmitting(true);
+      try {
+        const res = await fetch('http://localhost:3000/api/payment/vnpay/create_payment_url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: totalPrice,
+            orderInfo: `Thanh toan don hang PCStore: ${customerInfo.fullName || 'Khach hang'}`,
+            orderId: `ORDER_${Date.now()}`,
+            bankCode: 'NCB',
+          }),
+        });
+        const data = await res.json();
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl;
+          return;
+        }
+      } catch (err) {
+        console.error('Error creating VNPAY payment URL:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+
     setOrderSuccessModal(true);
   };
 
@@ -298,7 +328,12 @@ export const Cart: React.FC = () => {
                   onChange={() => setPaymentMethod('qr')}
                   className="text-blue-600 focus:ring-blue-500"
                 />
-                <span>Chuyển khoản qua mã QR Code</span>
+                <span className="flex items-center space-x-1.5">
+                  <span>Thanh toán VNPAY Sandbox (Quét mã QR / Thẻ ATM)</span>
+                  <span className="bg-red-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded tracking-wider">
+                    VNPAY
+                  </span>
+                </span>
               </label>
             </div>
           </div>
@@ -323,10 +358,19 @@ export const Cart: React.FC = () => {
           <div className="space-y-2">
             <button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3.5 px-4 rounded-xl text-center text-sm uppercase tracking-wider shadow-md transition-colors"
+              disabled={isSubmitting}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3.5 px-4 rounded-xl text-center text-sm uppercase tracking-wider shadow-md transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
             >
-              ĐẶT HÀNG
+              {isSubmitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>ĐANG ĐẾN VNPAY...</span>
+                </>
+              ) : (
+                <span>ĐẶT HÀNG</span>
+              )}
             </button>
+
 
             <button
               type="button"
