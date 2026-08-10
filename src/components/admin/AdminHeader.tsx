@@ -36,8 +36,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => 
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white shadow-md px-4 lg:px-8 flex items-center justify-between">
-      {/* Left side: Mobile menu toggle + Global Search */}
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
+      {/* Left side: Mobile menu toggle */}
+      <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
           className="lg:hidden p-1.5 rounded-lg text-white hover:bg-white/20 transition-colors focus:outline-none"
@@ -45,30 +45,10 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleSidebar }) => 
         >
           <Menu className="w-6 h-6" />
         </button>
-
-        {/* Global Admin Search Bar matching Customer header search style */}
-        <div className="relative w-full max-w-md hidden sm:block">
-          <input
-            type="text"
-            placeholder="Tìm kiếm sản phẩm, đơn hàng, khách hàng..."
-            className="w-full pl-4 pr-10 py-2 bg-white text-xs text-gray-900 placeholder-gray-400 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-300 transition-all font-sans"
-          />
-          <button className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 bg-amber-400 hover:bg-amber-500 text-blue-900 rounded-full flex items-center justify-center transition-colors shadow-sm">
-            <Search className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </div>
 
       {/* Right side: Actions & User Info */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick Add Product Button */}
-        <Link
-          to="/admin/products"
-          className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-400 hover:bg-amber-500 text-blue-950 text-xs font-bold rounded-full shadow-md transition-all transform hover:-translate-y-0.5"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Thêm sản phẩm</span>
-        </Link>
 
         {/* View Storefront Link */}
         <Link

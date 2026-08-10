@@ -171,11 +171,20 @@ export const Customers: React.FC = () => {
     setIsViewModalOpen(true);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const filteredCustomers = customers.filter(
     (c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.phone.includes(searchTerm)
+  );
+
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -187,7 +196,7 @@ export const Customers: React.FC = () => {
             Quản Lý Khách Hàng
           </h1>
           <p className="text-xs text-gray-500">
-            Quản lý tài khoản người dùng, xem tổng chi tiêu và thực hiện Thêm, Sửa, Xóa.
+            Quản lý tài khoản người dùng, xem tổng chi tiêu và thực hiện Thêm, Sửa, Xóa (10 khách hàng/trang).
           </p>
         </div>
 
@@ -207,7 +216,10 @@ export const Customers: React.FC = () => {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Tìm tên, email, số điện thoại..."
             className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
           />
@@ -229,70 +241,117 @@ export const Customers: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCustomers.map((cust) => (
-                <tr key={cust.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={cust.avatar}
-                        alt={cust.name}
-                        className="w-9 h-9 rounded-full object-cover border border-gray-200"
-                      />
-                      <div>
-                        <p className="font-bold text-gray-900">{cust.name}</p>
-                        <p className="text-[11px] text-blue-600 font-semibold">{cust.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-gray-800 flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-gray-400" /> {cust.email}
-                    </p>
-                    <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3 text-gray-400" /> {cust.phone}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">{cust.ordersCount} đơn</td>
-                  <td className="px-4 py-3 font-bold text-blue-600">{cust.totalSpent}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                        cust.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                      }`}
-                    >
-                      {cust.status === 'Active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                      {cust.status === 'Active' ? 'Hoạt động' : 'Đã khóa'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleOpenViewModal(cust)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Xem chi tiết"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEditModal(cust)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="Sửa thông tin"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenDeleteModal(cust)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Xóa tài khoản"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {paginatedCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy tài khoản khách hàng nào.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedCustomers.map((cust) => (
+                  <tr key={cust.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={cust.avatar}
+                          alt={cust.name}
+                          className="w-9 h-9 rounded-full object-cover border border-gray-200"
+                        />
+                        <div>
+                          <p className="font-bold text-gray-900">{cust.name}</p>
+                          <p className="text-[11px] text-blue-600 font-semibold">{cust.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-gray-800 flex items-center gap-1">
+                        <Mail className="w-3 h-3 text-gray-400" /> {cust.email}
+                      </p>
+                      <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3 text-gray-400" /> {cust.phone}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">{cust.ordersCount} đơn</td>
+                    <td className="px-4 py-3 font-bold text-blue-600">{cust.totalSpent}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                          cust.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        }`}
+                      >
+                        {cust.status === 'Active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                        {cust.status === 'Active' ? 'Hoạt động' : 'Đã khóa'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleOpenViewModal(cust)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(cust)}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Sửa thông tin"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDeleteModal(cust)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa tài khoản"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500 font-medium">
+            Hiển thị <span className="font-bold text-gray-800">{filteredCustomers.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> đến{' '}
+            <span className="font-bold text-gray-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)}</span> trên tổng số{' '}
+            <span className="font-bold text-gray-900">{filteredCustomers.length}</span> khách hàng
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang sau
+            </button>
+          </div>
         </div>
       </div>
 

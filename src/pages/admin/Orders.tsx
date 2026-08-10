@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -13,11 +13,14 @@ import {
   X,
   Save,
   AlertTriangle,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
+import { getAdminOrdersApi, updateOrderStatusApi } from '../../services/orderService';
 
 export interface OrderItem {
   id: string;
+  rawId?: string;
   customerName: string;
   customerPhone: string;
   address: string;
@@ -32,10 +35,14 @@ export const Orders: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [orders, setOrders] = useState<OrderItem[]>([
     {
       id: '#ORD-9482',
+      rawId: '1',
       customerName: 'Nguyễn Văn An',
       customerPhone: '0987.414.899',
       address: '17 Hà Kế Tấn, Phương Liệt, Thanh Xuân, Hà Nội',
@@ -47,6 +54,7 @@ export const Orders: React.FC = () => {
     },
     {
       id: '#ORD-9481',
+      rawId: '2',
       customerName: 'Trần Thị Bình',
       customerPhone: '0912.345.678',
       address: '83b Nguyễn Văn Cừ, Long Biên, Hà Nội',
@@ -55,41 +63,45 @@ export const Orders: React.FC = () => {
       date: '08/08/2026 13:15',
       status: 'Processing',
       paymentMethod: 'Thanh toán COD khi nhận hàng',
-    },
-    {
-      id: '#ORD-9480',
-      customerName: 'Lê Hoàng Cường',
-      customerPhone: '0903.888.999',
-      address: '249 Lý Thường Kiệt, Phường 15, Quận 11, TP.HCM',
-      productName: 'Bàn phím cơ Custom Akko Mod007',
-      total: '3.200.000 ₫',
-      date: '08/08/2026 11:20',
-      status: 'Completed',
-      paymentMethod: 'Ví MoPo / VNPAY',
-    },
-    {
-      id: '#ORD-9479',
-      customerName: 'Phạm Minh Đức',
-      customerPhone: '0977.123.456',
-      address: '45 Lê Duẩn, Quận 1, TP.HCM',
-      productName: 'Card màn hình MSI RTX 4070 Ti',
-      total: '22.900.000 ₫',
-      date: '08/08/2026 09:45',
-      status: 'Shipping',
-      paymentMethod: 'Chuyển khoản Ngân hàng',
-    },
-    {
-      id: '#ORD-9478',
-      customerName: 'Hoàng Văn Em',
-      customerPhone: '0966.999.111',
-      address: '12 Trần Phú, Hải Châu, Đà Nẵng',
-      productName: 'Nguồn Corsair RM1000x + Case NZXT H9',
-      total: '7.800.000 ₫',
-      date: '07/08/2026 17:10',
-      status: 'Cancelled',
-      paymentMethod: 'Thanh toán COD',
-    },
+    }
   ]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await getAdminOrdersApi({ limit: 100 });
+      if (res && res.orders && res.orders.length > 0) {
+        const mapped: OrderItem[] = res.orders.map((o: any) => {
+          let mappedStatus: 'Completed' | 'Processing' | 'Shipping' | 'Cancelled' = 'Processing';
+          if (o.status === 'COMPLETED' || o.status === 'DELIVERED') mappedStatus = 'Completed';
+          else if (o.status === 'SHIPPING' || o.status === 'DELIVERING') mappedStatus = 'Shipping';
+          else if (o.status === 'CANCELLED') mappedStatus = 'Cancelled';
+
+          return {
+            id: o.code || `#ORD-${o.id}`,
+            rawId: o.id.toString(),
+            customerName: o.customerName || (o.user ? o.user.fullName : 'Khách vãng lai'),
+            customerPhone: o.customerPhone || (o.user ? o.user.phone : '') || 'Chưa có SĐT',
+            address: o.shippingAddress || 'Địa chỉ mặc định',
+            productName: o.items && o.items.length > 0 ? o.items.map((it: any) => it.productName || it.product?.name).filter(Boolean).join(', ') : 'Đơn hàng PC Store',
+            total: `${Number(o.totalAmount || 0).toLocaleString('vi-VN')} ₫`,
+            date: new Date(o.createdAt).toLocaleString('vi-VN'),
+            status: mappedStatus,
+            paymentMethod: o.paymentMethod || 'Thanh toán trực tiếp'
+          };
+        });
+        setOrders(mapped);
+      }
+    } catch (err) {
+      console.warn('API getAdminOrders fallback:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   // Modal States
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -113,9 +125,21 @@ export const Orders: React.FC = () => {
   };
 
   // Submit Status Edit
-  const handleStatusSubmit = (e: React.FormEvent) => {
+  const handleStatusSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrder) return;
+    if (selectedOrder.rawId) {
+      let apiStatus = 'PENDING';
+      if (newStatus === 'Completed') apiStatus = 'DELIVERED';
+      else if (newStatus === 'Shipping') apiStatus = 'SHIPPING';
+      else if (newStatus === 'Cancelled') apiStatus = 'CANCELLED';
+      else if (newStatus === 'Processing') apiStatus = 'PROCESSING';
+      try {
+        await updateOrderStatusApi(selectedOrder.rawId, apiStatus);
+      } catch (err) {
+        console.warn('API updateOrderStatus failed fallback:', err);
+      }
+    }
     setOrders(
       orders.map((o) => (o.id === selectedOrder.id ? { ...o, status: newStatus } : o))
     );
@@ -144,6 +168,12 @@ export const Orders: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE) || 1;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-6 font-sans">
       {/* Header Title */}
@@ -153,7 +183,7 @@ export const Orders: React.FC = () => {
             Quản Lý Đơn Hàng
           </h1>
           <p className="text-xs text-gray-500">
-            Theo dõi, cập nhật trạng thái và xử lý thông tin các đơn hàng PC Store.
+            Theo dõi, cập nhật trạng thái và xử lý thông tin các đơn hàng PC Store (10 đơn hàng/trang).
           </p>
         </div>
       </div>
@@ -165,7 +195,10 @@ export const Orders: React.FC = () => {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Tìm mã đơn, tên khách, số ĐT..."
             className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
           />
@@ -175,7 +208,10 @@ export const Orders: React.FC = () => {
           <Filter className="w-4 h-4 text-gray-400 shrink-0" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full sm:w-auto px-3 py-2 bg-gray-50 text-xs text-gray-800 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">Tất cả trạng thái ({orders.length})</option>
@@ -203,68 +239,83 @@ export const Orders: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3.5 font-bold text-blue-600 cursor-pointer hover:underline" onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}>{ord.id}</td>
-                  <td className="px-4 py-3.5">
-                    <p className="font-bold text-gray-900">{ord.customerName}</p>
-                    <p className="text-[11px] text-gray-500">{ord.customerPhone}</p>
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-700 max-w-[200px] truncate">{ord.productName}</td>
-                  <td className="px-4 py-3.5 font-bold text-gray-900">{ord.total}</td>
-                  <td className="px-4 py-3.5 text-gray-500 text-[11px]">{ord.date}</td>
-                  <td className="px-4 py-3.5">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                        ord.status === 'Completed'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          : ord.status === 'Processing'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                          : ord.status === 'Shipping'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-100'
-                          : 'bg-rose-50 text-rose-700 border border-rose-100'
-                      }`}
-                    >
-                      {ord.status === 'Completed' && <CheckCircle2 className="w-3 h-3" />}
-                      {ord.status === 'Processing' && <Clock className="w-3 h-3" />}
-                      {ord.status === 'Shipping' && <Truck className="w-3 h-3" />}
-                      {ord.status === 'Cancelled' && <XCircle className="w-3 h-3" />}
-                      {ord.status === 'Completed'
-                        ? 'Hoàn thành'
-                        : ord.status === 'Processing'
-                        ? 'Đang xử lý'
-                        : ord.status === 'Shipping'
-                        ? 'Đang giao'
-                        : 'Đã hủy'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Xem chi tiết đơn hàng"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => navigate(`/admin/orders/${ord.id.replace('#', '')}`)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="Chỉnh sửa & xử lý đơn hàng"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenDeleteModal(ord)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Xóa đơn hàng"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+                    Đang nạp danh sách đơn hàng từ máy chủ...
                   </td>
                 </tr>
-              ))}
+              ) : paginatedOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy đơn hàng nào khớp với tìm kiếm.
+                  </td>
+                </tr>
+              ) : (
+                paginatedOrders.map((ord) => (
+                  <tr key={ord.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-4 py-3.5 font-bold text-blue-600 cursor-pointer hover:underline" onClick={() => navigate(`/admin/orders/${ord.rawId || ord.id.replace('#', '')}`)}>{ord.id}</td>
+                    <td className="px-4 py-3.5">
+                      <p className="font-bold text-gray-900">{ord.customerName}</p>
+                      <p className="text-[11px] text-gray-500">{ord.customerPhone}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-gray-700 max-w-[200px] truncate">{ord.productName}</td>
+                    <td className="px-4 py-3.5 font-bold text-gray-900">{ord.total}</td>
+                    <td className="px-4 py-3.5 text-gray-500 text-[11px]">{ord.date}</td>
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                          ord.status === 'Completed'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : ord.status === 'Processing'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                            : ord.status === 'Shipping'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                            : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        }`}
+                      >
+                        {ord.status === 'Completed' && <CheckCircle2 className="w-3 h-3" />}
+                        {ord.status === 'Processing' && <Clock className="w-3 h-3" />}
+                        {ord.status === 'Shipping' && <Truck className="w-3 h-3" />}
+                        {ord.status === 'Cancelled' && <XCircle className="w-3 h-3" />}
+                        {ord.status === 'Completed'
+                          ? 'Hoàn thành'
+                          : ord.status === 'Processing'
+                          ? 'Đang xử lý'
+                          : ord.status === 'Shipping'
+                          ? 'Đang giao'
+                          : 'Đã hủy'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleOpenViewModal(ord)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditStatusModal(ord)}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Đổi trạng thái"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDeleteModal(ord)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Hủy đơn"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
