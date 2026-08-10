@@ -21,6 +21,7 @@ import {
 import { getProducts, getCategories } from '../../services/productService';
 import { getAdminOrdersApi } from '../../services/orderService';
 import { getUsersApi } from '../../services/userService';
+import { Link } from 'react-router-dom';
 
 type TimeRange = 'today' | '7days' | 'this_month' | 'quarter' | 'this_year' | 'custom';
 
@@ -369,7 +370,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              {currentData.totalOrders}
+              {realStats.totalOrders > 0 ? `${realStats.totalOrders} đơn hàng` : currentData.totalOrders}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -392,7 +393,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              524 sản phẩm
+              {realStats.totalProducts > 0 ? `${realStats.totalProducts} sản phẩm` : '524 sản phẩm'}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
@@ -415,7 +416,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              892 khách hàng
+              {realStats.totalCustomers > 0 ? `${realStats.totalCustomers} khách hàng` : '892 khách hàng'}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
