@@ -123,3 +123,37 @@ export async function deleteProduct(id: string | number): Promise<{ message: str
   });
 }
 
+export async function createCategoryApi(data: {
+  name: string;
+  slug?: string;
+  description?: string;
+}): Promise<{ message: string; category: ApiCategory }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string; category: ApiCategory }>('/api/categories', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCategoryApi(
+  id: string | number,
+  data: { name?: string; slug?: string; description?: string }
+): Promise<{ message: string; category: ApiCategory }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string; category: ApiCategory }>(`/api/categories/${id}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCategoryApi(id: string | number): Promise<{ message: string }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string }>(`/api/categories/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+

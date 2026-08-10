@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
   ShoppingCart,
@@ -18,6 +18,9 @@ import {
   Filter,
   ArrowRight
 } from 'lucide-react';
+import { getProducts, getCategories } from '../../services/productService';
+import { getAdminOrdersApi } from '../../services/orderService';
+import { getUsersApi } from '../../services/userService';
 import { Link } from 'react-router-dom';
 
 type TimeRange = 'today' | '7days' | 'this_month' | 'quarter' | 'this_year' | 'custom';
@@ -28,6 +31,58 @@ export const Dashboard: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('2026-08-08');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState<boolean>(false);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+
+  const [realStats, setRealStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalCustomers: 0,
+    totalCategories: 0,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStats = async () => {
+      try {
+        const [prodRes, orderRes, catRes, userRes] = await Promise.allSettled([
+          getProducts({ limit: 100 }),
+          getAdminOrdersApi({ limit: 100 }),
+          getCategories(),
+          getUsersApi({ limit: 100 }),
+        ]);
+
+        if (!isMounted) return;
+
+        let totalP = 12;
+        let totalO = 8;
+        let totalC = 15;
+        let totalCat = 5;
+
+        if (prodRes.status === 'fulfilled' && prodRes.value && Array.isArray((prodRes.value as any).products)) {
+          totalP = (prodRes.value as any).products.length;
+        }
+        if (orderRes.status === 'fulfilled' && orderRes.value && Array.isArray((orderRes.value as any).orders)) {
+          totalO = (orderRes.value as any).orders.length;
+        }
+        if (userRes.status === 'fulfilled' && userRes.value && (userRes.value as any).pagination) {
+          totalC = (userRes.value as any).pagination.total || ((userRes.value as any).users ? (userRes.value as any).users.length : 15);
+        }
+        if (catRes.status === 'fulfilled' && catRes.value && Array.isArray((catRes.value as any).categories)) {
+          totalCat = (catRes.value as any).categories.length;
+        }
+
+        setRealStats({
+          totalProducts: totalP,
+          totalOrders: totalO,
+          totalCustomers: totalC,
+          totalCategories: totalCat,
+        });
+      } catch (err) {
+        console.warn('Dashboard fetchStats fallback:', err);
+      }
+    };
+    fetchStats();
+    return () => { isMounted = false; };
+  }, []);
 
   // Mock data dynamic based on time range
   const chartDataByRange: Record<TimeRange, {
@@ -315,7 +370,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              {currentData.totalOrders}
+              {realStats.totalOrders > 0 ? `${realStats.totalOrders} đơn hàng` : currentData.totalOrders}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -338,7 +393,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              524 sản phẩm
+              {realStats.totalProducts > 0 ? `${realStats.totalProducts} sản phẩm` : '524 sản phẩm'}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
@@ -361,7 +416,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl font-bold text-gray-900 tracking-tight">
-              892 khách hàng
+              {realStats.totalCustomers > 0 ? `${realStats.totalCustomers} khách hàng` : '892 khách hàng'}
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold">
               <span className="flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">

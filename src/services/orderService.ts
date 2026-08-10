@@ -31,25 +31,42 @@ export async function cancelOrderApi(id: string, reason?: string): Promise<{ mes
   });
 }
 
-export interface CreateOrderItemPayload {
-  productId: string | number;
-  quantity: number;
-}
+export async function getAdminOrdersApi(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  paymentStatus?: string;
+  search?: string;
+}): Promise<{
+  orders: Order[];
+  pagination?: { total: number; page: number; limit: number; totalPages: number };
+}> {
+  const token = localStorage.getItem('token');
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.status && params.status !== 'All') query.append('status', params.status);
+  if (params?.paymentStatus) query.append('paymentStatus', params.paymentStatus);
+  if (params?.search) query.append('search', params.search);
 
-export interface CreateOrderPayload {
-  customerName: string;
-  customerPhone: string;
-  shippingAddress: string;
-  paymentMethod?: 'COD' | 'VNPAY' | 'MOMO' | 'STRIPE' | 'MOCK';
-  notes?: string;
-  couponCode?: string;
-  shippingFee?: number;
-  items?: CreateOrderItemPayload[];
-}
-
-export async function createOrderApi(payload: CreateOrderPayload): Promise<{ message: string; order: Order }> {
-  return fetchApi<{ message: string; order: Order }>('/api/orders', {
-    method: 'POST',
-    body: JSON.stringify(payload),
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchApi<{
+    orders: Order[];
+    pagination?: { total: number; page: number; limit: number; totalPages: number };
+  }>(`/api/orders${queryString}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export async function updateOrderStatusApi(
+  id: string,
+  status: string
+): Promise<{ message: string; order: Order }> {
+  const token = localStorage.getItem('token');
+  return fetchApi<{ message: string; order: Order }>(`/api/orders/${id}/status`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ status }),
+  });
+}
+

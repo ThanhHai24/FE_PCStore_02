@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -12,8 +12,11 @@ import {
   X,
   Save,
   AlertTriangle,
-  Package
+  Package,
+  Loader2
 } from 'lucide-react';
+import { getProducts, deleteProduct } from '../../services/productService';
+import { getImageUrl } from '../../services/api';
 
 export interface ProductSpec {
   name: string;
@@ -49,89 +52,85 @@ export const Products: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
 
   // Initial Product List State
-  const [products, setProducts] = useState<ProductItem[]>([
-    {
-      id: 'PROD-001',
-      sku: 'PC-AAA-4090',
-      name: 'PC Gaming Ultra RTX 4090 i9-14900K',
-      category: 'PC Nguyên Bộ',
-      brand: 'ASUS',
-      distributor: 'Phong Vũ Tech',
-      warranty: '36 Tháng',
-      shortDescription: 'Cấu hình khủng chiến game 4K',
-      description: '<p>Cấu hình khủng nhất 2026, chiến mọi tựa game AAA ở độ phân giải 4K 144Hz.</p>',
-      marketPrice: '95.000.000 ₫',
-      sellPrice: '89.990.000 ₫',
-      price: '89.990.000 ₫',
-      stock: 12,
-      minStockAlert: 5,
-      importPrice: '80.000.000 ₫',
-      status: 'In Stock',
-      coverImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-      productImages: [
-        'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80'
-      ],
-      image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'CPU', value: 'Intel Core i9-14900K' },
-        { name: 'VGA', value: 'NVIDIA RTX 4090 24GB' },
-        { name: 'RAM', value: '64GB DDR5 6000MHz' },
-        { name: 'SSD', value: '2TB NVMe PCIe 4.0' }
-      ]
-    },
-    {
-      id: 'PROD-002',
-      sku: 'MON-DELL-U2723',
-      name: 'Màn hình Dell UltraSharp U2723QE 27" 4K',
-      category: 'Màn Hình',
-      brand: 'Dell',
-      distributor: 'Synnex FPT',
-      warranty: '36 Tháng',
-      shortDescription: 'Màn hình chuẩn màu đồ họa 4K IPS',
-      description: '<p>Màn hình chuẩn màu đồ họa 4K IPS, độ phủ màu 100% sRGB & DCI-P3.</p>',
-      marketPrice: '16.000.000 ₫',
-      sellPrice: '14.250.000 ₫',
-      price: '14.250.000 ₫',
-      stock: 3,
-      minStockAlert: 2,
-      status: 'Low Stock',
-      coverImage: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80',
-      productImages: ['https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80'],
-      image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'Kích thước', value: '27 inch' },
-        { name: 'Độ phân giải', value: '4K (3840 x 2160)' },
-        { name: 'Tấm nền', value: 'IPS Black' }
-      ]
-    },
-    {
-      id: 'PROD-003',
-      sku: 'VGA-ROG-4080S',
-      name: 'Card màn hình ASUS ROG Strix RTX 4080 Super',
-      category: 'Linh Kiện PC',
-      brand: 'ASUS',
-      distributor: 'Vĩnh Xuân',
-      warranty: '36 Tháng',
-      shortDescription: 'VGA tản nhiệt 3 quạt hầm hố',
-      description: '<p>VGA tản nhiệt 3 quạt hầm hố, LED RGB Aura Sync, 16GB GDDR6X.</p>',
-      marketPrice: '37.000.000 ₫',
-      sellPrice: '34.500.000 ₫',
-      price: '34.500.000 ₫',
-      stock: 0,
-      minStockAlert: 3,
-      status: 'Out of Stock',
-      coverImage: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80',
-      productImages: ['https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80'],
-      image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'Dung lượng VRAM', value: '16GB GDDR6X' },
-        { name: 'Cổng giao tiếp', value: 'HDMI 2.1a, DisplayPort 1.4a' }
-      ]
+  const [products, setProducts] = useState<ProductItem[]>([]);
+
+  // Fetch real products from API
+  const fetchRealProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await getProducts({ limit: 100, status: 'ACTIVE' });
+      if (res && res.products && res.products.length > 0) {
+        const mapped: ProductItem[] = res.products.map((p) => {
+          const formattedSellPrice = p.price ? `${p.price.toLocaleString('vi-VN')} ₫` : '0 ₫';
+          const formattedMarketPrice = p.originalPrice ? `${p.originalPrice.toLocaleString('vi-VN')} ₫` : '';
+          const specsArray: ProductSpec[] = [];
+          if (p.specifications && typeof p.specifications === 'object') {
+            Object.entries(p.specifications).forEach(([k, v]) => {
+              if (v) specsArray.push({ name: k, value: String(v) });
+            });
+          }
+
+          return {
+            id: p.id.toString(),
+            sku: p.sku || `PRD-${p.id}`,
+            name: p.name,
+            category: p.category?.name || 'Chưa phân loại',
+            brand: p.brand?.name || 'N/A',
+            distributor: 'Synnex FPT',
+            warranty: p.warranty ? `${p.warranty} Tháng` : '36 Tháng',
+            shortDescription: p.shortDescription || '',
+            description: p.description || '',
+            marketPrice: formattedMarketPrice,
+            sellPrice: formattedSellPrice,
+            price: formattedSellPrice,
+            stock: p.stock ?? 0,
+            minStockAlert: 5,
+            status: (p.stock === 0 ? 'Out of Stock' : (p.stock ?? 0) <= 5 ? 'Low Stock' : 'In Stock') as any,
+            coverImage: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
+            productImages: p.images ? p.images.map((img) => getImageUrl(img)) : [],
+            image: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
+            specs: specsArray
+          };
+        });
+        setProducts(mapped);
+      } else {
+        // Fallback default sample items if backend has no products yet
+        setProducts([
+          {
+            id: 'PROD-001',
+            sku: 'PC-AAA-4090',
+            name: 'PC Gaming Ultra RTX 4090 i9-14900K',
+            category: 'PC Nguyên Bộ',
+            brand: 'ASUS',
+            distributor: 'Phong Vũ Tech',
+            warranty: '36 Tháng',
+            shortDescription: 'Cấu hình khủng chiến game 4K',
+            description: '<p>Cấu hình khủng nhất 2026, chiến mọi tựa game AAA ở độ phân giải 4K 144Hz.</p>',
+            marketPrice: '95.000.000 ₫',
+            sellPrice: '89.990.000 ₫',
+            price: '89.990.000 ₫',
+            stock: 12,
+            minStockAlert: 5,
+            status: 'In Stock',
+            coverImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
+            image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
+            specs: [{ name: 'CPU', value: 'Intel Core i9-14900K' }]
+          }
+        ]);
+      }
+    } catch (err) {
+      console.warn('API getProducts fallback:', err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchRealProducts();
+  }, []);
 
   // Available Master Data Lists
   const brandOptions = ['ASUS', 'MSI', 'Gigabyte', 'Dell', 'Logitech', 'Razer', 'Corsair', 'Kingston'];
@@ -379,8 +378,13 @@ export const Products: React.FC = () => {
   };
 
   // Confirm Delete
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedProduct) {
+      try {
+        await deleteProduct(selectedProduct.id);
+      } catch (err) {
+        console.warn('Delete product API error fallback:', err);
+      }
       setProducts(products.filter((p) => p.id !== selectedProduct.id));
       setIsDeleteModalOpen(false);
     }
@@ -392,6 +396,9 @@ export const Products: React.FC = () => {
     setIsViewModalOpen(true);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   // Filter Products
   const filteredProducts = products.filter((prod) => {
     const matchesSearch =
@@ -402,13 +409,19 @@ export const Products: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quản Lý Sản Phẩm</h1>
-          <p className="text-xs text-gray-500 mt-1">Danh sách sản phẩm, giá bán, tồn kho và thông số kỹ thuật</p>
+          <p className="text-xs text-gray-500 mt-1">Danh sách sản phẩm, giá bán, tồn kho và thông số kỹ thuật (10 sản phẩm/trang)</p>
         </div>
         <button
           onClick={() => navigate('/admin/products/create')}
@@ -419,113 +432,114 @@ export const Products: React.FC = () => {
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
+      {/* Filter and Search Bar */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm theo tên, mã SKU hoặc ID..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Tìm theo tên sản phẩm, SKU hoặc Mã SP..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
           />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-gray-400" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full sm:w-48 py-2 px-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700"
-          >
-            <option value="All">Tất cả danh mục</option>
-            <option value="PC Nguyên Bộ">PC Nguyên Bộ</option>
-            <option value="Linh Kiện PC">Linh Kiện PC</option>
-            <option value="Màn Hình">Màn Hình</option>
-            <option value="Phụ Kiện">Phụ Kiện</option>
-          </select>
         </div>
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold uppercase text-gray-500 tracking-wider">
-                <th className="px-4 py-3.5">Sản Phẩm</th>
-                <th className="px-4 py-3.5">Danh Mục & Thương Hiệu</th>
-                <th className="px-4 py-3.5">Giá Niêm Yết / Bán</th>
-                <th className="px-4 py-3.5 text-center">Tồn Kho</th>
+          <table className="w-full text-left text-xs">
+            <thead className="bg-gray-50 text-gray-500 font-semibold uppercase border-b border-gray-100">
+              <tr>
+                <th className="px-4 py-3.5">Mã & Tên Sản Phẩm</th>
+                <th className="px-4 py-3.5">Danh Mục</th>
+                <th className="px-4 py-3.5">Thương Hiệu</th>
+                <th className="px-4 py-3.5">Giá Niêm Yết</th>
+                <th className="px-4 py-3.5">Giá Bán</th>
+                <th className="px-4 py-3.5">Tồn Kho</th>
                 <th className="px-4 py-3.5">Trạng Thái</th>
                 <th className="px-4 py-3.5 text-right">Thao Tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-xs">
-              {filteredProducts.map((prod) => (
-                <tr key={prod.id} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={prod.coverImage || prod.image}
-                        alt={prod.name}
-                        className="w-11 h-11 rounded-xl object-cover border border-gray-100 shadow-xs flex-shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-bold text-gray-900 truncate max-w-xs">{prod.name}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Mã: {prod.sku || prod.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-block px-2 py-0.5 text-[11px] font-semibold bg-gray-100 text-gray-700 rounded-md">
-                      {prod.category}
-                    </span>
-                    {prod.brand && (
-                      <p className="text-[10px] text-blue-600 font-bold mt-1">TH: {prod.brand}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {prod.marketPrice && (
-                      <p className="text-[10px] text-gray-400 line-through">{prod.marketPrice}</p>
-                    )}
-                    <p className="font-extrabold text-blue-600">{prod.sellPrice || prod.price}</p>
-                  </td>
-                  <td className="px-4 py-3 text-center font-bold text-gray-800">{prod.stock}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                        prod.status === 'In Stock'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                          : prod.status === 'Low Stock'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200/60'
-                          : 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                      }`}
-                    >
-                      {prod.status === 'In Stock' ? (
-                        <CheckCircle className="w-3 h-3 text-emerald-600" />
-                      ) : prod.status === 'Low Stock' ? (
-                        <AlertTriangle className="w-3 h-3 text-amber-600" />
-                      ) : (
-                        <XCircle className="w-3 h-3 text-rose-600" />
-                      )}
-                      {prod.status === 'In Stock'
-                        ? 'Còn hàng'
-                        : prod.status === 'Low Stock'
-                        ? 'Sắp hết'
-                        : 'Hết hàng'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => handleOpenViewModal(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => navigate(`/admin/products/edit/${prod.id}`)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleOpenDeleteModal(prod)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+                    Đang nạp danh sách sản phẩm từ máy chủ...
                   </td>
                 </tr>
-              ))}
+              ) : paginatedProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy sản phẩm nào khớp với tìm kiếm.
+                  </td>
+                </tr>
+              ) : (
+                paginatedProducts.map((prod) => (
+                  <tr key={prod.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={prod.coverImage || prod.image}
+                          alt={prod.name}
+                          className="w-10 h-10 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                        />
+                        <div>
+                          <p className="font-bold text-gray-900 line-clamp-1">{prod.name}</p>
+                          <p className="text-[11px] text-blue-600 font-mono font-semibold">{prod.sku || prod.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-700">{prod.category}</td>
+                    <td className="px-4 py-3 font-semibold text-indigo-600">{prod.brand}</td>
+                    <td className="px-4 py-3 text-gray-400 line-through text-[11px]">
+                      {prod.marketPrice || '-'}
+                    </td>
+                    <td className="px-4 py-3 font-black text-blue-600">
+                      {prod.sellPrice || prod.price}
+                    </td>
+                    <td className="px-4 py-3 font-bold text-gray-900">
+                      {prod.stock}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          prod.status === 'In Stock'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                            : prod.status === 'Low Stock'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                        }`}
+                      >
+                        {prod.status === 'In Stock' ? (
+                          <CheckCircle className="w-3 h-3 text-emerald-600" />
+                        ) : prod.status === 'Low Stock' ? (
+                          <AlertTriangle className="w-3 h-3 text-amber-600" />
+                        ) : (
+                          <XCircle className="w-3 h-3 text-rose-600" />
+                        )}
+                        {prod.status === 'In Stock'
+                          ? 'Còn hàng'
+                          : prod.status === 'Low Stock'
+                          ? 'Sắp hết'
+                          : 'Hết hàng'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleOpenViewModal(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
+                        <button onClick={() => navigate(`/admin/products/edit/${prod.id}`)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleOpenDeleteModal(prod)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

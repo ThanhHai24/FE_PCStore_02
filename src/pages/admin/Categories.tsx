@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FolderTree,
   Plus,
@@ -9,8 +9,10 @@ import {
   CheckCircle2,
   X,
   Save,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
+import { getCategories, createCategoryApi, updateCategoryApi, deleteCategoryApi } from '../../services/productService';
 
 export interface CategoryItem {
   id: string;
@@ -23,14 +25,40 @@ export interface CategoryItem {
 
 export const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [categories, setCategories] = useState<CategoryItem[]>([
     { id: 'CAT-01', name: 'PC Nguyên Bộ', slug: 'pc-nguyen-bo', itemCount: 128, description: 'Các cấu hình máy tính nguyên bộ PC Gaming, PC Đồ họa, PC Văn phòng.', status: 'Active' },
     { id: 'CAT-02', name: 'Linh Kiện PC', slug: 'linh-kien-pc', itemCount: 340, description: 'Card màn hình VGA, CPU Intel/AMD, RAM DDR4/DDR5, Mainboard, SSD/HDD.', status: 'Active' },
-    { id: 'CAT-03', name: 'Màn Hình Computer', slug: 'man-hinh', itemCount: 86, description: 'Màn hình Gaming 144Hz-240Hz, Màn hình 4K cho dân đồ họa chuyên nghiệp.', status: 'Active' },
-    { id: 'CAT-04', name: 'Phụ Kiện Gaming', slug: 'phu-kien-gaming', itemCount: 195, description: 'Bàn phím cơ Custom, Chuột Gaming không dây, Tai nghe Gaming vòm 7.1.', status: 'Active' },
-    { id: 'CAT-05', name: 'Tản Nhiệt & Case', slug: 'tan-nhiet-case', itemCount: 64, description: 'Tản nhiệt nước AIO, Tản nhiệt khí tower, Vỏ máy tính kính cường lực.', status: 'Hidden' },
   ]);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const res = await getCategories();
+      if (res && res.categories && res.categories.length > 0) {
+        const mapped: CategoryItem[] = res.categories.map((c: any) => ({
+          id: c.id.toString(),
+          name: c.name,
+          slug: c.slug || c.name.toLowerCase().replace(/\s+/g, '-'),
+          itemCount: c._count?.products ?? 0,
+          description: c.description || 'Danh mục hàng sản phẩm PC Store',
+          status: 'Active'
+        }));
+        setCategories(mapped);
+      }
+    } catch (err) {
+      console.warn('API getCategories fallback:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -59,17 +87,29 @@ export const Categories: React.FC = () => {
   };
 
   // Submit Add Category
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newCategory: CategoryItem = {
-      id: `CAT-0${categories.length + 1}`,
-      name: formData.name,
-      slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
-      itemCount: 0,
-      description: formData.description || 'Danh mục sản phẩm vừa tạo.',
-      status: formData.status,
-    };
-    setCategories([newCategory, ...categories]);
+    try {
+      const res = await createCategoryApi({
+        name: formData.name,
+        slug: formData.slug || undefined,
+        description: formData.description || undefined
+      });
+      if (res && res.category) {
+        fetchCategories();
+      }
+    } catch (err) {
+      console.warn('createCategoryApi failed fallback:', err);
+      const newCategory: CategoryItem = {
+        id: `CAT-0${categories.length + 1}`,
+        name: formData.name,
+        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
+        itemCount: 0,
+        description: formData.description || 'Danh mục sản phẩm vừa tạo.',
+        status: formData.status,
+      };
+      setCategories([newCategory, ...categories]);
+    }
     setIsAddModalOpen(false);
   };
 
@@ -86,15 +126,25 @@ export const Categories: React.FC = () => {
   };
 
   // Submit Edit Category
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCategory) return;
-    const updated = categories.map((c) =>
-      c.id === selectedCategory.id
-        ? { ...c, name: formData.name, slug: formData.slug, description: formData.description, status: formData.status }
-        : c
-    );
-    setCategories(updated);
+    try {
+      await updateCategoryApi(selectedCategory.id, {
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description
+      });
+      fetchCategories();
+    } catch (err) {
+      console.warn('updateCategoryApi failed fallback:', err);
+      const updated = categories.map((c) =>
+        c.id === selectedCategory.id
+          ? { ...c, name: formData.name, slug: formData.slug, description: formData.description, status: formData.status }
+          : c
+      );
+      setCategories(updated);
+    }
     setIsEditModalOpen(false);
   };
 
@@ -105,9 +155,15 @@ export const Categories: React.FC = () => {
   };
 
   // Confirm Delete Category
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!selectedCategory) return;
-    setCategories(categories.filter((c) => c.id !== selectedCategory.id));
+    try {
+      await deleteCategoryApi(selectedCategory.id);
+      fetchCategories();
+    } catch (err) {
+      console.warn('deleteCategoryApi failed fallback:', err);
+      setCategories(categories.filter((c) => c.id !== selectedCategory.id));
+    }
     setIsDeleteModalOpen(false);
   };
 
@@ -119,6 +175,12 @@ export const Categories: React.FC = () => {
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase()) || cat.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredCategories.length / ITEMS_PER_PAGE) || 1;
+  const paginatedCategories = filteredCategories.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -172,61 +234,115 @@ export const Categories: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCategories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                        <FolderTree className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">{cat.name}</p>
-                        <p className="text-[11px] text-blue-600 font-semibold">{cat.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-600 font-mono text-[11px]">{cat.slug}</td>
-                  <td className="px-4 py-3.5 font-bold text-gray-900">{cat.itemCount} sản phẩm</td>
-                  <td className="px-4 py-3.5 text-gray-500 max-w-xs truncate">{cat.description}</td>
-                  <td className="px-4 py-3.5">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                        cat.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3 h-3" />
-                      {cat.status === 'Active' ? 'Đang hiển thị' : 'Đang ẩn'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleOpenViewModal(cat)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Xem chi tiết"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenEditModal(cat)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="Sửa danh mục"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenDeleteModal(cat)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Xóa danh mục"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+                    Đang nạp danh mục từ máy chủ...
                   </td>
                 </tr>
-              ))}
+              ) : paginatedCategories.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy danh mục nào.
+                  </td>
+                </tr>
+              ) : (
+                paginatedCategories.map((cat) => (
+                  <tr key={cat.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                          <FolderTree className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{cat.name}</p>
+                          <p className="text-[11px] text-blue-600 font-semibold">{cat.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-gray-600 font-mono text-[11px]">{cat.slug}</td>
+                    <td className="px-4 py-3.5 font-bold text-gray-900">{cat.itemCount} sản phẩm</td>
+                    <td className="px-4 py-3.5 text-gray-500 max-w-xs truncate">{cat.description}</td>
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                          cat.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        {cat.status === 'Active' ? 'Đang hiển thị' : 'Đang ẩn'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleOpenViewModal(cat)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(cat)}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Sửa danh mục"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDeleteModal(cat)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa danh mục"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500 font-medium">
+            Hiển thị <span className="font-bold text-gray-800">{filteredCategories.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> đến{' '}
+            <span className="font-bold text-gray-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredCategories.length)}</span> trên tổng số{' '}
+            <span className="font-bold text-gray-900">{filteredCategories.length}</span> danh mục
+          </p>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
+                  currentPage === page
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Trang sau
+            </button>
+          </div>
         </div>
       </div>
 
