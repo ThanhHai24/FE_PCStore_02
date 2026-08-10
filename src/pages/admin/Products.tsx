@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -12,8 +12,11 @@ import {
   X,
   Save,
   AlertTriangle,
-  Package
+  Package,
+  Loader2
 } from 'lucide-react';
+import { getProducts, deleteProduct } from '../../services/productService';
+import { getImageUrl } from '../../services/api';
 
 export interface ProductSpec {
   name: string;
@@ -49,89 +52,85 @@ export const Products: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
 
   // Initial Product List State
-  const [products, setProducts] = useState<ProductItem[]>([
-    {
-      id: 'PROD-001',
-      sku: 'PC-AAA-4090',
-      name: 'PC Gaming Ultra RTX 4090 i9-14900K',
-      category: 'PC Nguyên Bộ',
-      brand: 'ASUS',
-      distributor: 'Phong Vũ Tech',
-      warranty: '36 Tháng',
-      shortDescription: 'Cấu hình khủng chiến game 4K',
-      description: '<p>Cấu hình khủng nhất 2026, chiến mọi tựa game AAA ở độ phân giải 4K 144Hz.</p>',
-      marketPrice: '95.000.000 ₫',
-      sellPrice: '89.990.000 ₫',
-      price: '89.990.000 ₫',
-      stock: 12,
-      minStockAlert: 5,
-      importPrice: '80.000.000 ₫',
-      status: 'In Stock',
-      coverImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-      productImages: [
-        'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80'
-      ],
-      image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'CPU', value: 'Intel Core i9-14900K' },
-        { name: 'VGA', value: 'NVIDIA RTX 4090 24GB' },
-        { name: 'RAM', value: '64GB DDR5 6000MHz' },
-        { name: 'SSD', value: '2TB NVMe PCIe 4.0' }
-      ]
-    },
-    {
-      id: 'PROD-002',
-      sku: 'MON-DELL-U2723',
-      name: 'Màn hình Dell UltraSharp U2723QE 27" 4K',
-      category: 'Màn Hình',
-      brand: 'Dell',
-      distributor: 'Synnex FPT',
-      warranty: '36 Tháng',
-      shortDescription: 'Màn hình chuẩn màu đồ họa 4K IPS',
-      description: '<p>Màn hình chuẩn màu đồ họa 4K IPS, độ phủ màu 100% sRGB & DCI-P3.</p>',
-      marketPrice: '16.000.000 ₫',
-      sellPrice: '14.250.000 ₫',
-      price: '14.250.000 ₫',
-      stock: 3,
-      minStockAlert: 2,
-      status: 'Low Stock',
-      coverImage: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80',
-      productImages: ['https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80'],
-      image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'Kích thước', value: '27 inch' },
-        { name: 'Độ phân giải', value: '4K (3840 x 2160)' },
-        { name: 'Tấm nền', value: 'IPS Black' }
-      ]
-    },
-    {
-      id: 'PROD-003',
-      sku: 'VGA-ROG-4080S',
-      name: 'Card màn hình ASUS ROG Strix RTX 4080 Super',
-      category: 'Linh Kiện PC',
-      brand: 'ASUS',
-      distributor: 'Vĩnh Xuân',
-      warranty: '36 Tháng',
-      shortDescription: 'VGA tản nhiệt 3 quạt hầm hố',
-      description: '<p>VGA tản nhiệt 3 quạt hầm hố, LED RGB Aura Sync, 16GB GDDR6X.</p>',
-      marketPrice: '37.000.000 ₫',
-      sellPrice: '34.500.000 ₫',
-      price: '34.500.000 ₫',
-      stock: 0,
-      minStockAlert: 3,
-      status: 'Out of Stock',
-      coverImage: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80',
-      productImages: ['https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80'],
-      image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=200&q=80',
-      specs: [
-        { name: 'Dung lượng VRAM', value: '16GB GDDR6X' },
-        { name: 'Cổng giao tiếp', value: 'HDMI 2.1a, DisplayPort 1.4a' }
-      ]
+  const [products, setProducts] = useState<ProductItem[]>([]);
+
+  // Fetch real products from API
+  const fetchRealProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await getProducts({ limit: 100, status: 'ACTIVE' });
+      if (res && res.products && res.products.length > 0) {
+        const mapped: ProductItem[] = res.products.map((p) => {
+          const formattedSellPrice = p.price ? `${p.price.toLocaleString('vi-VN')} ₫` : '0 ₫';
+          const formattedMarketPrice = p.originalPrice ? `${p.originalPrice.toLocaleString('vi-VN')} ₫` : '';
+          const specsArray: ProductSpec[] = [];
+          if (p.specifications && typeof p.specifications === 'object') {
+            Object.entries(p.specifications).forEach(([k, v]) => {
+              if (v) specsArray.push({ name: k, value: String(v) });
+            });
+          }
+
+          return {
+            id: p.id.toString(),
+            sku: p.sku || `PRD-${p.id}`,
+            name: p.name,
+            category: p.category?.name || 'Chưa phân loại',
+            brand: p.brand?.name || 'N/A',
+            distributor: 'Synnex FPT',
+            warranty: p.warranty ? `${p.warranty} Tháng` : '36 Tháng',
+            shortDescription: p.shortDescription || '',
+            description: p.description || '',
+            marketPrice: formattedMarketPrice,
+            sellPrice: formattedSellPrice,
+            price: formattedSellPrice,
+            stock: p.stock ?? 0,
+            minStockAlert: 5,
+            status: (p.stock === 0 ? 'Out of Stock' : (p.stock ?? 0) <= 5 ? 'Low Stock' : 'In Stock') as any,
+            coverImage: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
+            productImages: p.images ? p.images.map((img) => getImageUrl(img)) : [],
+            image: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
+            specs: specsArray
+          };
+        });
+        setProducts(mapped);
+      } else {
+        // Fallback default sample items if backend has no products yet
+        setProducts([
+          {
+            id: 'PROD-001',
+            sku: 'PC-AAA-4090',
+            name: 'PC Gaming Ultra RTX 4090 i9-14900K',
+            category: 'PC Nguyên Bộ',
+            brand: 'ASUS',
+            distributor: 'Phong Vũ Tech',
+            warranty: '36 Tháng',
+            shortDescription: 'Cấu hình khủng chiến game 4K',
+            description: '<p>Cấu hình khủng nhất 2026, chiến mọi tựa game AAA ở độ phân giải 4K 144Hz.</p>',
+            marketPrice: '95.000.000 ₫',
+            sellPrice: '89.990.000 ₫',
+            price: '89.990.000 ₫',
+            stock: 12,
+            minStockAlert: 5,
+            status: 'In Stock',
+            coverImage: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
+            image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
+            specs: [{ name: 'CPU', value: 'Intel Core i9-14900K' }]
+          }
+        ]);
+      }
+    } catch (err) {
+      console.warn('API getProducts fallback:', err);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchRealProducts();
+  }, []);
 
   // Available Master Data Lists
   const brandOptions = ['ASUS', 'MSI', 'Gigabyte', 'Dell', 'Logitech', 'Razer', 'Corsair', 'Kingston'];
@@ -379,8 +378,13 @@ export const Products: React.FC = () => {
   };
 
   // Confirm Delete
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedProduct) {
+      try {
+        await deleteProduct(selectedProduct.id);
+      } catch (err) {
+        console.warn('Delete product API error fallback:', err);
+      }
       setProducts(products.filter((p) => p.id !== selectedProduct.id));
       setIsDeleteModalOpen(false);
     }
