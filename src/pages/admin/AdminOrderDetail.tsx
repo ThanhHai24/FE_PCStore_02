@@ -11,8 +11,9 @@ import {
   Clock,
   DollarSign
 } from 'lucide-react';
-import { getOrderDetailApi } from '../../services/orderService';
+import { getOrderDetailApi, updateOrderStatusApi } from '../../services/orderService';
 import { getImageUrl } from '../../services/api';
+
 
 export interface AdminOrderItemDetail {
   id: string;
@@ -178,26 +179,29 @@ export const AdminOrderDetail: React.FC = () => {
 
   const currentStepIdx = getStepIndex(orderStatus);
 
-  const handleConfirmOrder = () => {
-    setOrderStatus('CONFIRMED');
-    setOrderData(prev => ({
-      ...prev,
-      activityLogs: [
-        ...prev.activityLogs,
-        { time: new Date().toLocaleString('vi-VN'), text: 'Admin xác nhận đơn hàng thành công' }
-      ]
-    }));
-  };
-
-  const handleCancelOrder = () => {
-    setOrderStatus('CANCELLED');
-    setOrderData(prev => ({
-      ...prev,
-      activityLogs: [
-        ...prev.activityLogs,
-        { time: new Date().toLocaleString('vi-VN'), text: 'Admin đã hủy đơn hàng' }
-      ]
-    }));
+  const handleUpdateStatus = async (targetStatus: string) => {
+    if (!id) return;
+    try {
+      const targetCodeOrId = id.replace('#', '');
+      const res = await updateOrderStatusApi(targetCodeOrId, targetStatus);
+      if (res && res.order) {
+        setOrderStatus(res.order.status as any);
+        if (res.order.paymentStatus) {
+          setOrderData(prev => ({ ...prev, paymentStatus: res.order.paymentStatus }));
+        }
+      } else {
+        setOrderStatus(targetStatus as any);
+      }
+      setOrderData(prev => ({
+        ...prev,
+        activityLogs: [
+          ...prev.activityLogs,
+          { time: new Date().toLocaleString('vi-VN'), text: `Admin cập nhật trạng thái thành: ${targetStatus}` }
+        ]
+      }));
+    } catch (err: any) {
+      alert(err.message || 'Lỗi cập nhật trạng thái đơn hàng');
+    }
   };
 
   if (loading) {
@@ -220,25 +224,45 @@ export const AdminOrderDetail: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {orderStatus !== 'CANCELLED' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {orderStatus !== 'CANCELLED' && orderStatus !== 'DELIVERED' && (
             <button
-              onClick={handleCancelOrder}
-              className="px-4 py-2 text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition-colors shadow-xs"
+              onClick={() => handleUpdateStatus('CANCELLED')}
+              className="px-3.5 py-2 text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white rounded-lg transition-colors shadow-xs"
             >
               Hủy đơn
             </button>
           )}
+
           {orderStatus === 'PENDING' && (
             <button
-              onClick={handleConfirmOrder}
-              className="px-4 py-2 text-xs font-bold bg-[#1D52E7] hover:bg-blue-700 text-white rounded-lg transition-colors shadow-xs"
+              onClick={() => handleUpdateStatus('CONFIRMED')}
+              className="px-3.5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-xs"
             >
-              Xác nhận đơn hàng
+              Xác nhận đơn hàng (CONFIRMED)
+            </button>
+          )}
+
+          {orderStatus === 'CONFIRMED' && (
+            <button
+              onClick={() => handleUpdateStatus('SHIPPING')}
+              className="px-3.5 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors shadow-xs"
+            >
+              Giao hàng (SHIPPING)
+            </button>
+          )}
+
+          {orderStatus === 'SHIPPING' && (
+            <button
+              onClick={() => handleUpdateStatus('DELIVERED')}
+              className="px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-xs"
+            >
+              Hoàn thành (DELIVERED)
             </button>
           )}
         </div>
       </div>
+
 
       {/* Trạng thái đơn hàng (Timeline Progress) */}
       <div className="bg-white rounded-xl border border-gray-200/80 p-6 shadow-xs space-y-4">

@@ -1,6 +1,28 @@
 import { fetchApi } from './api';
 import type { Order, OrderListResponse } from '../types/order';
 
+export interface CreateOrderPayload {
+  customerName: string;
+  customerPhone: string;
+  shippingAddress: string;
+  paymentMethod?: string;
+  notes?: string;
+  couponCode?: string;
+  shippingFee?: number;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+}
+
+export async function createOrderApi(payload: CreateOrderPayload): Promise<{ message: string; order: Order }> {
+  return fetchApi<{ message: string; order: Order }>('/api/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+
 export async function getMyOrdersApi(params?: {
   page?: number;
   limit?: number;

@@ -27,7 +27,7 @@ export interface OrderItem {
   productName: string;
   total: string;
   date: string;
-  status: 'Completed' | 'Processing' | 'Shipping' | 'Cancelled';
+  status: 'Pending' | 'Confirmed' | 'Processing' | 'Shipping' | 'Completed' | 'Cancelled';
   paymentMethod: string;
 }
 
@@ -72,9 +72,12 @@ export const Orders: React.FC = () => {
       const res = await getAdminOrdersApi({ limit: 100 });
       if (res && res.orders && res.orders.length > 0) {
         const mapped: OrderItem[] = res.orders.map((o: any) => {
-          let mappedStatus: 'Completed' | 'Processing' | 'Shipping' | 'Cancelled' = 'Processing';
+          let mappedStatus: 'Pending' | 'Confirmed' | 'Processing' | 'Shipping' | 'Completed' | 'Cancelled' = 'Pending';
           if (o.status === 'COMPLETED' || o.status === 'DELIVERED') mappedStatus = 'Completed';
-          else if (o.status === 'SHIPPING' || o.status === 'DELIVERING') mappedStatus = 'Shipping';
+          else if (o.status === 'SHIPPING' || o.status === 'SHIPPED' || o.status === 'DELIVERING') mappedStatus = 'Shipping';
+          else if (o.status === 'CONFIRMED') mappedStatus = 'Confirmed';
+          else if (o.status === 'PENDING') mappedStatus = 'Pending';
+          else if (o.status === 'PROCESSING') mappedStatus = 'Processing';
           else if (o.status === 'CANCELLED') mappedStatus = 'Cancelled';
 
           return {
@@ -109,7 +112,7 @@ export const Orders: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
-  const [newStatus, setNewStatus] = useState<'Completed' | 'Processing' | 'Shipping' | 'Cancelled'>('Processing');
+  const [newStatus, setNewStatus] = useState<'Pending' | 'Confirmed' | 'Processing' | 'Shipping' | 'Completed' | 'Cancelled'>('Processing');
 
   // Open View Details
   const handleOpenViewModal = (order: OrderItem) => {
@@ -134,6 +137,8 @@ export const Orders: React.FC = () => {
       else if (newStatus === 'Shipping') apiStatus = 'SHIPPING';
       else if (newStatus === 'Cancelled') apiStatus = 'CANCELLED';
       else if (newStatus === 'Processing') apiStatus = 'PROCESSING';
+      else if (newStatus === 'Confirmed') apiStatus = 'CONFIRMED';
+      else if (newStatus === 'Pending') apiStatus = 'PENDING';
       try {
         await updateOrderStatusApi(selectedOrder.rawId, apiStatus);
       } catch (err) {
@@ -215,6 +220,8 @@ export const Orders: React.FC = () => {
             className="w-full sm:w-auto px-3 py-2 bg-gray-50 text-xs text-gray-800 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="All">Tất cả trạng thái ({orders.length})</option>
+            <option value="Pending">Chờ xác nhận</option>
+            <option value="Confirmed">Đã xác nhận</option>
             <option value="Processing">Đang xử lý</option>
             <option value="Shipping">Đang vận chuyển</option>
             <option value="Completed">Đã hoàn thành</option>
@@ -276,11 +283,17 @@ export const Orders: React.FC = () => {
                         }`}
                       >
                         {ord.status === 'Completed' && <CheckCircle2 className="w-3 h-3" />}
+                        {ord.status === 'Confirmed' && <CheckCircle2 className="w-3 h-3" />}
+                        {ord.status === 'Pending' && <Clock className="w-3 h-3" />}
                         {ord.status === 'Processing' && <Clock className="w-3 h-3" />}
                         {ord.status === 'Shipping' && <Truck className="w-3 h-3" />}
                         {ord.status === 'Cancelled' && <XCircle className="w-3 h-3" />}
                         {ord.status === 'Completed'
                           ? 'Hoàn thành'
+                          : ord.status === 'Pending'
+                          ? 'Chờ xác nhận'
+                          : ord.status === 'Confirmed'
+                          ? 'Đã xác nhận'
                           : ord.status === 'Processing'
                           ? 'Đang xử lý'
                           : ord.status === 'Shipping'
@@ -376,10 +389,12 @@ export const Orders: React.FC = () => {
                   onChange={(e) => setNewStatus(e.target.value as any)}
                   className="w-full text-xs px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
-                  <option value="Processing">⏳ Đang xử lý</option>
-                  <option value="Shipping">🚚 Đang vận chuyển</option>
-                  <option value="Completed">✅ Đã hoàn thành</option>
-                  <option value="Cancelled">❌ Đã hủy đơn</option>
+                  <option value="Pending">⏳ Chờ xác nhận (PENDING)</option>
+                  <option value="Confirmed">📋 Đã xác nhận (CONFIRMED)</option>
+                  <option value="Processing">📦 Đang đóng gói (PROCESSING)</option>
+                  <option value="Shipping">🚚 Đang vận chuyển (SHIPPING)</option>
+                  <option value="Completed">✅ Đã hoàn thành (DELIVERED)</option>
+                  <option value="Cancelled">❌ Đã hủy đơn (CANCELLED)</option>
                 </select>
               </div>
 
