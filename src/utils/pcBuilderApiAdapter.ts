@@ -24,10 +24,50 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
   }
 
   let slotIndex = 0;
-  if (catSlug.includes('tan-nhiet') || lowerCat.includes('tản nhiệt')) {
-    slotIndex = 8; // Cooler
-  } else if (catSlug.includes('fan') || lowerCat.includes('fan')) {
-    slotIndex = 10; // Fan
+
+  const isFanCase =
+    catSlug.includes('fan-case') ||
+    catSlug === 'fan' ||
+    catSlug.includes('quat') ||
+    lowerCat.includes('fan case') ||
+    lowerCat.includes('quạt case') ||
+    lowerCat.includes('quạt làm mát') ||
+    lowerTitle.includes('fan case') ||
+    lowerTitle.includes('quạt case') ||
+    lowerTitle.includes('kit fan') ||
+    lowerTitle.includes('bộ fan') ||
+    lowerTitle.includes('bộ 3 fan') ||
+    lowerTitle.includes('bộ 4 fan') ||
+    lowerTitle.includes('bộ 5 fan') ||
+    lowerTitle.includes('bộ 6 fan') ||
+    lowerTitle.startsWith('fan ') ||
+    (lowerTitle.includes('fan') && !lowerTitle.includes('tản nhiệt cpu') && !lowerTitle.includes('tản cpu') && !lowerTitle.includes('aio') && !lowerTitle.includes('khí cpu') && !lowerTitle.includes('tháp'));
+
+  const isCpuCooler =
+    catSlug.includes('tan-nhiet-cpu') ||
+    catSlug.includes('cpu-cooler') ||
+    lowerCat.includes('tản nhiệt cpu') ||
+    lowerCat.includes('tản nhiệt khí') ||
+    lowerCat.includes('tản nhiệt nước') ||
+    lowerTitle.includes('tản nhiệt cpu') ||
+    lowerTitle.includes('tản cpu') ||
+    lowerTitle.includes('tản nhiệt khí cpu') ||
+    lowerTitle.includes('tản nhiệt nước') ||
+    lowerTitle.includes('tản tháp') ||
+    lowerTitle.includes('aio') ||
+    lowerTitle.includes('peerless assassin') ||
+    lowerTitle.includes('aqua elite') ||
+    lowerTitle.includes('masterliquid') ||
+    lowerTitle.includes('kraken');
+
+  if (isCpuCooler) {
+    slotIndex = 8; // Tản Nhiệt CPU
+  } else if (isFanCase) {
+    slotIndex = 10; // Fan Case / Quạt làm mát
+  } else if (catSlug.includes('tan-nhiet') || lowerCat.includes('tản nhiệt')) {
+    slotIndex = 8; // Default Tản Nhiệt CPU
+  } else if (catSlug.includes('fan') || lowerCat.includes('fan') || lowerCat.includes('quạt')) {
+    slotIndex = 10; // Default Fan Case
   } else if (catSlug.includes('cpu') || lowerCat.includes('cpu') || lowerCat.includes('vi xử lý')) {
     slotIndex = 1; // CPU
   } else if (catSlug.includes('mainboard') || lowerCat.includes('mainboard') || lowerCat.includes('bo mạch')) {
