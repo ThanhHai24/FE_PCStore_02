@@ -41,11 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const res = await getMeApi();
           setUser(res.user);
           setToken(savedToken);
-        } catch (error) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
           console.error('Failed to authenticate session token:', error);
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
+          // Chỉ xóa token khi Server thực sự phản hồi lỗi 401/403 (Token hết hạn/không hợp lệ)
+          // Không xóa token nếu do lỗi mạng tạm thời hoặc người dùng ngắt kết nối
+          if (error?.status === 401 || error?.status === 403) {
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -115,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
