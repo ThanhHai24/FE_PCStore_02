@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Send, Camera, CheckCircle2, User, Trash2, Loader2 } from 'lucide-react';
+import { Star, Send, Camera, CheckCircle2, User, Trash2, Loader2, MessageSquare, CornerDownRight } from 'lucide-react';
 import type { Product } from '../../types/product';
 import { mockReviewsList, mockQAItems, type QuestionItem } from '../../data/mockReviews';
 import { useAuth } from '../../context/AuthContext';
 import { getReviewsByProductApi, createReviewApi, deleteReviewApi } from '../../services/reviewService';
+import {
+  getQuestionsByProduct,
+  createQuestionApi,
+  answerQuestionAdminApi,
+  deleteQuestionAdminApi
+} from '../../services/qnaService';
 import type { ReviewItem, ReviewSummary } from '../../types/review';
 
 interface ProductReviewsProps {
@@ -27,8 +33,15 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
   // States for Q&A Input
   const [qaText, setQaText] = useState('');
-  const [qaList, setQaList] = useState<QuestionItem[]>(mockQAItems);
+  const [qaList, setQaList] = useState<QuestionItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Admin Q&A inline reply states
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
+  const [submittingReply, setSubmittingReply] = useState<boolean>(false);
+
+  const isAdmin = user?.role === 'ADMIN';
 
   // Fetch reviews from API
   const loadReviews = useCallback(async () => {
@@ -54,9 +67,36 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
     }
   }, [product.id]);
 
+  // Fetch questions from API
+  const loadQuestions = useCallback(async () => {
+    if (!product.id) return;
+    try {
+      const data = await getQuestionsByProduct(product.id);
+      if (data.questions) {
+        const mapped: QuestionItem[] = data.questions.map((q) => ({
+          id: q.id,
+          userName: q.customerName || (q.user ? (q.user.fullName || 'Khách hàng') : 'Khách hàng'),
+          question: q.content,
+          date: new Date(q.createdAt).toLocaleDateString('vi-VN'),
+          answer: q.answer
+            ? {
+                adminName: 'QTV PCStore',
+                text: q.answer,
+                date: q.answeredAt ? new Date(q.answeredAt).toLocaleDateString('vi-VN') : 'Vừa xong',
+              }
+            : undefined,
+        }));
+        setQaList(mapped);
+      }
+    } catch {
+      setQaList([]);
+    }
+  }, [product.id]);
+
   useEffect(() => {
     loadReviews();
-  }, [loadReviews]);
+    loadQuestions();
+  }, [loadReviews, loadQuestions]);
 
   useEffect(() => {
     if (user) {
@@ -118,28 +158,70 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
       await loadReviews();
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: any) {
-      // Local removal fallback if string ID
       setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
       setToastMessage('Đã xóa đánh giá!');
       setTimeout(() => setToastMessage(null), 3000);
     }
   };
 
-  const handleSendQuestion = (e: React.FormEvent) => {
+  const handleSendQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Kiểm tra phải đăng nhập tài khoản trước khi đặt câu hỏi
+    if (!isAuthenticated) {
+      setToastMessage('Vui lòng đăng nhập tài khoản để gửi câu hỏi về sản phẩm!');
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
+
     if (!qaText.trim()) return;
 
-    const newQ: QuestionItem = {
-      id: Date.now().toString(),
-      userName: user?.fullName || user?.username || 'Khách hàng',
-      question: qaText,
-      date: 'Vừa xong',
-    };
+    try {
+      await createQuestionApi(product.id, {
+        customerName: user?.fullName || user?.username || 'Khách hàng',
+        content: qaText.trim(),
+      });
+      setQaText('');
+      setToastMessage('Câu hỏi của bạn đã được gửi, PCStore sẽ trả lời trong thời gian sớm nhất!');
+      await loadQuestions();
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gửi câu hỏi không thành công, vui lòng thử lại!');
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
 
-    setQaList([newQ, ...qaList]);
-    setQaText('');
-    setToastMessage('Câu hỏi của bạn đã được gửi, PCStore sẽ trả lời trong thời gian sớm nhất!');
-    setTimeout(() => setToastMessage(null), 3000);
+  // Admin reply question
+  const handleAdminReplySubmit = async (questionId: string) => {
+    if (!replyText.trim()) return;
+    setSubmittingReply(true);
+    try {
+      await answerQuestionAdminApi(questionId, replyText.trim());
+      setReplyText('');
+      setReplyingId(null);
+      setToastMessage('QTV đã gửi phản hồi thành công!');
+      await loadQuestions();
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gửi phản hồi thất bại, vui lòng thử lại!');
+      setTimeout(() => setToastMessage(null), 3000);
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  // Admin delete question
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) return;
+    try {
+      await deleteQuestionAdminApi(questionId);
+      setToastMessage('Đã xóa câu hỏi!');
+      await loadQuestions();
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Xóa câu hỏi thất bại!');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
   // Breakdown calculations
@@ -310,13 +392,17 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
         <h3 className="font-extrabold text-base text-gray-900">Hỏi và đáp</h3>
 
         {/* Input Box */}
-        <form onSubmit={handleSendQuestion} className="space-y-1">
+        <form onSubmit={handleSendQuestion} className="space-y-2">
           <div className="flex flex-col sm:flex-row items-stretch gap-3">
             <textarea
               rows={3}
               value={qaText}
               onChange={(e) => setQaText(e.target.value)}
-              placeholder="Xin mời để lại câu hỏi, PCStore sẽ trả lời ngay trong 1h, các câu hỏi sau 22h - 8h sẽ được trả lời vào sáng hôm sau."
+              placeholder={
+                isAuthenticated
+                  ? "Xin mời để lại câu hỏi, PCStore sẽ trả lời ngay trong 1h, các câu hỏi sau 22h - 8h sẽ được trả lời vào sáng hôm sau."
+                  : "Vui lòng đăng nhập tài khoản để gửi câu hỏi về sản phẩm này."
+              }
               className="flex-1 bg-white border border-gray-200 rounded-2xl p-4 text-xs text-gray-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 leading-relaxed resize-none"
             />
             <button
@@ -328,6 +414,12 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
             </button>
           </div>
 
+          {!isAuthenticated && (
+            <p className="text-[11px] text-amber-600 font-bold">
+              🔒 Bạn chưa đăng nhập. Vui lòng đăng nhập tài khoản trước khi gửi câu hỏi.
+            </p>
+          )}
+
           <div className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-blue-600 w-fit pt-1">
             <Camera className="w-4 h-4 text-gray-500" />
             <span className="font-semibold">Đính kèm ảnh</span>
@@ -336,15 +428,44 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
         {/* Q&A List */}
         {qaList.length > 0 && (
-          <div className="border-t border-gray-100 pt-4 space-y-3">
+          <div className="border-t border-gray-100 pt-4 space-y-4">
             {qaList.map((qa) => (
               <div key={qa.id} className="space-y-2 border-b border-gray-100 pb-3 text-xs">
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-gray-900">{qa.userName}</span>
-                  <span className="text-[11px] text-gray-400">• {qa.date}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-gray-900">{qa.userName}</span>
+                    <span className="text-[11px] text-gray-400">• {qa.date}</span>
+                  </div>
+
+                  {/* Admin action buttons */}
+                  {isAdmin && (
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingId(replyingId === qa.id ? null : qa.id);
+                          setReplyText(qa.answer ? qa.answer.text : '');
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{qa.answer ? 'Sửa phản hồi' : 'Trả lời QTV'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteQuestion(qa.id)}
+                        className="text-gray-400 hover:text-red-600 p-1"
+                        title="Xóa câu hỏi"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
+
                 <p className="text-gray-800 font-medium pl-2 border-l-2 border-blue-500">{qa.question}</p>
 
+                {/* Answer Box */}
                 {qa.answer && (
                   <div className="bg-blue-50/60 p-3 rounded-xl ml-4 space-y-1 border border-blue-100">
                     <div className="flex items-center space-x-2">
@@ -354,6 +475,43 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
                       <span className="text-[10px] text-gray-400">{qa.answer.date}</span>
                     </div>
                     <p className="text-gray-700 text-xs">{qa.answer.text}</p>
+                  </div>
+                )}
+
+                {/* Inline Admin Reply Input Form */}
+                {isAdmin && replyingId === qa.id && (
+                  <div className="ml-4 mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2 animate-in fade-in zoom-in-95">
+                    <p className="text-[11px] font-bold text-blue-700 flex items-center space-x-1">
+                      <CornerDownRight className="w-3.5 h-3.5" />
+                      <span>Nhập câu trả lời của QTV:</span>
+                    </p>
+                    <textarea
+                      rows={2}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Nhập nội dung phản hồi cho khách hàng..."
+                      className="w-full bg-white border border-gray-300 rounded-xl p-2.5 text-xs text-gray-800 outline-none focus:border-blue-500"
+                    />
+                    <div className="flex items-center space-x-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingId(null);
+                          setReplyText('');
+                        }}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-200"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submittingReply || !replyText.trim()}
+                        onClick={() => handleAdminReplySubmit(qa.id)}
+                        className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                      >
+                        {submittingReply ? 'Đang gửi...' : 'Gửi phản hồi'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
