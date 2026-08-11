@@ -61,32 +61,41 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, onToggle 
             </div>
           )}
         </div>
-        <button
-          onClick={onToggle}
-          className="hidden lg:flex p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
+        {/* Top toggle button replaced with whitespace */}
+        <div className="w-6" />
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.exact}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
-                ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span className="truncate">{item.label}</span>}
-          </NavLink>
-        ))}
+      {/* Navigation list + Clickable whitespace below */}
+      <div className="flex-1 py-4 px-3 flex flex-col justify-between overflow-y-auto">
+        <div className="space-y-1">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.exact}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
+                  ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`
+              }
+            >
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Clickable Empty Whitespace area below nav items to toggle collapse/expand */}
+        <div
+          onClick={onToggle}
+          className="flex-1 min-h-[60px] cursor-pointer rounded-xl transition-colors hover:bg-gray-50/80 flex items-end justify-center pb-3 my-2"
+          title={collapsed ? 'Bấm vào khoảng trắng để mở rộng Sidebar' : 'Bấm vào khoảng trắng để thu gọn Sidebar'}
+        >
+          <span className="text-[10px] font-bold text-gray-300 opacity-0 hover:opacity-100 transition-opacity">
+            {collapsed ? '▶' : '◀ Click để thu gọn'}
+          </span>
+        </div>
       </div>
 
       {/* Footer Info */}

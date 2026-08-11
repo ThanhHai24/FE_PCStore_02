@@ -31,15 +31,15 @@ export const AdminLayout: React.FC = () => {
       {/* Main Container */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:ml-20' : 'lg:ml-64'
+          collapsed ? 'ml-20' : 'ml-64'
         }`}
       >
         {/* Header Topbar */}
         <AdminHeader onToggleSidebar={() => setCollapsed(!collapsed)} />
 
         {/* Content Body */}
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-gray-100">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-1 p-4 lg:p-8 overflow-x-hidden overflow-y-auto bg-gray-100 min-w-0">
+          <div className="w-full max-w-7xl mx-auto space-y-6 min-w-0">
             <Outlet />
           </div>
         </main>
