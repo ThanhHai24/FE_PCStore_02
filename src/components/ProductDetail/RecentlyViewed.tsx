@@ -7,15 +7,24 @@ interface RecentlyViewedProps {
 }
 
 export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ products }) => {
-  if (!products || products.length === 0) return null;
+  if (!products || products.length === 0) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3 shadow-sm">
+        <h3 className="font-bold text-xs text-gray-900 border-b border-gray-100 pb-2">
+          Sản phẩm đã xem
+        </h3>
+        <p className="text-xs text-gray-400 text-center py-4">Chưa có sản phẩm đã xem</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3 shadow-sm">
       <h3 className="font-bold text-xs text-gray-900 border-b border-gray-100 pb-2">
         Sản phẩm đã xem
       </h3>
       <div className="space-y-3">
-        {products.slice(0, 3).map((item) => (
+        {products.slice(0, 4).map((item) => (
           <Link
             key={item.id}
             to={`/product/${item.id}`}
@@ -23,7 +32,7 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({ products }) => {
           >
             <div className="w-14 h-14 bg-gray-50 rounded-lg shrink-0 flex items-center justify-center p-1 overflow-hidden">
               <img
-                src={item.images[0]}
+                src={item.images?.[0] || ''}
                 alt={item.title}
                 className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
               />

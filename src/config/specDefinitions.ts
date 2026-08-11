@@ -506,8 +506,9 @@ export type PcComponentKey = typeof PC_COMPONENT_TYPES[number]['key'];
 
 /** Map category name (lowercase) → CategoryType for spec template selection */
 export function detectCategoryType(categoryName: string): CategoryType {
-  const n = categoryName.toLowerCase();
-  if (n.includes('pc') || n.includes('nguyên bộ') || n.includes('nguyen bo') || n.includes('máy tính nguyên bộ')) return 'PC';
+  if (!categoryName) return 'Generic';
+  const n = categoryName.toLowerCase().trim();
+  if (n.includes('case') || n.includes('vỏ máy') || n.includes('vỏ case') || n.includes('thùng máy') || n.includes('vỏ máy tính') || n.includes('vỏ pc') || n.includes('vỏ cây')) return 'Case';
   if (n.includes('tản nhiệt') || n.includes('cooler') || n.includes('cooling')) return 'Cooler';
   if (n.includes('cpu') || n.includes('bộ xử lý') || n.includes('processor')) return 'CPU';
   if (n.includes('mainboard') || n.includes('bo mạch') || n.includes('motherboard')) return 'Mainboard';
@@ -516,7 +517,7 @@ export function detectCategoryType(categoryName: string): CategoryType {
   if (n.includes('ssd')) return 'SSD';
   if (n.includes('hdd') || n.includes('ổ cứng cơ')) return 'HDD';
   if (n.includes('psu') || (n.includes('nguồn') && !n.includes('sản phẩm'))) return 'PSU';
-  if (n.includes('case') || n.includes('vỏ máy') || n.includes('thùng máy')) return 'Case';
+  if (n.includes('pc') || n.includes('nguyên bộ') || n.includes('nguyen bo') || n.includes('máy tính nguyên bộ')) return 'PC';
   return 'Generic';
 }
 

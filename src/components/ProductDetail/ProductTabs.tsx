@@ -30,11 +30,10 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
             setActiveTab('specs');
             setIsExpanded(false);
           }}
-          className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border ${
-            activeTab === 'specs'
-              ? 'bg-sky-50 border-sky-400 text-sky-600 shadow-sm'
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`}
+          className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border ${activeTab === 'specs'
+            ? 'bg-sky-50 border-sky-400 text-sky-600 shadow-sm'
+            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
         >
           Thông số kỹ thuật {categoryType !== 'Generic' && `(${categoryType})`}
         </button>
@@ -43,11 +42,10 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
             setActiveTab('desc');
             setIsExpanded(false);
           }}
-          className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border ${
-            activeTab === 'desc'
-              ? 'bg-sky-50 border-sky-400 text-sky-600 shadow-sm'
-              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-          }`}
+          className={`py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all border ${activeTab === 'desc'
+            ? 'bg-sky-50 border-sky-400 text-sky-600 shadow-sm'
+            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
         >
           Mô tả sản phẩm
         </button>
@@ -115,8 +113,8 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
                         <td className="border border-gray-300 px-4 py-3 font-bold text-gray-900 uppercase">
                           {item.key}
                         </td>
-                        <td className="border border-gray-300 px-4 py-3 text-gray-800 font-medium leading-relaxed">
-                          {item.name} {item.warranty ? `(Bảo hành: ${item.warranty})` : ''}
+                        <td className="border border-gray-300 px-4 py-3 text-gray-800 font-medium text-center leading-relaxed">
+                          {item.name}
                         </td>
                       </tr>
                     ))}

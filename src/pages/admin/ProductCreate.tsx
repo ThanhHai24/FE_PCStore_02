@@ -154,10 +154,25 @@ const ProductCreate: React.FC = () => {
         setLoadingCategories(true);
         getCategories()
             .then(async (res) => {
-                setCategories(res.categories ?? []);
+                const rawCategories = res.categories ?? [];
+                const flattenCategories = (cats: ApiCategory[]): ApiCategory[] => {
+                    const list: ApiCategory[] = [];
+                    const traverse = (items: ApiCategory[]) => {
+                        for (const item of items) {
+                            list.push(item);
+                            if (item.children && item.children.length > 0) {
+                                traverse(item.children);
+                            }
+                        }
+                    };
+                    traverse(cats);
+                    return list;
+                };
+                const allCategories = flattenCategories(rawCategories);
+                setCategories(allCategories);
                 // set default SKU once categories load
-                if (res.categories && res.categories.length > 0) {
-                    const first = res.categories[0];
+                if (allCategories.length > 0) {
+                    const first = allCategories[0];
                     setSkuLoading(true);
                     const sku = await generateSkuAsync(first.name);
                     setFormData((prev) => ({

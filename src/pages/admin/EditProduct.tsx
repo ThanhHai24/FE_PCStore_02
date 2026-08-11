@@ -93,7 +93,23 @@ export const EditProduct: React.FC = () => {
         const initData = async () => {
             try {
                 const catRes = await getCategories();
-                const allCategories = catRes.categories ?? [];
+                const rawCategories = catRes.categories ?? [];
+                
+                const flattenCategories = (cats: ApiCategory[]): ApiCategory[] => {
+                    const res: ApiCategory[] = [];
+                    const traverse = (items: ApiCategory[]) => {
+                        for (const item of items) {
+                            res.push(item);
+                            if (item.children && item.children.length > 0) {
+                                traverse(item.children);
+                            }
+                        }
+                    };
+                    traverse(cats);
+                    return res;
+                };
+
+                const allCategories = flattenCategories(rawCategories);
                 if (isMounted) {
                     setCategories(allCategories);
                 }
@@ -103,16 +119,26 @@ export const EditProduct: React.FC = () => {
                     if (isMounted && detailRes && detailRes.product) {
                         const p = detailRes.product;
                         const catId = p.categoryId ? p.categoryId.toString() : (p.category?.id?.toString() || '');
-                        const foundCat = allCategories.find((c) => c.id === catId) || p.category;
+                        const foundCat = allCategories.find((c) => String(c.id) === String(catId)) || p.category;
                         const brandId = p.brandId ? p.brandId.toString() : (p.brand?.id?.toString() || '');
 
                         let initialSpecs: SpecRecord = {};
                         if (p.specifications) {
-                            if (typeof p.specifications === 'object' && !Array.isArray(p.specifications)) {
-                                initialSpecs = p.specifications as SpecRecord;
-                            } else if (Array.isArray(p.specifications)) {
-                                (p.specifications as any[]).forEach((sp) => {
-                                    if (sp && sp.name) initialSpecs[sp.name] = sp.value || '';
+                            let parsedSpecs = p.specifications;
+                            if (typeof parsedSpecs === 'string') {
+                                try {
+                                    parsedSpecs = JSON.parse(parsedSpecs);
+                                } catch (e) {
+                                    console.warn('Failed to parse specifications string:', e);
+                                }
+                            }
+                            if (typeof parsedSpecs === 'object' && parsedSpecs !== null && !Array.isArray(parsedSpecs)) {
+                                initialSpecs = parsedSpecs as SpecRecord;
+                            } else if (Array.isArray(parsedSpecs)) {
+                                (parsedSpecs as any[]).forEach((sp) => {
+                                    if (sp && (sp.name || sp.key)) {
+                                        initialSpecs[sp.name || sp.key] = sp.value || sp.val || '';
+                                    }
                                 });
                             }
                         }
@@ -121,7 +147,7 @@ export const EditProduct: React.FC = () => {
                             sku: p.sku || `PRD-${p.id}`,
                             name: p.name || '',
                             categoryId: catId,
-                            categoryName: foundCat?.name || '',
+                            categoryName: foundCat?.name || p.category?.name || '',
                             brandId: brandId,
                             distributor: 'Synnex FPT',
                             warranty: p.warranty ? `${p.warranty} Tháng` : '36 Tháng',

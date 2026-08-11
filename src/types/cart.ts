@@ -12,6 +12,7 @@ export interface CustomerInfo {
   email?: string;
   address: string;
   city?: string;
+  ward?: string;
   district?: string;
   note?: string;
   invoiceRequired?: boolean;

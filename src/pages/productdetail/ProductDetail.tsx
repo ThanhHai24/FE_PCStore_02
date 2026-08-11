@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getProductById, mockProducts } from '../../data/mockProducts';
-import { getProductDetail, mapApiProductToProduct } from '../../services/productService';
+import { getProductDetail, getProducts, mapApiProductToProduct } from '../../services/productService';
 import type { Product } from '../../types/product';
 import ProductGallery from '../../components/ProductDetail/ProductGallery';
 import ProductInfo from '../../components/ProductDetail/ProductInfo';
@@ -10,10 +10,13 @@ import RelatedProducts from '../../components/ProductDetail/RelatedProducts';
 import ProductTabs from '../../components/ProductDetail/ProductTabs';
 import ProductReviews from '../../components/ProductDetail/ProductReviews';
 import { Loader2 } from 'lucide-react';
+import { getRecentlyViewedProducts, addRecentlyViewedProduct } from '../../utils/recentlyViewed';
 
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product>(() => getProductById(id));
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -22,19 +25,52 @@ export const ProductDetail: React.FC = () => {
     if (id) {
       // First set fallback from mock if matches mock ID
       const mockObj = getProductById(id);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProduct(mockObj);
 
+      // Load initial recently viewed products (excluding current ID)
+      const recentList = getRecentlyViewedProducts().filter((p) => String(p.id) !== String(id));
+      setRecentlyViewedProducts(recentList);
+
       getProductDetail(id)
-        .then((res) => {
+        .then(async (res) => {
           if (!isMounted) return;
           const apiProd = res.product;
           if (apiProd) {
-            setProduct(mapApiProductToProduct(apiProd));
+            const mapped = mapApiProductToProduct(apiProd);
+            setProduct(mapped);
+
+            // Add current product to recently viewed in localStorage
+            addRecentlyViewedProduct(mapped);
+            setRecentlyViewedProducts(
+              getRecentlyViewedProducts().filter((p) => String(p.id) !== String(mapped.id))
+            );
+
+            // Fetch related products from backend
+            try {
+              const relRes = await getProducts({
+                categoryId: apiProd.categoryId ? String(apiProd.categoryId) : undefined,
+                limit: 8,
+              });
+
+              if (relRes && relRes.products && relRes.products.length > 0) {
+                const mappedRel = relRes.products
+                  .filter((p) => String(p.id) !== String(apiProd.id))
+                  .map(mapApiProductToProduct);
+                if (isMounted) setRelatedProducts(mappedRel);
+              } else {
+                const fallbackRel = mockProducts.filter((p) => String(p.id) !== String(mapped.id));
+                if (isMounted) setRelatedProducts(fallbackRel);
+              }
+            } catch {
+              const fallbackRel = mockProducts.filter((p) => String(p.id) !== String(mapped.id));
+              if (isMounted) setRelatedProducts(fallbackRel);
+            }
           }
         })
         .catch(() => {
           if (!isMounted) return;
+          const fallbackRel = mockProducts.filter((p) => String(p.id) !== String(id));
+          setRelatedProducts(fallbackRel);
         })
         .finally(() => {
           if (isMounted) setLoading(false);
@@ -47,9 +83,6 @@ export const ProductDetail: React.FC = () => {
       isMounted = false;
     };
   }, [id]);
-
-  const relatedProducts = mockProducts.filter((p) => p.id !== product.id);
-  const recentlyViewedProducts = [product, ...relatedProducts.slice(0, 2)];
 
   if (loading && !product.title) {
     return (
@@ -82,7 +115,7 @@ export const ProductDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Middle Row */}
+      {/* Middle Row (Related & Recently Viewed Products) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8">
           <RelatedProducts products={relatedProducts} />
@@ -101,7 +134,6 @@ export const ProductDetail: React.FC = () => {
         />
       </div>
 
-
       {/* Product Reviews Section */}
       <div className="pt-2">
         <ProductReviews product={product} />
@@ -111,4 +143,3 @@ export const ProductDetail: React.FC = () => {
 };
 
 export default ProductDetail;
-

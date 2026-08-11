@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Plus, Minus, CheckCircle, FileText, Image as ImageIcon, Printer, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { createOrderApi } from '../../services/orderService';
+import { fetchProvinces, fetchWardsByProvince, type ProvinceItem, type WardItem } from '../../services/provinceService';
 import type { CustomerInfo } from '../../types/cart';
 
 export const Cart: React.FC = () => {
@@ -14,16 +15,72 @@ export const Cart: React.FC = () => {
     phone: '',
     email: '',
     address: '',
-    city: 'Hà Nội',
+    city: '',
+    ward: '',
     district: '',
     note: '',
     invoiceRequired: false,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr' | 'vnpay'>('vnpay');
+  const [provinces, setProvinces] = useState<ProvinceItem[]>([]);
+  const [wards, setWards] = useState<WardItem[]>([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'qr' | 'vnpay' | ''>('');
+  const [paymentError, setPaymentError] = useState(false);
   const [orderSuccessModal, setOrderSuccessModal] = useState<boolean>(false);
   const [createdOrderData, setCreatedOrderData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load provinces on mount
+  useEffect(() => {
+    setLoadingProvinces(true);
+    fetchProvinces()
+      .then((list) => {
+        setProvinces(list);
+        if (list.length > 0) {
+          const defaultProv = list.find((p) => p.code === 1) || list[0];
+          setSelectedProvinceCode(defaultProv.code);
+          setCustomerInfo((prev) => ({ ...prev, city: defaultProv.name }));
+        }
+      })
+      .finally(() => setLoadingProvinces(false));
+  }, []);
+
+  // Load wards when selectedProvinceCode changes
+  useEffect(() => {
+    if (!selectedProvinceCode) {
+      setWards([]);
+      return;
+    }
+    setLoadingWards(true);
+    fetchWardsByProvince(selectedProvinceCode)
+      .then((list) => {
+        setWards(list);
+      })
+      .finally(() => setLoadingWards(false));
+  }, [selectedProvinceCode]);
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = Number(e.target.value);
+    const prov = provinces.find((p) => p.code === code);
+    setSelectedProvinceCode(code || null);
+    setCustomerInfo((prev) => ({
+      ...prev,
+      city: prov ? prov.name : '',
+      ward: '',
+    }));
+  };
+
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const wardName = e.target.value;
+    setCustomerInfo((prev) => ({
+      ...prev,
+      ward: wardName,
+    }));
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -46,9 +103,22 @@ export const Cart: React.FC = () => {
       return;
     }
 
+    if (!paymentMethod) {
+      setPaymentError(true);
+      alert('Vui lòng chọn phương thức thanh toán trước khi đặt hàng!');
+      return;
+    }
+    setPaymentError(false);
+
     setIsSubmitting(true);
     try {
-      const fullAddress = `${customerInfo.address.trim()}${customerInfo.district ? `, ${customerInfo.district}` : ''}${customerInfo.city ? `, ${customerInfo.city}` : ''}`;
+      const addressParts = [
+        customerInfo.address.trim(),
+        customerInfo.ward ? customerInfo.ward : customerInfo.district ? customerInfo.district : '',
+        customerInfo.city ? customerInfo.city : '',
+      ].filter(Boolean);
+      const fullAddress = addressParts.join(', ');
+
       const itemsPayload = items.map((i) => ({
         productId: i.product.id,
         quantity: i.quantity,
@@ -294,30 +364,47 @@ export const Cart: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <select
-                  name="city"
-                  value={customerInfo.city}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500 bg-white"
-                >
-                  <option value="Hà Nội">Tỉnh/Thành phố: Hà Nội</option>
-                  <option value="TP. Hồ Chí Minh">Tỉnh/Thành phố: TP. Hồ Chí Minh</option>
-                  <option value="Đà Nẵng">Tỉnh/Thành phố: Đà Nẵng</option>
-                  <option value="Hải Phòng">Tỉnh/Thành phố: Hải Phòng</option>
-                </select>
-                <select
-                  name="district"
-                  value={customerInfo.district}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500 bg-white"
-                >
-                  <option value="">Quận/Huyện</option>
-                  <option value="Thanh Xuân">Quận Thanh Xuân</option>
-                  <option value="Cầu Giấy">Quận Cầu Giấy</option>
-                  <option value="Đống Đa">Quận Đống Đa</option>
-                  <option value="Quận 1">Quận 1</option>
-                  <option value="Quận 10">Quận 10</option>
-                </select>
+                {/* Tỉnh / Thành phố */}
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Tỉnh / Thành phố {loadingProvinces && '(Đang tải...)'}
+                  </label>
+                  <select
+                    name="city"
+                    value={selectedProvinceCode ?? ''}
+                    onChange={handleProvinceChange}
+                    disabled={loadingProvinces}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500 bg-white text-xs disabled:opacity-50"
+                  >
+                    <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                    {provinces.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Phường / Xã */}
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                    Phường / Xã {loadingWards && '(Đang tải...)'}
+                  </label>
+                  <select
+                    name="ward"
+                    value={customerInfo.ward || ''}
+                    onChange={handleWardChange}
+                    disabled={loadingWards || !selectedProvinceCode}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500 bg-white text-xs disabled:opacity-50"
+                  >
+                    <option value="">-- Chọn Phường / Xã --</option>
+                    {wards.map((w) => (
+                      <option key={w.code} value={w.name}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -348,10 +435,19 @@ export const Cart: React.FC = () => {
           </div>
 
           {/* PHƯƠNG THỨC THANH TOÁN Box */}
-          <div className="bg-white rounded-2xl p-5 border border-gray-200 space-y-3 shadow-sm text-xs">
-            <h2 className="font-extrabold text-blue-600 uppercase tracking-wider">
-              PHƯƠNG THỨC THANH TOÁN
-            </h2>
+          <div className={`bg-white rounded-2xl p-5 border transition-all space-y-3 shadow-sm text-xs ${
+            paymentError ? 'border-red-500 bg-red-50/20 ring-2 ring-red-100' : 'border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-extrabold text-blue-600 uppercase tracking-wider">
+                PHƯƠNG THỨC THANH TOÁN *
+              </h2>
+              {paymentError && (
+                <span className="text-red-500 font-bold text-[11px] animate-pulse">
+                  * Vui lòng chọn 1 phương thức thanh toán
+                </span>
+              )}
+            </div>
             <div className="space-y-2">
               <label className="flex items-center space-x-2 cursor-pointer font-bold text-gray-800">
                 <input
@@ -359,7 +455,10 @@ export const Cart: React.FC = () => {
                   name="payment"
                   value="cod"
                   checked={paymentMethod === 'cod'}
-                  onChange={() => setPaymentMethod('cod')}
+                  onChange={() => {
+                    setPaymentMethod('cod');
+                    setPaymentError(false);
+                  }}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <span>Thanh toán khi nhận hàng (COD)</span>
@@ -368,9 +467,12 @@ export const Cart: React.FC = () => {
                 <input
                   type="radio"
                   name="payment"
-                  value="qr"
-                  checked={paymentMethod === 'qr'}
-                  onChange={() => setPaymentMethod('qr')}
+                  value="vnpay"
+                  checked={paymentMethod === 'vnpay' || paymentMethod === 'qr'}
+                  onChange={() => {
+                    setPaymentMethod('vnpay');
+                    setPaymentError(false);
+                  }}
                   className="text-blue-600 focus:ring-blue-500"
                 />
                 <span className="flex items-center space-x-1.5">

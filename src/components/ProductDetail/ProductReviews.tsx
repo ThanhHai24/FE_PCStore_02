@@ -1,45 +1,128 @@
-import React, { useState } from 'react';
-import { Star, Send, Camera, CheckCircle2, User } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Star, Send, Camera, CheckCircle2, User, Trash2, Loader2 } from 'lucide-react';
 import type { Product } from '../../types/product';
-import { mockReviewsList, mockQAItems, type ReviewItem, type QuestionItem } from '../../data/mockReviews';
+import { mockReviewsList, mockQAItems, type QuestionItem } from '../../data/mockReviews';
+import { useAuth } from '../../context/AuthContext';
+import { getReviewsByProductApi, createReviewApi, deleteReviewApi } from '../../services/reviewService';
+import type { ReviewItem, ReviewSummary } from '../../types/review';
 
 interface ProductReviewsProps {
   product: Product;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
+  const { user, isAuthenticated } = useAuth();
+
   // States for Review Modal / Form
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [userRating, setUserRating] = useState(5);
-  const [reviewName, setReviewName] = useState('');
+  const [reviewName, setReviewName] = useState(user?.fullName || user?.username || '');
   const [reviewComment, setReviewComment] = useState('');
-  const [reviewsList, setReviewsList] = useState<ReviewItem[]>(mockReviewsList);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reviews Data States
+  const [reviewsList, setReviewsList] = useState<ReviewItem[]>([]);
+  const [summary, setSummary] = useState<ReviewSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // States for Q&A Input
   const [qaText, setQaText] = useState('');
   const [qaList, setQaList] = useState<QuestionItem[]>(mockQAItems);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handleAddReview = (e: React.FormEvent) => {
+  // Fetch reviews from API
+  const loadReviews = useCallback(async () => {
+    if (!product.id) return;
+    setLoading(true);
+    try {
+      const data = await getReviewsByProductApi(product.id);
+      setReviewsList(data.reviews || []);
+      setSummary(data.summary || {
+        totalReviews: 0,
+        avgRating: 0,
+        starCounts: [5, 4, 3, 2, 1].map((s) => ({ star: s, count: 0, percentage: 0 }))
+      });
+    } catch {
+      setReviewsList([]);
+      setSummary({
+        totalReviews: 0,
+        avgRating: 0,
+        starCounts: [5, 4, 3, 2, 1].map((s) => ({ star: s, count: 0, percentage: 0 }))
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [product.id]);
+
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
+
+  useEffect(() => {
+    if (user) {
+      setReviewName(user.fullName || user.username || '');
+    }
+  }, [user]);
+
+  const handleOpenModal = () => {
+    if (user) {
+      setReviewName(user.fullName || user.username || '');
+    }
+    setShowReviewModal(true);
+  };
+
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewName.trim() || !reviewComment.trim()) return;
+    if (!reviewComment.trim()) return;
 
-    const newRev: ReviewItem = {
-      id: Date.now().toString(),
-      userName: reviewName,
-      rating: userRating,
-      date: new Date().toLocaleDateString('vi-VN'),
-      comment: reviewComment,
-      purchased: true,
-    };
+    setSubmitting(true);
+    try {
+      if (isAuthenticated) {
+        await createReviewApi(product.id, {
+          rating: userRating,
+          comment: reviewComment,
+        });
+        await loadReviews();
+      } else {
+        // Guest mode submission fallback locally
+        const newRev: ReviewItem = {
+          id: Date.now().toString(),
+          userId: 'guest',
+          productId: product.id,
+          userName: reviewName.trim() || 'Khách hàng',
+          rating: userRating,
+          date: new Date().toLocaleDateString('vi-VN'),
+          comment: reviewComment.trim(),
+          purchased: false,
+        };
+        setReviewsList([newRev, ...reviewsList]);
+      }
 
-    setReviewsList([newRev, ...reviewsList]);
-    setShowReviewModal(false);
-    setReviewName('');
-    setReviewComment('');
-    setToastMessage('Cảm ơn bạn đã gửi đánh giá sản phẩm!');
-    setTimeout(() => setToastMessage(null), 3000);
+      setShowReviewModal(false);
+      setReviewComment('');
+      setToastMessage('Cảm ơn bạn đã gửi đánh giá sản phẩm!');
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Gửi đánh giá không thành công, vui lòng thử lại!');
+      setTimeout(() => setToastMessage(null), 3500);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) return;
+    try {
+      await deleteReviewApi(reviewId);
+      setToastMessage('Đã xóa đánh giá!');
+      await loadReviews();
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err: any) {
+      // Local removal fallback if string ID
+      setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
+      setToastMessage('Đã xóa đánh giá!');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
   const handleSendQuestion = (e: React.FormEvent) => {
@@ -48,7 +131,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
     const newQ: QuestionItem = {
       id: Date.now().toString(),
-      userName: 'Khách hàng',
+      userName: user?.fullName || user?.username || 'Khách hàng',
       question: qaText,
       date: 'Vừa xong',
     };
@@ -59,17 +142,21 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Breakdown counts
-  const totalReviews = reviewsList.length;
-  const avgRating = totalReviews > 0
-    ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews).toFixed(1)
-    : '0';
+  // Breakdown calculations
+  const totalReviews = summary ? summary.totalReviews : reviewsList.length;
+  const avgRating = summary
+    ? summary.avgRating.toFixed(1)
+    : totalReviews > 0
+      ? (reviewsList.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews).toFixed(1)
+      : '0.0';
 
-  const starCounts = [5, 4, 3, 2, 1].map((star) => {
-    const count = reviewsList.filter((r) => r.rating === star).length;
-    const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-    return { star, count, percentage };
-  });
+  const starCounts = summary
+    ? summary.starCounts
+    : [5, 4, 3, 2, 1].map((star) => {
+      const count = reviewsList.filter((r) => r.rating === star).length;
+      const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+      return { star, count, percentage };
+    });
 
   return (
     <div className="space-y-6">
@@ -81,7 +168,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
         </div>
       )}
 
-      {/* 1. Bình luận và đánh giá Box matching screenshot */}
+      {/* 1. Bình luận và đánh giá Box */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
         <h3 className="font-extrabold text-base text-gray-900">Bình luận và đánh giá</h3>
 
@@ -108,7 +195,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
             </p>
           </div>
 
-          {/* Right Star Progress Bars matching screenshot */}
+          {/* Right Star Progress Bars */}
           <div className="md:col-span-7 space-y-2 text-xs">
             {starCounts.map(({ star, count, percentage }) => (
               <div key={star} className="flex items-center space-x-3">
@@ -132,59 +219,97 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
         <div className="text-center space-y-3 pt-2">
           <p className="text-xs font-bold text-gray-800">Bạn đánh giá sao sản phẩm này</p>
           <button
-            onClick={() => setShowReviewModal(true)}
+            onClick={handleOpenModal}
             className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 px-8 rounded-xl shadow-md transition-colors uppercase tracking-wider"
           >
             Đánh giá ngay
           </button>
         </div>
 
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="flex justify-center items-center py-6 text-gray-500 text-xs">
+            <Loader2 className="w-5 h-5 animate-spin mr-2 text-blue-600" />
+            <span>Đang tải đánh giá...</span>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && reviewsList.length === 0 && (
+          <div className="border-t border-gray-100 pt-5 text-center py-6 space-y-1">
+            <p className="text-xs text-gray-500 font-semibold">Chưa có đánh giá nào cho sản phẩm này.</p>
+            <p className="text-[11px] text-gray-400">Hãy là người đầu tiên gửi đánh giá cho sản phẩm!</p>
+          </div>
+        )}
+
         {/* Reviews List */}
-        {reviewsList.length > 0 && (
+        {!loading && reviewsList.length > 0 && (
           <div className="border-t border-gray-100 pt-5 space-y-4">
             <h4 className="font-bold text-xs text-gray-900 uppercase">Đánh giá từ khách hàng ({reviewsList.length})</h4>
             <div className="space-y-3">
-              {reviewsList.map((rev) => (
-                <div key={rev.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                        <User className="w-4 h-4" />
+              {reviewsList.map((rev) => {
+                const canDelete = user && (String(user.id) === String(rev.userId) || user.role === 'ADMIN');
+                return (
+                  <div key={rev.id} className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-2 relative group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs overflow-hidden">
+                          {rev.userAvatar ? (
+                            <img src={rev.userAvatar} alt={rev.userName} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-4 h-4" />
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-gray-900">{rev.userName}</span>
+                        {rev.purchased && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold flex items-center space-x-0.5">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Đã mua hàng</span>
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs font-bold text-gray-900">{rev.userName}</span>
-                      {rev.purchased && (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold flex items-center space-x-0.5">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Đã mua hàng</span>
-                        </span>
-                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[11px] text-gray-400">{rev.date}</span>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteReview(rev.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                            title="Xóa đánh giá"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[11px] text-gray-400">{rev.date}</span>
-                  </div>
 
-                  <div className="flex items-center space-x-1">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star
-                        key={s}
-                        className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'
-                          }`}
-                      />
-                    ))}
-                  </div>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-200'
+                            }`}
+                        />
+                      ))}
+                    </div>
 
-                  <p className="text-xs text-gray-700 leading-relaxed">{rev.comment}</p>
-                </div>
-              ))}
+                    {rev.title && (
+                      <p className="text-xs font-bold text-gray-900">{rev.title}</p>
+                    )}
+                    <p className="text-xs text-gray-700 leading-relaxed">{rev.comment}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
 
-      {/* 2. Hỏi và đáp Box matching screenshot */}
+      {/* 2. Hỏi và đáp Box */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
         <h3 className="font-extrabold text-base text-gray-900">Hỏi và đáp</h3>
 
-        {/* Input Box matching screenshot */}
+        {/* Input Box */}
         <form onSubmit={handleSendQuestion} className="space-y-1">
           <div className="flex flex-col sm:flex-row items-stretch gap-3">
             <textarea
@@ -203,7 +328,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
             </button>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-blue-600 w-fit">
+          <div className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer hover:text-blue-600 w-fit pt-1">
             <Camera className="w-4 h-4 text-gray-500" />
             <span className="font-semibold">Đính kèm ảnh</span>
           </div>
@@ -243,7 +368,12 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <h3 className="font-bold text-sm text-gray-900">Viết đánh giá sản phẩm</h3>
-              <button onClick={() => setShowReviewModal(false)} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-sm"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleAddReview} className="space-y-4 text-xs">
@@ -258,7 +388,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
                       className="p-1 focus:outline-none"
                     >
                       <Star
-                        className={`w-6 h-6 ${s <= userRating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-300'
+                        className={`w-6 h-6 transition-colors ${s <= userRating ? 'fill-amber-400 text-amber-400' : 'fill-gray-200 text-gray-300'
                           }`}
                       />
                     </button>
@@ -275,7 +405,9 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
                   value={reviewName}
                   onChange={(e) => setReviewName(e.target.value)}
                   placeholder="Nhập họ tên"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500"
+                  disabled={isAuthenticated}
+                  className={`w-full border rounded-lg p-2.5 outline-none ${isAuthenticated ? 'bg-gray-100 text-gray-700' : 'border-gray-300 focus:border-blue-500'
+                    }`}
                 />
               </div>
 
@@ -287,7 +419,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   placeholder="Nhập cảm nhận của bạn về sản phẩm..."
-                  className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:border-blue-500 leading-relaxed"
                 />
               </div>
 
@@ -296,14 +428,17 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
                   type="button"
                   onClick={() => setShowReviewModal(false)}
                   className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50"
+                  disabled={submitting}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow flex items-center space-x-1 disabled:opacity-50"
                 >
-                  Gửi đánh giá
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{submitting ? 'Đang gửi...' : 'Gửi đánh giá'}</span>
                 </button>
               </div>
             </form>

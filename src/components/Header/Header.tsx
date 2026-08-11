@@ -586,12 +586,12 @@ export const Header: React.FC = () => {
                                             </Link>
 
                                             <Link
-                                                to="/track-order"
+                                                to="/orders"
                                                 onClick={() => setIsUserDropdownOpen(false)}
                                                 className="flex items-center space-x-2 px-4 py-2 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                             >
                                                 <Truck className="w-4 h-4 text-blue-500" />
-                                                <span>Tra Cứu Đơn Hàng</span>
+                                                <span>Đơn Hàng</span>
                                             </Link>
 
                                             {(user.role === 'ADMIN' || user.role === 'STAFF') && (

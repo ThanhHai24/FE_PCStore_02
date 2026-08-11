@@ -30,7 +30,7 @@ export function formatProductToCardProps(product: ApiProduct): ProductCardProps 
     title: product.name,
     image: getImageUrl(product.image),
     price: formatPrice(product.price),
-    marketPrice: product.originalPrice ? formatPrice(product.originalPrice) : undefined,
+    marketPrice: (product.originalPrice && product.originalPrice > product.price) ? formatPrice(product.originalPrice) : undefined,
     discountPercent,
     badge: product.isFeatured ? 'HOT' : undefined,
     inStock: (product.stock ?? 1) > 0,
@@ -40,7 +40,7 @@ export function formatProductToCardProps(product: ApiProduct): ProductCardProps 
 }
 
 export function formatProductToDealCardProps(product: ApiProduct): DealProductCardProps {
-  const discountPercent = calculateDiscount(product.price, product.originalPrice) || '-15%';
+  const discountPercent = calculateDiscount(product.price, product.originalPrice);
   const stock = product.stock ?? 10;
   const sold = Math.max(1, Math.min(stock, Math.floor(stock * 0.4) || 3));
 
@@ -49,7 +49,7 @@ export function formatProductToDealCardProps(product: ApiProduct): DealProductCa
     title: product.name,
     image: getImageUrl(product.image),
     price: formatPrice(product.price),
-    marketPrice: product.originalPrice ? formatPrice(product.originalPrice) : formatPrice(Math.round(product.price * 1.2)),
+    marketPrice: (product.originalPrice && product.originalPrice > product.price) ? formatPrice(product.originalPrice) : undefined,
     discountPercent,
     sold,
     total: stock + sold,
@@ -129,17 +129,17 @@ export function mapApiProductToProduct(apiProd: ApiProduct): Product {
       : [getImageUrl(apiProd.image)],
     price: formatPrice(apiProd.price),
     numericPrice: apiProd.price || 0,
-    marketPrice: apiProd.originalPrice ? formatPrice(apiProd.originalPrice) : undefined,
+    marketPrice: apiProd.originalPrice && apiProd.originalPrice > apiProd.price ? formatPrice(apiProd.originalPrice) : undefined,
     discountPercent: calculateDiscount(apiProd.price, apiProd.originalPrice),
     badge: apiProd.isFeatured ? 'HOT' : undefined,
     inStock: (apiProd.stock ?? 0) > 0,
     stockQuantity: apiProd.stock ?? 0,
     warrantyInfo: apiProd.warranty ? `Bảo hành ${apiProd.warranty} tháng` : 'Bảo hành chính hãng',
-    rating: 5.0,
-    reviewCount: 12,
-    viewCount: apiProd.viewCount || 100,
-    commentCount: 4,
-    purchaseCount: 10,
+    rating: (apiProd as any).rating || 0,
+    reviewCount: (apiProd as any).reviewCount || 0,
+    viewCount: apiProd.viewCount || 0,
+    commentCount: 0,
+    purchaseCount: 0,
     category: apiProd.category?.slug || 'pc-gaming',
     categoryName: apiProd.category?.name || 'PC GAMING',
     brand: apiProd.brand?.name || '',

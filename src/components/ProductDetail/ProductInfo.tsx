@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale } from 'lucide-react';
+import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../types/product';
 import { useCart } from '../../context/CartContext';
 
@@ -137,10 +137,28 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
 
         {/* Flash Sale Price Content */}
-        <div className="p-4 flex flex-wrap items-baseline justify-between gap-2">
-          <div className="text-2xl sm:text-3xl font-extrabold text-red-600 tracking-tight">
-            {product.price}
+        <div className="p-4 space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Giá bán hiện tại */}
+            <span className="text-2xl sm:text-3xl font-extrabold text-red-600 tracking-tight">
+              {product.price}
+            </span>
+
+            {/* Giá niêm yết */}
+            {product.marketPrice && product.marketPrice !== product.price && (
+              <span className="text-sm sm:text-base text-gray-400 line-through font-medium">
+                {product.marketPrice}
+              </span>
+            )}
+
+            {/* % Giảm giá */}
+            {product.discountPercent && (
+              <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-md border border-red-200">
+                {product.discountPercent}
+              </span>
+            )}
           </div>
+
           {product.installmentPrice && (
             <div className="text-xs text-gray-600">
               <span>Hoặc </span>
@@ -247,9 +265,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           <button
             onClick={handleAddToCart}
             disabled={!product.inStock || product.stockQuantity === 0}
-            className="bg-white border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed"
+            className="bg-white flex items-center gap-2 border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed"
           >
-            Thêm vào giỏ
+            Thêm vào giỏ <ShoppingCart className='w-4 h-4 text-red-600' />
           </button>
 
           <Link

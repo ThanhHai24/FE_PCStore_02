@@ -114,7 +114,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     {/* Price & Discount */}
                     <div className="mt-2">
                         <div className="flex items-center gap-1.5 min-h-[20px]">
-                            {marketPrice && (
+                            {marketPrice && marketPrice !== price && (
                                 <span className="text-xs text-gray-400 line-through font-normal">
                                     {marketPrice}
                                 </span>
