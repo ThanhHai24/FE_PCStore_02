@@ -28,7 +28,6 @@ const navItems = [
   { path: '/admin/customers', label: 'Khách hàng', icon: Users },
   { path: '/admin/categories', label: 'Danh mục', icon: FolderTree },
   { path: '/admin/brands', label: 'Thương hiệu', icon: Award },
-  { path: '/admin/settings', label: 'Cài đặt', icon: Settings },
 ];
 
 

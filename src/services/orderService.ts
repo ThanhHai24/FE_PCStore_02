@@ -3,6 +3,7 @@ import type { Order, OrderListResponse } from '../types/order';
 
 export interface CreateOrderPayload {
   customerName: string;
+  customerEmail?: string;
   customerPhone: string;
   shippingAddress: string;
   paymentMethod?: string;

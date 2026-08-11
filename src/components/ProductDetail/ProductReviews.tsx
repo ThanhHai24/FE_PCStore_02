@@ -29,6 +29,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
   // Reviews Data States
   const [reviewsList, setReviewsList] = useState<ReviewItem[]>([]);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
+  const [userHasPurchased, setUserHasPurchased] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // States for Q&A Input
@@ -50,6 +51,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
     try {
       const data = await getReviewsByProductApi(product.id);
       setReviewsList(data.reviews || []);
+      setUserHasPurchased(Boolean(data.userHasPurchased));
       setSummary(data.summary || {
         totalReviews: 0,
         avgRating: 0,
@@ -57,6 +59,7 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
       });
     } catch {
       setReviewsList([]);
+      setUserHasPurchased(false);
       setSummary({
         totalReviews: 0,
         avgRating: 0,
@@ -105,6 +108,16 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
   }, [user]);
 
   const handleOpenModal = () => {
+    if (!isAuthenticated) {
+      setToastMessage('🔒 Vui lòng đăng nhập tài khoản để gửi đánh giá cho sản phẩm!');
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
+    if (!userHasPurchased && !isAdmin) {
+      setToastMessage('🛒 Bạn chỉ có thể gửi đánh giá sau khi đã mua sản phẩm này thành công!');
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
     if (user) {
       setReviewName(user.fullName || user.username || '');
     }
@@ -113,30 +126,21 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setToastMessage('🔒 Vui lòng đăng nhập tài khoản để gửi đánh giá!');
+      setTimeout(() => setToastMessage(null), 3500);
+      setShowReviewModal(false);
+      return;
+    }
     if (!reviewComment.trim()) return;
 
     setSubmitting(true);
     try {
-      if (isAuthenticated) {
-        await createReviewApi(product.id, {
-          rating: userRating,
-          comment: reviewComment,
-        });
-        await loadReviews();
-      } else {
-        // Guest mode submission fallback locally
-        const newRev: ReviewItem = {
-          id: Date.now().toString(),
-          userId: 'guest',
-          productId: product.id,
-          userName: reviewName.trim() || 'Khách hàng',
-          rating: userRating,
-          date: new Date().toLocaleDateString('vi-VN'),
-          comment: reviewComment.trim(),
-          purchased: false,
-        };
-        setReviewsList([newRev, ...reviewsList]);
-      }
+      await createReviewApi(product.id, {
+        rating: userRating,
+        comment: reviewComment,
+      });
+      await loadReviews();
 
       setShowReviewModal(false);
       setReviewComment('');
@@ -298,14 +302,23 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
         </div>
 
         {/* Action Prompt & Button */}
-        <div className="text-center space-y-3 pt-2">
+        <div className="text-center space-y-2 pt-2">
           <p className="text-xs font-bold text-gray-800">Bạn đánh giá sao sản phẩm này</p>
           <button
             onClick={handleOpenModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 px-8 rounded-xl shadow-md transition-colors uppercase tracking-wider"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 px-8 rounded-xl shadow-md transition-colors uppercase tracking-wider cursor-pointer"
           >
             Đánh giá ngay
           </button>
+          {!isAuthenticated ? (
+            <p className="text-[11px] text-amber-600 font-semibold pt-1">
+              🔒 Bạn cần đăng nhập tài khoản để gửi đánh giá cho sản phẩm này.
+            </p>
+          ) : !userHasPurchased && !isAdmin ? (
+            <p className="text-[11px] text-amber-600 font-semibold pt-1">
+              🛒 Chỉ khách hàng đã mua sản phẩm này mới có thể viết đánh giá & nhận xét.
+            </p>
+          ) : null}
         </div>
 
         {/* Loading Indicator */}

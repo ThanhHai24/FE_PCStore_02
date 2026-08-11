@@ -26,6 +26,7 @@ export interface ReviewSummary {
 
 export interface ProductReviewsResponse {
   productId: string;
+  userHasPurchased?: boolean;
   summary: ReviewSummary;
   reviews: ReviewItem[];
 }

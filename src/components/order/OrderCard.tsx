@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, CreditCard, Eye, X, Loader2 } from 'lucide-react';
+import { Calendar, CreditCard, Eye, X, Loader2, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import OrderItem from './OrderItem';
 import type { Order } from '../../types/order';
@@ -110,6 +110,14 @@ function OrderCard({ order, onCancelled }: OrderCardProps) {
               >
                 <X size={15} /> Hủy đơn
               </button>
+            )}
+            {order.status === 'DELIVERED' && (
+              <Link
+                to={`/order/${order.id}`}
+                className="order-action-btn bg-amber-50 border border-amber-300 text-amber-700 text-sm rounded-[8px] py-[5px] px-[12px] font-[600] cursor-pointer gap-1 flex items-center hover:bg-amber-100 transition-colors"
+              >
+                <Star size={15} className="fill-amber-400 text-amber-400" /> Đánh giá
+              </Link>
             )}
             <Link
               to={`/order/${order.id}`}

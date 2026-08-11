@@ -125,10 +125,10 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
     };
 
     return (
-        <div ref={ref} className="relative">
+        <div ref={ref} className="relative w-full min-w-0">
             {/* Selected product chip */}
             {selected ? (
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 w-full min-w-0 overflow-hidden">
                     {selected.image ? (
                         <img
                             src={selected.image}
@@ -136,18 +136,19 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
                             className="w-8 h-8 object-cover rounded-lg flex-shrink-0 border border-blue-100"
                         />
                     ) : (
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-500">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-500 flex-shrink-0">
                             {COMPONENT_ICONS[componentKey] ?? <Package className="w-4 h-4" />}
                         </div>
                     )}
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">{selected.name}</p>
-                        <p className="text-[10px] text-blue-600 font-mono">{selected.sku}</p>
+                        <p className="text-xs font-bold text-gray-900 truncate" title={selected.name}>{selected.name}</p>
+                        <p className="text-[10px] text-blue-600 font-mono truncate">{selected.sku}</p>
                     </div>
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
-                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-1"
+                        title="Bỏ chọn linh kiện"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -156,19 +157,19 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
                 <button
                     type="button"
                     onClick={handleOpen}
-                    className="w-full flex items-center gap-2 bg-gray-50 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-500 hover:border-blue-400 hover:bg-blue-50/30 transition-colors"
+                    className="w-full flex items-center gap-2 bg-gray-50 border border-dashed border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-500 hover:border-blue-400 hover:bg-blue-50/30 transition-colors min-w-0"
                 >
-                    <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                    <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
                         {COMPONENT_ICONS[componentKey] ?? <Package className="w-4 h-4" />}
                     </div>
-                    <span className="flex-1 text-left text-gray-400">Chọn {label}...</span>
-                    <ChevronDown className="w-4 h-4 text-gray-300" />
+                    <span className="flex-1 text-left text-gray-400 truncate">Chọn {label}...</span>
+                    <ChevronDown className="w-4 h-4 text-gray-300 flex-shrink-0" />
                 </button>
             )}
 
             {/* Dropdown */}
             {open && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden min-w-0">
                     <div className="p-2 border-b border-gray-100">
                         <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-2.5 py-1.5">
                             <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -181,7 +182,7 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
                                     search(e.target.value);
                                 }}
                                 placeholder={`Tìm ${label}...`}
-                                className="flex-1 text-xs bg-transparent focus:outline-none text-gray-700 placeholder:text-gray-400"
+                                className="flex-1 min-w-0 text-xs bg-transparent focus:outline-none text-gray-700 placeholder:text-gray-400"
                             />
                         </div>
                     </div>
@@ -200,7 +201,7 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
                                         setOpen(false);
                                         setQuery('');
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50 transition-colors text-left"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-blue-50 transition-colors text-left min-w-0"
                                 >
                                     {p.image ? (
                                         <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded-lg border border-gray-100 flex-shrink-0" />
@@ -210,8 +211,8 @@ const ProductSearchPicker: React.FC<ProductSearchPickerProps> = ({
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-semibold text-gray-900 truncate">{p.name}</p>
-                                        <p className="text-[10px] text-gray-400">{p.sku} · {p.price?.toLocaleString('vi-VN')}đ</p>
+                                        <p className="text-xs font-semibold text-gray-900 truncate" title={p.name}>{p.name}</p>
+                                        <p className="text-[10px] text-gray-400 truncate">{p.sku} · {p.price?.toLocaleString('vi-VN')}đ</p>
                                     </div>
                                 </button>
                             ))
@@ -236,14 +237,14 @@ const SpecFieldRow: React.FC<SpecFieldRowProps> = ({ field, value, onChange }) =
         'w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all';
 
     return (
-        <div className="flex items-start gap-3">
-            <div className="w-52 flex-shrink-0 pt-2">
-                <label className="text-xs font-semibold text-gray-700 leading-tight">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-full sm:w-36 flex-shrink-0">
+                <label className="text-xs font-semibold text-gray-700 leading-tight block truncate" title={field.label}>
                     {field.label}
                     {field.required && <span className="text-rose-500 ml-0.5">*</span>}
                 </label>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
                 {field.type === 'select' ? (
                     <select
                         required={field.required}
@@ -383,14 +384,14 @@ const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                 </p>
                 <div className="space-y-3">
                     {PC_COMPONENT_TYPES.map(({ key, label, keywords }) => (
-                        <div key={key} className="flex items-start gap-3">
-                            <div className="w-52 flex-shrink-0 pt-2">
-                                <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                        <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="w-full sm:w-28 flex-shrink-0">
+                                <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5 truncate" title={label}>
                                     <span className="text-gray-400">{COMPONENT_ICONS[key]}</span>
                                     {label}
                                 </label>
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                                 <ProductSearchPicker
                                     componentKey={key}
                                     label={label}

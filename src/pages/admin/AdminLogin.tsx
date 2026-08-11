@@ -132,17 +132,6 @@ export const AdminLogin: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Demo Fill */}
-          <div className="pt-2 border-t border-gray-100">
-            <button
-              onClick={fillDemoAccount}
-              className="w-full py-2.5 px-3 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Sử dụng tài khoản Admin Demo</span>
-            </button>
-          </div>
-
           <div className="text-center text-xs text-gray-500">
             <Link to="/" className="text-blue-600 font-semibold hover:underline">
               ← Quay lại trang chủ PC Store

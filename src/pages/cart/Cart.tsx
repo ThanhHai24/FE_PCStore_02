@@ -127,6 +127,7 @@ export const Cart: React.FC = () => {
       // Call API to create Order in Database
       const orderRes = await createOrderApi({
         customerName: customerInfo.fullName.trim(),
+        customerEmail: customerInfo.email ? customerInfo.email.trim() : undefined,
         customerPhone: customerInfo.phone.trim(),
         shippingAddress: fullAddress,
         paymentMethod: paymentMethod === 'cod' ? 'COD' : 'VNPAY',

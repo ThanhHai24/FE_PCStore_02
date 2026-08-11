@@ -52,6 +52,7 @@ export interface Order {
   code: string;
   userId?: string | null;
   customerName: string;
+  customerEmail?: string | null;
   customerPhone: string;
   shippingAddress: string;
   subtotal: number;

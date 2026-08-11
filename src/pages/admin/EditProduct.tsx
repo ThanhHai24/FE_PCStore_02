@@ -312,6 +312,24 @@ export const EditProduct: React.FC = () => {
     const removeGalleryImage = (idx: number) =>
         setGalleryImages((prev) => prev.filter((_, i) => i !== idx));
 
+    /* ── Scroll to first field error ── */
+    const scrollToError = (errors: Record<string, string>) => {
+        const errorKeys = Object.keys(errors);
+        if (errorKeys.length === 0) return;
+
+        const firstKey = errorKeys[0];
+        setTimeout(() => {
+            const el = document.getElementById(`field-${firstKey}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const focusable = el.querySelector<HTMLElement>('input, select, textarea, button') || el;
+                if (focusable && typeof focusable.focus === 'function') {
+                    focusable.focus({ preventScroll: true });
+                }
+            }
+        }, 50);
+    };
+
     /* ── Validate before submit ── */
     const validate = (): boolean => {
         const errors: Record<string, string> = {};
@@ -326,8 +344,19 @@ export const EditProduct: React.FC = () => {
             errors.sellPrice = 'Vui lòng nhập giá bán hợp lệ (> 0)';
         }
 
+        if (formData.stock === undefined || formData.stock === null || isNaN(Number(formData.stock)) || Number(formData.stock) < 0) {
+            errors.stock = 'Vui lòng nhập số lượng tồn kho hợp lệ (≥ 0)';
+        }
+
         setFieldErrors(errors);
-        return Object.keys(errors).length === 0;
+
+        if (Object.keys(errors).length > 0) {
+            setSaveError('Vui lòng kiểm tra và điền đầy đủ các thông tin bắt buộc còn thiếu (*)');
+            scrollToError(errors);
+            return false;
+        }
+
+        return true;
     };
 
     /* ── Submit update ── */
@@ -447,7 +476,7 @@ export const EditProduct: React.FC = () => {
                     </div>
 
                     {/* Tên sản phẩm */}
-                    <div>
+                    <div id="field-name">
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Tên sản phẩm *</label>
                         <input
                             type="text"
@@ -469,7 +498,7 @@ export const EditProduct: React.FC = () => {
                     </div>
 
                     {/* SKU (read-only) */}
-                    <div>
+                    <div id="field-sku">
                         <label className="block text-xs font-semibold text-gray-700 mb-1">SKU / Mã sản phẩm</label>
                         <input
                             type="text"
@@ -481,7 +510,7 @@ export const EditProduct: React.FC = () => {
 
                     {/* Danh mục & Thương hiệu */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <div id="field-categoryId">
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Danh mục *</label>
                             {loadingCategories ? (
                                 <div className="flex items-center gap-2 text-xs text-gray-400 h-9">
@@ -511,7 +540,7 @@ export const EditProduct: React.FC = () => {
                             )}
                         </div>
 
-                        <div>
+                        <div id="field-brandId">
                             <label className="block text-xs font-semibold text-gray-700 mb-1">
                                 Thương hiệu *
                                 <span className="ml-1 text-[10px] font-normal text-red-400">(Bắt buộc)</span>
@@ -782,7 +811,7 @@ export const EditProduct: React.FC = () => {
                 </div>
 
                 {/* ══════ KHỐI 4: THÔNG SỐ KỸ THUẬT ══════ */}
-                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4 overflow-hidden w-full min-w-0">
                     <div className="flex items-center pb-2 border-b border-gray-100">
                         <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                             <span className="w-4 h-4 text-blue-600 text-base">⚙️</span>
@@ -817,7 +846,7 @@ export const EditProduct: React.FC = () => {
                                 className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
                             />
                         </div>
-                        <div>
+                        <div id="field-sellPrice">
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Giá bán (Sell Price) *</label>
                             <input
                                 type="text"
@@ -866,16 +895,25 @@ export const EditProduct: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <div id="field-stock">
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Số lượng tồn kho *</label>
                             <input
                                 type="number"
-                                required
                                 min="0"
                                 value={formData.stock}
-                                onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
-                                className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                                onChange={(e) => {
+                                    setFormData({ ...formData, stock: Number(e.target.value) });
+                                    if (fieldErrors.stock) setFieldErrors((p) => ({ ...p, stock: '' }));
+                                }}
+                                className={`w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all ${
+                                    fieldErrors.stock ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+                                }`}
                             />
+                            {fieldErrors.stock && (
+                                <p className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />{fieldErrors.stock}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Ngưỡng cảnh báo hết hàng</label>

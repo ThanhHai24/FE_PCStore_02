@@ -20,6 +20,7 @@ export async function getReviewsByProductApi(productId: string): Promise<Product
 
   return {
     productId: data.productId,
+    userHasPurchased: Boolean(data.userHasPurchased),
     summary: data.summary || {
       totalReviews: reviews.length,
       avgRating: reviews.length > 0 ? Number((reviews.reduce((a, b) => a + b.rating, 0) / reviews.length).toFixed(1)) : 0,

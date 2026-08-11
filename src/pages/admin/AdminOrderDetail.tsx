@@ -61,7 +61,7 @@ export const AdminOrderDetail: React.FC = () => {
     paymentStatus: 'PAID',
     notes: 'Không có ghi chú',
     subtotal: 85085500,
-    shippingFee: 225500,
+    shippingFee: 0,
     discountAmount: 0,
     totalAmount: 85311000,
     items: [
@@ -110,7 +110,7 @@ export const AdminOrderDetail: React.FC = () => {
             paymentStatus: o.paymentStatus || 'PAID',
             notes: o.notes || 'Không có ghi chú',
             subtotal: o.subtotal || 85085500,
-            shippingFee: o.shippingFee || 225500,
+            shippingFee: o.shippingFee,
             discountAmount: o.discountAmount || 0,
             totalAmount: o.totalAmount || 85311000,
             items: o.items ? o.items.map((it: any) => ({
@@ -268,26 +268,28 @@ export const AdminOrderDetail: React.FC = () => {
       <div className="bg-white rounded-xl border border-gray-200/80 p-6 shadow-xs space-y-4">
         <h2 className="text-sm font-bold text-gray-900">Trạng thái đơn hàng</h2>
 
-        <div className="relative pt-4 pb-2 px-8">
-          {/* Progress bar background line */}
-          <div className="absolute top-8 left-16 right-16 h-0.5 bg-gray-200 -z-0"></div>
-          {currentStepIdx >= 0 && (
-            <div
-              className="absolute top-8 left-16 h-0.5 bg-blue-600 transition-all duration-500 -z-0"
-              style={{ width: `${(currentStepIdx / (steps.length - 1)) * 100}%` }}
-            ></div>
-          )}
-
-          {/* Step Items */}
-          <div className="flex items-start justify-between relative z-10">
+        <div className="pt-2 pb-2">
+          <div className="flex items-start">
             {steps.map((st, idx) => {
               const isPassed = currentStepIdx >= idx;
-              const isCurrent = currentStepIdx === idx;
+              const isLinePassed = currentStepIdx > idx;
 
               return (
-                <div key={st.key} className="flex flex-col items-center text-center max-w-[120px]">
+                <div key={st.key} className="flex-1 relative flex flex-col items-center text-center px-1">
+                  {/* Connecting Line to Next Step */}
+                  {idx < steps.length - 1 && (
+                    <div className="absolute top-3.5 left-[calc(50%+14px)] right-[calc(-50%+14px)] h-0.5 z-0 pointer-events-none">
+                      <div
+                        className={`h-full transition-all duration-500 ${
+                          isLinePassed ? 'bg-[#1D52E7]' : 'bg-gray-200'
+                        }`}
+                      />
+                    </div>
+                  )}
+
+                  {/* Step Circle */}
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all relative z-10 ${
                       isPassed
                         ? 'bg-[#1D52E7] text-white ring-4 ring-blue-100'
                         : 'bg-white border-2 border-gray-300 text-gray-400'
@@ -296,10 +298,12 @@ export const AdminOrderDetail: React.FC = () => {
                     {isPassed ? <Check className="w-4 h-4 stroke-[3]" /> : <div className="w-2 h-2 rounded-full bg-gray-300" />}
                   </div>
 
+                  {/* Step Label */}
                   <p className={`text-xs font-semibold mt-2.5 ${isPassed ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>
                     {st.label}
                   </p>
 
+                  {/* Step Meta (Date & Actor) */}
                   {st.date && (
                     <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">
                       <p>{st.date}</p>
@@ -315,7 +319,7 @@ export const AdminOrderDetail: React.FC = () => {
 
       {/* Grid: Thông tin đơn hàng (Left) & Khách hàng + Tổng thanh toán (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Cột Trái: Thông tin đơn hàng */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200/80 p-6 shadow-xs space-y-4">
           <h2 className="text-sm font-bold text-gray-900 pb-2">Thông tin đơn hàng</h2>
@@ -357,7 +361,7 @@ export const AdminOrderDetail: React.FC = () => {
 
         {/* Cột Phải: Khách hàng & Tổng thanh toán */}
         <div className="space-y-6">
-          
+
           {/* Card 1: Khách hàng */}
           <div className="bg-white rounded-xl border border-gray-200/80 p-5 shadow-xs space-y-3">
             <h2 className="text-sm font-bold text-gray-900">Khách hàng</h2>

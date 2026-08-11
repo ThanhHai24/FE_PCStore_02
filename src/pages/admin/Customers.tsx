@@ -13,6 +13,13 @@ import {
   AlertTriangle,
   Mail,
   Phone,
+  ShieldCheck,
+  ShieldAlert,
+  User,
+  Check,
+  Lock,
+  Filter,
+  Key,
 } from 'lucide-react';
 import { getUsersApi, createUserApi, updateUserApi, deleteUserApi } from '../../services/userService';
 
@@ -29,8 +36,23 @@ export interface CustomerItem {
   username?: string;
 }
 
+// Danh sách ma trận quyền hạn hiển thị mô phỏng các tính năng hệ thống
+const PERMISSION_MATRIX = [
+  { id: 'dashboard', name: 'Xem Dashboard & Báo cáo Doanh thu', adminOnly: true },
+  { id: 'products', name: 'Quản lý Sản phẩm (Thêm, Sửa, Xóa)', adminOnly: true },
+  { id: 'orders', name: 'Xử lý Đơn hàng & Trạng thái Vận chuyển', adminOnly: true },
+  { id: 'users', name: 'Quản lý Người dùng & Phân quyền Hệ thống', adminOnly: true },
+  { id: 'categories', name: 'Quản lý Danh mục & Thương hiệu', adminOnly: true },
+  { id: 'settings', name: 'Cấu hình Hệ thống & Cổng Thanh toán', adminOnly: true },
+  { id: 'shop', name: 'Mua sắm & Đặt hàng Trực tuyến', adminOnly: false },
+  { id: 'profile', name: 'Quản lý Hồ sơ Cá nhân & Đơn hàng đã mua', adminOnly: false },
+];
+
 export const Customers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'ADMIN' | 'CUSTOMER'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'Active' | 'Blocked'>('ALL');
+
   const [customers, setCustomers] = useState<CustomerItem[]>([]);
 
   // Fetch Users from API
@@ -64,6 +86,7 @@ export const Customers: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerItem | null>(null);
 
@@ -77,6 +100,8 @@ export const Customers: React.FC = () => {
     status: 'Active' as 'Active' | 'Blocked',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
   });
+
+  const [roleFormRole, setRoleFormRole] = useState<'ADMIN' | 'CUSTOMER'>('CUSTOMER');
 
   // Open Add Modal
   const handleOpenAddModal = () => {
@@ -147,6 +172,28 @@ export const Customers: React.FC = () => {
     }
   };
 
+  // Open Set Role / Permission Modal
+  const handleOpenRoleModal = (cust: CustomerItem) => {
+    setSelectedCustomer(cust);
+    setRoleFormRole(cust.role);
+    setIsRoleModalOpen(true);
+  };
+
+  // Submit Set Role / Permission
+  const handleRoleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCustomer) return;
+    try {
+      await updateUserApi(selectedCustomer.id, {
+        role: roleFormRole,
+      });
+      await fetchUsers();
+      setIsRoleModalOpen(false);
+    } catch (err: any) {
+      alert(`Lỗi cập nhật quyền hạn: ${err.message}`);
+    }
+  };
+
   // Open Delete Modal
   const handleOpenDeleteModal = (cust: CustomerItem) => {
     setSelectedCustomer(cust);
@@ -174,12 +221,18 @@ export const Customers: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const filteredCustomers = customers.filter(
-    (c) =>
+  const filteredCustomers = customers.filter((c) => {
+    const matchesSearch =
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone.includes(searchTerm)
-  );
+      c.phone.includes(searchTerm) ||
+      (c.username && c.username.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesRole = roleFilter === 'ALL' || c.role === roleFilter;
+    const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE) || 1;
   const paginatedCustomers = filteredCustomers.slice(
@@ -192,11 +245,11 @@ export const Customers: React.FC = () => {
       {/* Header Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-            Quản Lý Khách Hàng
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <Users className="w-6 h-6 text-blue-600" /> Quản Lý Người Dùng & Phân Quyền
           </h1>
-          <p className="text-xs text-gray-500">
-            Quản lý tài khoản người dùng, xem tổng chi tiêu và thực hiện Thêm, Sửa, Xóa (10 khách hàng/trang).
+          <p className="text-xs text-gray-500 mt-1">
+            Quản lý tài khoản người dùng, xem vai trò, gán quyền truy cập hệ thống và thực hiện Thêm, Sửa, Set quyền, Xóa.
           </p>
         </div>
 
@@ -205,13 +258,14 @@ export const Customers: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow transition-all"
         >
           <Plus className="w-4 h-4 text-amber-300" />
-          <span>Thêm Khách Hàng Mới</span>
+          <span>Thêm Tài Khoản Mới</span>
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-        <div className="relative w-full sm:w-80">
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -220,9 +274,45 @@ export const Customers: React.FC = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Tìm tên, email, số điện thoại..."
+            placeholder="Tìm tên, username, email, số điện thoại..."
             className="w-full pl-10 pr-4 py-2 bg-gray-50 text-xs text-gray-900 placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200"
           />
+        </div>
+
+        {/* Dropdown Filters */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-xl text-xs">
+            <Filter className="w-3.5 h-3.5 text-gray-500" />
+            <span className="text-gray-600 font-medium">Vai trò:</span>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-gray-900 font-bold focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Tất cả vai trò</option>
+              <option value="ADMIN">Quản trị viên (ADMIN)</option>
+              <option value="CUSTOMER">Khách hàng (CUSTOMER)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-xl text-xs">
+            <span className="text-gray-600 font-medium">Trạng thái:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-gray-900 font-bold focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="Active">Hoạt động</option>
+              <option value="Blocked">Đã khóa</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -232,9 +322,10 @@ export const Customers: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 text-gray-500 font-semibold uppercase border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3.5">Khách hàng</th>
+                <th className="px-4 py-3.5">Tài khoản & Khách hàng</th>
                 <th className="px-4 py-3.5">Liên hệ</th>
-                <th className="px-4 py-3.5">Số đơn đã mua</th>
+                <th className="px-4 py-3.5">Vai trò / Phân quyền</th>
+                <th className="px-4 py-3.5">Số đơn mua</th>
                 <th className="px-4 py-3.5">Tổng chi tiêu</th>
                 <th className="px-4 py-3.5">Trạng thái</th>
                 <th className="px-4 py-3.5 text-right">Thao tác</th>
@@ -243,8 +334,8 @@ export const Customers: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
-                    Không tìm thấy tài khoản khách hàng nào.
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                    Không tìm thấy tài khoản người dùng nào thỏa điều kiện.
                   </td>
                 </tr>
               ) : (
@@ -259,7 +350,9 @@ export const Customers: React.FC = () => {
                         />
                         <div>
                           <p className="font-bold text-gray-900">{cust.name}</p>
-                          <p className="text-[11px] text-blue-600 font-semibold">{cust.id}</p>
+                          <p className="text-[11px] text-gray-500 font-medium">
+                            @{cust.username || cust.email.split('@')[0]}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -271,13 +364,25 @@ export const Customers: React.FC = () => {
                         <Phone className="w-3 h-3 text-gray-400" /> {cust.phone}
                       </p>
                     </td>
+                    <td className="px-4 py-3">
+                      {cust.role === 'ADMIN' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                          <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                          <span>ADMIN (Quản trị)</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          <User className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Khách hàng</span>
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-gray-900">{cust.ordersCount} đơn</td>
                     <td className="px-4 py-3 font-bold text-blue-600">{cust.totalSpent}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                          cust.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                        }`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${cust.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                          }`}
                       >
                         {cust.status === 'Active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                         {cust.status === 'Active' ? 'Hoạt động' : 'Đã khóa'}
@@ -285,6 +390,15 @@ export const Customers: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleOpenRoleModal(cust)}
+                          className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200 flex items-center gap-1 px-2"
+                          title="Phân quyền / Set Role"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          <span className="text-[11px] font-bold">Quyền truy cập</span>
+                        </button>
+
                         <button
                           onClick={() => handleOpenViewModal(cust)}
                           className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -320,7 +434,7 @@ export const Customers: React.FC = () => {
           <p className="text-xs text-gray-500 font-medium">
             Hiển thị <span className="font-bold text-gray-800">{filteredCustomers.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}</span> đến{' '}
             <span className="font-bold text-gray-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredCustomers.length)}</span> trên tổng số{' '}
-            <span className="font-bold text-gray-900">{filteredCustomers.length}</span> khách hàng
+            <span className="font-bold text-gray-900">{filteredCustomers.length}</span> người dùng
           </p>
 
           <div className="flex items-center gap-1.5">
@@ -335,11 +449,10 @@ export const Customers: React.FC = () => {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${
-                  currentPage === page
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
+                className={`w-8 h-8 text-xs font-bold rounded-lg transition-all ${currentPage === page
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
               >
                 {page}
               </button>
@@ -361,7 +474,7 @@ export const Customers: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex justify-between items-center pb-3 border-b border-gray-100">
               <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-600" /> Thêm Khách Hàng Mới
+                <Plus className="w-5 h-5 text-blue-600" /> Thêm Tài Khoản Mới
               </h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -430,14 +543,14 @@ export const Customers: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Vai trò (Role)</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Phân quyền (Role)</label>
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold text-blue-600"
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold text-purple-600"
                   >
-                    <option value="CUSTOMER">Khách hàng</option>
-                    <option value="ADMIN">Quản trị viên (Admin)</option>
+                    <option value="CUSTOMER">👤 Khách hàng</option>
+                    <option value="ADMIN">🛡️ ADMIN (Quản trị viên)</option>
                   </select>
                 </div>
                 <div>
@@ -474,13 +587,13 @@ export const Customers: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 2: SỬA KHÁCH HÀNG */}
+      {/* MODAL 2: SỬA KHÁCH HÀNG & VAI TRÒ */}
       {isEditModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex justify-between items-center pb-3 border-b border-gray-100">
               <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Edit className="w-5 h-5 text-indigo-600" /> Sửa Khách Hàng ({selectedCustomer.id})
+                <Edit className="w-5 h-5 text-indigo-600" /> Sửa Tài Khoản ({selectedCustomer.name})
               </h2>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -521,17 +634,34 @@ export const Customers: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái tài khoản</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="Active">✅ Hoạt động</option>
-                  <option value="Blocked">🔒 Khóa tài khoản</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Vai trò / Phân quyền</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-purple-200 bg-purple-50 text-purple-700 font-bold rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="CUSTOMER">👤 Khách hàng</option>
+                    <option value="ADMIN">🛡️ ADMIN (Quản trị)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái tài khoản</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="Active">✅ Hoạt động</option>
+                    <option value="Blocked">🔒 Khóa tài khoản</option>
+                  </select>
+                </div>
               </div>
+
+              <p className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                💡 <span className="font-semibold">Lưu ý phân quyền:</span> Nâng cấp lên <span className="font-bold text-purple-700">ADMIN</span> sẽ cấp toàn bộ quyền quản trị hệ thống PC Store.
+              </p>
 
               <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
                 <button
@@ -554,6 +684,118 @@ export const Customers: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL 5: PHÂN QUYỀN VAI TRÒ NHANH (SET ROLE & PERMISSION MATRIX MODAL) */}
+      {isRoleModalOpen && selectedCustomer && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Key className="w-5 h-5 text-purple-600" /> Thiết Lập Phân Quyền Hạn
+              </h2>
+              <button onClick={() => setIsRoleModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-purple-50/60 border border-purple-100 rounded-xl">
+              <img
+                src={selectedCustomer.avatar}
+                alt={selectedCustomer.name}
+                className="w-10 h-10 rounded-full object-cover border border-purple-200"
+              />
+              <div>
+                <h3 className="font-bold text-xs text-gray-900">{selectedCustomer.name}</h3>
+                <p className="text-[11px] text-gray-500">{selectedCustomer.email}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleRoleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">Chọn Vai Trò (Role) *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRoleFormRole('CUSTOMER')}
+                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${roleFormRole === 'CUSTOMER'
+                      ? 'border-blue-500 bg-blue-50/50 text-blue-900 ring-2 ring-blue-500/20'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs flex items-center gap-1">
+                        <User className="w-4 h-4 text-blue-600" /> Khách Hàng
+                      </span>
+                      {roleFormRole === 'CUSTOMER' && <Check className="w-4 h-4 text-blue-600" />}
+                    </div>
+                    <p className="text-[10px] text-gray-500">Tài khoản người dùng thông thường, mua sản phẩm.</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRoleFormRole('ADMIN')}
+                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${roleFormRole === 'ADMIN'
+                      ? 'border-purple-500 bg-purple-50/50 text-purple-900 ring-2 ring-purple-500/20'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs flex items-center gap-1">
+                        <ShieldCheck className="w-4 h-4 text-purple-600" /> Quản Trị Viên
+                      </span>
+                      {roleFormRole === 'ADMIN' && <Check className="w-4 h-4 text-purple-600" />}
+                    </div>
+                    <p className="text-[10px] text-gray-500">Toàn quyền truy cập Admin Dashboard & Cấu hình.</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Bảng Ma trận Quyền Hạn */}
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-1">
+                  Bảng Chi Tiết Quyền Hạn Đánh Cho Vai Trò:
+                </label>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto divide-y divide-gray-100 text-xs">
+                  {PERMISSION_MATRIX.map((perm) => {
+                    const isGranted = roleFormRole === 'ADMIN' || !perm.adminOnly;
+                    return (
+                      <div key={perm.id} className="py-1.5 flex items-center justify-between">
+                        <span className="text-gray-700 text-[11px] font-medium">{perm.name}</span>
+                        {isGranted ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <Check className="w-3 h-3" /> Đã cấp quyền
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                            <Lock className="w-3 h-3" /> Không được phép
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsRoleModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Lưu Phân Quyền Hạn</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL 3: XÓA KHÁCH HÀNG */}
       {isDeleteModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -562,9 +804,9 @@ export const Customers: React.FC = () => {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">Xóa Khách Hàng Này?</h2>
+              <h2 className="text-base font-bold text-gray-900">Xóa Tài Khoản Này?</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Xác nhận xóa tài khoản của <span className="font-bold text-gray-900">{selectedCustomer.name}</span> ({selectedCustomer.email})?
+                Xác nhận xóa vĩnh viễn tài khoản của <span className="font-bold text-gray-900">{selectedCustomer.name}</span> ({selectedCustomer.email})?
               </p>
             </div>
 
@@ -586,13 +828,13 @@ export const Customers: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 4: XEM CHI TIẾT KHÁCH HÀNG */}
+      {/* MODAL 4: XEM CHI TIẾT KHÁCH HÀNG & QUYỀN HẠN */}
       {isViewModalOpen && selectedCustomer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex justify-between items-center pb-3 border-b border-gray-100">
               <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" /> Hồ Sơ Khách Hàng ({selectedCustomer.id})
+                <Users className="w-5 h-5 text-blue-600" /> Hồ Sơ Người Dùng ({selectedCustomer.id})
               </h2>
               <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
@@ -613,9 +855,21 @@ export const Customers: React.FC = () => {
             </div>
 
             <div className="space-y-2 text-xs text-gray-700">
+              <div className="flex items-center justify-between py-1 border-b border-gray-100">
+                <span className="font-semibold text-gray-900">Vai trò / Phân quyền:</span>
+                {selectedCustomer.role === 'ADMIN' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    <ShieldCheck className="w-3 h-3 text-purple-600" /> ADMIN (Quản trị viên)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    <User className="w-3 h-3 text-blue-600" /> Khách hàng
+                  </span>
+                )}
+              </div>
               <p><span className="font-semibold text-gray-900">Tổng số đơn đã mua:</span> {selectedCustomer.ordersCount} đơn</p>
               <p><span className="font-semibold text-gray-900">Tổng chi tiêu lũy kế:</span> <span className="font-bold text-blue-600">{selectedCustomer.totalSpent}</span></p>
-              <p><span className="font-semibold text-gray-900">Trạng thái:</span> {selectedCustomer.status === 'Active' ? 'Hoạt động bình thường' : 'Tài khoản đang bị khóa'}</p>
+              <p><span className="font-semibold text-gray-900">Trạng thái tài khoản:</span> {selectedCustomer.status === 'Active' ? '✅ Hoạt động bình thường' : '🔒 Tài khoản đang bị khóa'}</p>
             </div>
 
             <div className="pt-3 flex justify-end border-t border-gray-100">
@@ -634,3 +888,4 @@ export const Customers: React.FC = () => {
 };
 
 export default Customers;
+
