@@ -234,6 +234,7 @@ export const Customers: React.FC = () => {
               <tr>
                 <th className="px-4 py-3.5">Khách hàng</th>
                 <th className="px-4 py-3.5">Liên hệ</th>
+                <th className="px-4 py-3.5">Vai trò (Phân quyền)</th>
                 <th className="px-4 py-3.5">Số đơn đã mua</th>
                 <th className="px-4 py-3.5">Tổng chi tiêu</th>
                 <th className="px-4 py-3.5">Trạng thái</th>
@@ -243,7 +244,7 @@ export const Customers: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                     Không tìm thấy tài khoản khách hàng nào.
                   </td>
                 </tr>
@@ -270,6 +271,17 @@ export const Customers: React.FC = () => {
                       <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
                         <Phone className="w-3 h-3 text-gray-400" /> {cust.phone}
                       </p>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          cust.role === 'ADMIN'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                        }`}
+                      >
+                        {cust.role === 'ADMIN' ? '🛡️ Quản trị viên' : '👤 Khách hàng'}
+                      </span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-900">{cust.ordersCount} đơn</td>
                     <td className="px-4 py-3 font-bold text-blue-600">{cust.totalSpent}</td>
@@ -521,16 +533,29 @@ export const Customers: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái tài khoản</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="Active">✅ Hoạt động</option>
-                  <option value="Blocked">🔒 Khóa tài khoản</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Vai trò (Phân quyền) *</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-purple-700 bg-purple-50/50"
+                  >
+                    <option value="CUSTOMER">👤 Khách hàng (CUSTOMER)</option>
+                    <option value="ADMIN">🛡️ Quản trị viên (ADMIN)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái tài khoản</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="Active">✅ Hoạt động</option>
+                    <option value="Blocked">🔒 Khóa tài khoản</option>
+                  </select>
+                </div>
               </div>
 
               <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
