@@ -20,6 +20,12 @@ export const ProductDetail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    if (product?.title) {
+      document.title = `${product.title} | PC Store`;
+    }
+  }, [product?.title]);
+
+  useEffect(() => {
     let isMounted = true;
 
     if (id) {

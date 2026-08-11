@@ -7,10 +7,7 @@ import {
   Users,
   FolderTree,
   Award,
-  Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
   ShieldCheck,
   Globe
 } from 'lucide-react';

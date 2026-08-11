@@ -30,6 +30,8 @@ import Order from './pages/order/Order';
 import OrderDetail from './pages/order/OrderDetail';
 import ProductCreate from './pages/admin/ProductCreate';
 
+import PageTitleManager from './components/common/PageTitleManager';
+
 function ScrollToTop() {
   const { pathname, search } = useLocation();
 
@@ -46,6 +48,7 @@ function App() {
       <CartProvider>
         <BrowserRouter>
           <ScrollToTop />
+          <PageTitleManager />
           <Routes>
             {/* User Storefront Routes */}
             <Route path="/" element={<MainLayout />}>
