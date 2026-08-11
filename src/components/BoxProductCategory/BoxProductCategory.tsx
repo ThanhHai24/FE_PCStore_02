@@ -9,16 +9,21 @@ import "swiper/css/navigation";
 
 import ProductCard, { type ProductCardProps } from "./ProductCard";
 
+export interface TabItem {
+    name: string;
+    link?: string;
+}
+
 interface BoxProductCategoryProps {
     title: string;
-    tabs?: string[];
+    tabs?: (string | TabItem)[];
     tabContent?: ProductCardProps[];
     viewAllLink?: string;
 }
 
 export const BoxProductCategory: React.FC<BoxProductCategoryProps> = ({
     title,
-    tabs = ["PC Gaming Theo Game", "Chọn PC Gaming Theo Giá"],
+    tabs = [],
     tabContent = [],
     viewAllLink = "#",
 }) => {
@@ -35,20 +40,29 @@ export const BoxProductCategory: React.FC<BoxProductCategoryProps> = ({
                     {title}
                 </h2>
                 <div className="flex items-center gap-3 text-sm flex-wrap">
-                    {tabs.map((tab, idx) => (
-                        <React.Fragment key={idx}>
-                            <a
-                                href="#"
-                                className="text-gray-600 hover:text-blue-600 font-medium transition-colors"
-                            >
-                                {tab}
-                            </a>
-                            {idx < tabs.length - 1 && <span className="text-gray-300">|</span>}
-                        </React.Fragment>
-                    ))}
-                    <span className="text-gray-300">|</span>
+                    {tabs.map((tab, idx) => {
+                        const name = typeof tab === "string" ? tab : tab.name;
+                        const link = typeof tab === "string"
+                            ? (viewAllLink && viewAllLink !== "#" ? `${viewAllLink}?search=${encodeURIComponent(name)}` : `/products?search=${encodeURIComponent(name)}`)
+                            : (tab.link || viewAllLink);
+
+                        return (
+                            <React.Fragment key={idx}>
+                                <Link
+                                    to={link}
+                                    onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
+                                    className="text-gray-600 hover:text-blue-600 font-medium transition-colors"
+                                >
+                                    {name}
+                                </Link>
+                                {idx < tabs.length - 1 && <span className="text-gray-300">|</span>}
+                            </React.Fragment>
+                        );
+                    })}
+                    {tabs.length > 0 && <span className="text-gray-300">|</span>}
                     <Link
                         to={viewAllLink}
+                        onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' })}
                         className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
                     >
                         Xem Tất Cả <ChevronRight className="w-4 h-4" />

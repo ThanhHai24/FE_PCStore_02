@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { Loader2, Zap } from 'lucide-react';
 import type { SubCategory } from '../../components/ProductList/SubCategoryHeader';
 
 import ProductListFilter, { defaultPriceRanges } from '../../components/ProductList/ProductListFilter';
 import ProductSortBar from '../../components/ProductList/ProductSortBar';
 import type { SortOptionKey, ViewMode } from '../../components/ProductList/ProductSortBar';
 import ProductCard from '../../components/BoxProductCategory/ProductCard';
+import { checkProductMatchesFilter } from '../../components/ProductList/categoryFilterConfigs';
 import {
   getProducts,
   getCategories,
@@ -19,6 +20,9 @@ import type { ApiProduct, ApiBrand, ApiCategory } from '../../types/apiProduct';
 export const ProductList: React.FC = () => {
   const { categoryId: routeCategoryId } = useParams<{ categoryId?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const isDealsPage = location.pathname === '/deals' || searchParams.get('isFeatured') === 'true';
 
   const searchParamQuery = searchParams.get('q') || searchParams.get('search') || '';
   const searchParamCategory = searchParams.get('categoryId') || routeCategoryId || null;
@@ -40,7 +44,7 @@ export const ProductList: React.FC = () => {
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
-    limit: 15,
+    limit: 20,
     totalPages: 1,
   });
 
@@ -50,8 +54,8 @@ export const ProductList: React.FC = () => {
   // Sync categoryId from route or query params
   useEffect(() => {
     if (searchParamCategory !== selectedSubCategory) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSubCategory(searchParamCategory);
+      setSelectedFilters({});
     }
   }, [searchParamCategory, selectedSubCategory]);
 
@@ -102,9 +106,7 @@ export const ProductList: React.FC = () => {
           if (isMounted) setBrands([]);
         });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategoryName('');
-
       setBrands([]);
     }
     return () => {
@@ -118,8 +120,8 @@ export const ProductList: React.FC = () => {
     setError(null);
 
     try {
-      let minPrice: number | undefined = undefined;
-      let maxPrice: number | undefined = undefined;
+      let minPrice: number | undefined = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
+      let maxPrice: number | undefined = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
 
       if (selectedPriceRange) {
         const found = defaultPriceRanges.find((r) => r.id === selectedPriceRange);
@@ -151,7 +153,7 @@ export const ProductList: React.FC = () => {
 
       const response = await getProducts({
         page,
-        limit: 15,
+        limit: 20,
         categoryId: selectedSubCategory || undefined,
         brandId: selectedBrandId || undefined,
         minPrice,
@@ -160,6 +162,7 @@ export const ProductList: React.FC = () => {
         sortOrder,
         search: searchParamQuery || undefined,
         status: 'ACTIVE',
+        isFeatured: isDealsPage ? true : undefined,
       });
 
       setProducts(response.products || []);
@@ -169,7 +172,7 @@ export const ProductList: React.FC = () => {
         setPagination({
           total: response.products ? response.products.length : 0,
           page: 1,
-          limit: 15,
+          limit: 20,
           totalPages: 1,
         });
       }
@@ -180,12 +183,25 @@ export const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedSubCategory, selectedBrandId, selectedPriceRange, currentSort, searchParamQuery]);
+  }, [page, selectedSubCategory, selectedBrandId, selectedPriceRange, currentSort, searchParamQuery, isDealsPage, searchParams]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProductsList();
   }, [fetchProductsList]);
+
+  // Client-side filtering based on category-specific criteria selected by user
+  const filteredProducts = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    const activeKeys = Object.keys(selectedFilters).filter((k) => selectedFilters[k]);
+    if (activeKeys.length === 0) return products;
+
+    return products.filter((product) => {
+      return activeKeys.every((key) => {
+        const val = selectedFilters[key];
+        return checkProductMatchesFilter(product, key, val);
+      });
+    });
+  }, [products, selectedFilters]);
 
   const handleFilterChange = (key: string, value: string | null) => {
     setSelectedFilters((prev) => {
@@ -213,7 +229,6 @@ export const ProductList: React.FC = () => {
     setPage(1);
   };
 
-
   const handleSelectBrand = (brandId: string | null) => {
     setSelectedBrandId(brandId);
     setPage(1);
@@ -232,12 +247,17 @@ export const ProductList: React.FC = () => {
         <Link to="/" className="hover:text-blue-600 font-medium">Trang chủ</Link>
         <span>&gt;</span>
         <Link to="/products" className="hover:text-blue-600 font-medium uppercase">Sản phẩm</Link>
-        {categoryName && (
+        {isDealsPage ? (
+          <>
+            <span>&gt;</span>
+            <span className="text-gray-800 font-bold uppercase text-orange-600 flex items-center gap-1">⚡ HOT DEALS</span>
+          </>
+        ) : categoryName ? (
           <>
             <span>&gt;</span>
             <span className="text-gray-800 font-bold uppercase">{categoryName}</span>
           </>
-        )}
+        ) : null}
         {searchParamQuery && (
           <>
             <span>&gt;</span>
@@ -246,13 +266,30 @@ export const ProductList: React.FC = () => {
         )}
       </nav>
 
-
+      {/* Deal Hero Banner for Deals Page */}
+      {isDealsPage && (
+        <div className="bg-gradient-to-r from-[#fe7112] via-[#f7521e] to-[#ffdb68] text-white rounded-2xl p-5 sm:p-6 shadow-md flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-300 animate-bounce" />
+              <h1 className="text-xl sm:text-3xl font-black text-yellow-300 tracking-tight">
+                GIÁ TỐT MỖI NGÀY - FLASH SALE
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm font-medium text-white/90">
+              Tổng hợp các sản phẩm nổi bật giảm giá cực sốc trong ngày!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main 2-Column Grid Layout: Left Sidebar + Right Products List */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column: Product Filter Sidebar */}
         <div className="w-full lg:w-72 shrink-0">
           <ProductListFilter
+            categoryKey={routeCategoryId || selectedSubCategory}
+            categoryDisplayName={categoryName}
             brands={brands}
             selectedPriceRange={selectedPriceRange}
             onSelectPriceRange={handleSelectPriceRange}
@@ -275,7 +312,7 @@ export const ProductList: React.FC = () => {
             }}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            totalProducts={pagination.total}
+            totalProducts={filteredProducts.length}
           />
 
           {/* Loading Skeleton / State */}
@@ -295,7 +332,7 @@ export const ProductList: React.FC = () => {
                 Thử lại
               </button>
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 space-y-3">
               <div className="text-4xl">🔍</div>
               <h3 className="text-base font-bold text-gray-800">Không tìm thấy sản phẩm phù hợp</h3>
@@ -315,7 +352,7 @@ export const ProductList: React.FC = () => {
                   : 'space-y-4'
               }
             >
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const cardProps = formatProductToCardProps(product);
                 return (
                   <ProductCard
@@ -343,8 +380,8 @@ export const ProductList: React.FC = () => {
                   key={pNum}
                   onClick={() => handlePageChange(pNum)}
                   className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors ${pNum === page
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   {pNum}
@@ -362,10 +399,10 @@ export const ProductList: React.FC = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };
 
 export default ProductList;
+
 

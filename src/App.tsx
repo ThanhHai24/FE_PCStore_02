@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/home/Home';
 import ProductList from './pages/product/ProductList';
@@ -29,17 +30,29 @@ import Order from './pages/order/Order';
 import OrderDetail from './pages/order/OrderDetail';
 import ProductCreate from './pages/admin/ProductCreate';
 
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname, search]);
+
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* User Storefront Routes */}
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Home />} />
               <Route path="category/:categoryId" element={<ProductList />} />
               <Route path="products" element={<ProductList />} />
+              <Route path="deals" element={<ProductList />} />
               <Route path="product/:id" element={<ProductDetail />} />
               <Route path="vnpay-return" element={<PaymentResult />} />
               <Route path="cart" element={<Cart />} />

@@ -45,6 +45,7 @@ export interface ProductItem {
   discountPrice?: string;
   profitMargin?: string;
   status: 'In Stock' | 'Out of Stock' | 'Low Stock';
+  isFeatured?: boolean;
   coverImage?: string;
   productImages?: string[];
   image: string;
@@ -123,6 +124,7 @@ export const Products: React.FC = () => {
             stock: p.stock ?? 0,
             minStockAlert: 5,
             status: (p.stock === 0 ? 'Out of Stock' : (p.stock ?? 0) <= 5 ? 'Low Stock' : 'In Stock') as any,
+            isFeatured: Boolean(p.isFeatured),
             coverImage: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
             productImages: p.images ? p.images.map((img) => getImageUrl(img)) : [],
             image: p.image ? getImageUrl(p.image) : 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=200&q=80',
@@ -350,7 +352,14 @@ export const Products: React.FC = () => {
                           className="w-10 h-10 rounded-xl object-cover border border-gray-200 flex-shrink-0"
                         />
                         <div>
-                          <p className="font-bold text-gray-900 line-clamp-1">{prod.name}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-gray-900 line-clamp-1">{prod.name}</p>
+                            {prod.isFeatured && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 shadow-xs">
+                                ⚡ Deal
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-blue-600 font-mono font-semibold">{prod.sku || prod.id}</p>
                         </div>
                       </div>

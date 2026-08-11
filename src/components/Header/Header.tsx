@@ -21,8 +21,12 @@ import {
     LogOut,
     Shield,
     Package,
-    Truck
+    Truck,
+    Tv,
+    Gamepad2
 } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface CategoryItem {
     id: string;
@@ -51,7 +55,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'pc-van-phong',
+        id: 'mini-pc',
         name: 'Mini PC',
         icon: <HardDrive className="w-4 h-4 text-blue-500" />,
         subcategories: [
@@ -62,7 +66,7 @@ const CATEGORIES: CategoryItem[] = [
         ],
     },
     {
-        id: 'pc-do-hoa',
+        id: 'pc-ai',
         name: 'PC AI',
         icon: <Sparkles className="w-4 h-4 text-amber-500" />,
         subcategories: [
@@ -121,20 +125,12 @@ const CATEGORIES: CategoryItem[] = [
                 items: ['HDD 1TB', 'HDD 2TB'],
             },
             {
-                title: 'Ổ cứng di động',
-                items: [],
-            },
-            {
-                title: 'USB',
-                items: [],
-            },
-            {
                 title: 'Chọn theo hãng',
-                items: ['Ổ cứng Silicon Power', 'Ổ cứng Western Digital', 'Ổ cứng Transcend', 'Ổ cứng Toshiba', 'Ổ cứng Team', 'Ổ cứng Seagate', 'Ổ cứng Samsung', 'Ổ cứng Kingspec', 'Ổ cứng Kingmax', 'Ổ cứng Kingston', 'Ổ cứng Gigabyte', 'Ổ cứng Colorful', 'Ổ cứng Apacer', 'Ổ cứng Adata', 'Ổ cứng KIOXIA', 'Ổ cứng AGI', 'Ổ cứng HIKSEMI', 'Ổ cứng Lexar'],
+                items: ['Western Digital', 'Seagate', 'Samsung', 'Kingston'],
             },
             {
                 title: 'Chọn theo dung lượng',
-                items: ['8GB', '16GB', '32GB', '120GB', '128GB', '240GB', '256GB', '480GB', '500GB', '512GB', '1TB', '2TB', '3TB', '4TB', '8TB', '10TB', 'Trên 10TB'],
+                items: ['256GB', '512GB', '1TB', '2TB', '4TB'],
             },
         ],
     },
@@ -157,7 +153,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'pc-van-phong',
+        id: 'mini-pc',
         name: 'Mini PC',
         icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
         subcategories: [
@@ -168,7 +164,7 @@ const HORIZONTAL_CATEGORIES = [
         ],
     },
     {
-        id: 'pc-do-hoa',
+        id: 'pc-ai',
         name: 'PC AI',
         icon: <Sparkles className="w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors" />,
         subcategories: [
@@ -252,16 +248,16 @@ const SHOWROOMS = [
 const getSubcategoryTitleLink = (title: string, parentCatSlug?: string): string => {
     const t = title.toLowerCase();
     if (t.includes('cpu')) return '/category/cpu-bo-vi-xu-ly';
-    if (t.includes('vga')) return '/category/vga-card-do-hoa';
-    if (t.includes('mainboard')) return '/category/mainboard-bo-mach-chu';
+    if (t.includes('vga') || t.includes('card màn hình')) return '/category/vga-card-do-hoa';
+    if (t.includes('mainboard') || t.includes('bo mạch chủ')) return '/category/mainboard-bo-mach-chu';
     if (t.includes('ram')) return '/category/ram-bo-nho-trong';
     if (t.includes('psu') || t.includes('nguồn')) return '/category/psu-nguon-may-tinh';
     if (t.includes('case') || t.includes('vỏ')) return '/category/case-vo-may-tinh';
     if (t.includes('tản nhiệt')) return '/category/tan-nhiet-cpu';
     if (t.includes('ssd') || t.includes('hdd') || t.includes('lưu trữ')) return '/category/o-cung-hdd-ssd';
     if (t.includes('pc theo nhu cầu')) return '/category/pc';
-    if (t.includes('mini pc')) return '/category/pc-van-phong';
-    if (t.includes('ai workstation')) return '/category/pc-do-hoa';
+    if (t.includes('mini pc')) return '/category/mini-pc';
+    if (t.includes('ai workstation') || t.includes('pc ai')) return '/category/pc-ai';
 
     if (parentCatSlug) return `/category/${parentCatSlug}`;
     return '/products';
@@ -273,6 +269,8 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
     if (itemLower === 'pc gaming') return '/category/pc-gaming';
     if (itemLower === 'pc đồ họa - render' || itemLower === 'pc đồ họa') return '/category/pc-do-hoa';
     if (itemLower === 'pc văn phòng') return '/category/pc-van-phong';
+    if (itemLower === 'pc ai' || itemLower.includes('pc ai')) return '/category/pc-ai';
+    if (itemLower === 'mini pc' || itemLower.includes('mini pc')) return '/category/mini-pc';
 
     if (itemLower.includes('dưới 10 triệu')) return '/products?categoryId=pc&maxPrice=10000000';
     if (itemLower.includes('10 - 20 triệu')) return '/products?categoryId=pc&minPrice=10000000&maxPrice=20000000';
@@ -288,8 +286,7 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
         if (sTitle.includes('psu') || sTitle.includes('nguồn')) return `/category/psu-nguon-may-tinh?search=${encodeURIComponent(item.replace(/^nguồn\s+/i, ''))}`;
         if (sTitle.includes('case') || sTitle.includes('vỏ')) return `/category/case-vo-may-tinh?search=${encodeURIComponent(item.replace(/^case\s+/i, ''))}`;
         if (sTitle.includes('tản nhiệt')) return `/category/tan-nhiet-cpu?search=${encodeURIComponent(item)}`;
-        if (sTitle.includes('ssd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
-        if (sTitle.includes('hdd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
+        if (sTitle.includes('ssd') || sTitle.includes('hdd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
     }
 
     if (parentCatSlug) {
@@ -297,9 +294,6 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
     }
     return `/products?search=${encodeURIComponent(item)}`;
 };
-
-import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
 
 export const Header: React.FC = () => {
     const navigate = useNavigate();
@@ -313,12 +307,13 @@ export const Header: React.FC = () => {
     const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close search suggestions on click outside & menus on scroll
+    // Track scroll position & click outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -334,12 +329,16 @@ export const Header: React.FC = () => {
         };
 
         const handleScroll = () => {
-            if (window.scrollY > 40) {
-                setIsMegaMenuOpen(false);
-                setActiveHorizontalCategory(null);
-                setIsLocationOpen(false);
-                setIsSearchOpen(false);
-            }
+            const scrolled = window.scrollY > 500;
+            setIsScrolled((prev) => {
+                if (prev !== scrolled) {
+                    setIsMegaMenuOpen(false);
+                    setActiveHorizontalCategory(null);
+                    setIsLocationOpen(false);
+                    setIsSearchOpen(false);
+                }
+                return scrolled;
+            });
         };
 
         handleScroll();
@@ -352,10 +351,106 @@ export const Header: React.FC = () => {
         };
     }, []);
 
+    // Reusable Mega Menu Panel Renderer
+    const renderMegaMenuDropdown = () => (
+        <div
+            onMouseLeave={() => {
+                setIsMegaMenuOpen(false);
+                setActiveCategory(null);
+            }}
+            className="absolute left-0 top-full mt-1.5 w-[1100px] xl:w-[1250px] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 flex z-50 overflow-hidden animate-in fade-in duration-150"
+        >
+            {/* Left side: Category List */}
+            <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2 shrink-0">
+                {CATEGORIES.map((cat) => (
+                    <Link
+                        key={cat.id}
+                        to={`/category/${cat.id}`}
+                        onClick={() => {
+                            setIsMegaMenuOpen(false);
+                            setActiveCategory(null);
+                        }}
+                        onMouseEnter={() => setActiveCategory(cat)}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold transition-colors text-left ${activeCategory?.id === cat.id
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                            }`}
+                    >
+                        <div className="flex items-center space-x-2.5">
+                            <span className={activeCategory?.id === cat.id ? 'text-white' : ''}>{cat.icon}</span>
+                            <span>{cat.name}</span>
+                        </div>
+                        <ChevronRight className={`w-3.5 h-3.5 ${activeCategory?.id === cat.id ? 'text-white' : 'text-gray-400'}`} />
+                    </Link>
+                ))}
+            </div>
+
+            {/* Right side: Subcategories Content */}
+            <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px] w-full">
+                {activeCategory ? (
+                    <div>
+                        <Link
+                            to={`/category/${activeCategory.id}`}
+                            onClick={() => {
+                                setIsMegaMenuOpen(false);
+                                setActiveCategory(null);
+                            }}
+                            className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
+                        >
+                            <span className="text-blue-600">{activeCategory.icon}</span>
+                            <span>{activeCategory.name}</span>
+                        </Link>
+                        <div className="grid grid-cols-4 gap-6">
+                            {activeCategory.subcategories.map((sub, idx) => (
+                                <div key={idx} className="space-y-2">
+                                    <Link
+                                        to={getSubcategoryTitleLink(sub.title, activeCategory.id)}
+                                        onClick={() => {
+                                            setIsMegaMenuOpen(false);
+                                            setActiveCategory(null);
+                                        }}
+                                        className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
+                                    >
+                                        {sub.title}
+                                    </Link>
+                                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                                        {sub.items.map((item, itemIdx) => (
+                                            <li key={itemIdx}>
+                                                <Link
+                                                    to={getItemLink(item, activeCategory.id, sub.title)}
+                                                    onClick={() => {
+                                                        setIsMegaMenuOpen(false);
+                                                        setActiveCategory(null);
+                                                    }}
+                                                    className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
+                                                >
+                                                    {item}
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 py-12">
+                        <Menu className="w-8 h-8 stroke-1 text-gray-300" />
+                        <span className="text-xs">Rê chuột vào danh mục bên trái để xem chi tiết</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <>
-            <header className="w-full font-sans select-none sticky top-0 z-50 shadow-md bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white">
-                <div className="max-w-[1250px] mx-auto px-3 sm:px-4 lg:px-6 py-2.5 flex items-center justify-between gap-2 md:gap-4">
+            <header
+                className={`w-full font-sans select-none sticky top-0 z-50 shadow-md bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white transition-all duration-300 ${isScrolled ? 'py-0.5 shadow-xl border-b border-blue-400/30' : ''
+                    }`}
+            >
+                <div className={`max-w-[1250px] mx-auto px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2 md:gap-4 relative transition-all duration-300 ${isScrolled ? 'py-1.5' : 'py-2.5'
+                    }`}>
                     <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -364,54 +459,100 @@ export const Header: React.FC = () => {
                         >
                             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
-                        <Link to="/" className="flex items-center space-x-2 group">
-                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10 group-hover:bg-white/20 transition-all duration-300 shadow-inner">
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/80 flex items-center justify-center font-extrabold text-xs sm:text-sm tracking-tighter">
+
+                        {/* DESKTOP LEFT AREA: SCROLLED vs NORMAL */}
+                        {isScrolled ? (
+                            /* SCROLLED STATE: "DANH MỤC SẢN PHẨM" button replaces Logo & Location */
+                            <div className="flex items-center space-x-2 hidden lg:flex">
+                                <Link
+                                    to="/"
+                                    className="w-8 h-8 rounded-full border border-white/50 bg-white/15 hover:bg-white/25 flex items-center justify-center font-black text-xs text-white shrink-0 transition-colors"
+                                    title="Trang chủ"
+                                >
                                     PC
+                                </Link>
+
+                                <div ref={categoryRef} className="relative">
+                                    <button
+                                        onClick={() => {
+                                            setIsMegaMenuOpen(!isMegaMenuOpen);
+                                            if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                            setActiveHorizontalCategory(null);
+                                        }}
+                                        onMouseEnter={() => {
+                                            setIsMegaMenuOpen(true);
+                                            if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                            setActiveHorizontalCategory(null);
+                                        }}
+                                        className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider border border-white/40"
+                                    >
+                                        <Menu className="w-4 h-4 text-[#1752e5]" />
+                                        <span>DANH MỤC SẢN PHẨM</span>
+                                    </button>
+
+                                    {isMegaMenuOpen && renderMegaMenuDropdown()}
                                 </div>
                             </div>
-                            <div className="flex flex-col justify-center leading-none">
-                                <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-white drop-shadow-sm font-sans">
-                                    PC<span className="text-amber-300 font-extrabold">STORE</span>
-                                </span>
-                            </div>
-                        </Link>
-                        <div className="relative hidden md:block">
-                            <button
-                                onClick={() => setIsLocationOpen(!isLocationOpen)}
-                                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white transition-all duration-200"
-                                title="Hệ thống showroom Nguyễn Công PC"
-                            >
-                                <MapPin className="w-4 h-4" />
-                            </button>
-                            {isLocationOpen && (
-                                <div className="absolute left-0 mt-2 w-72 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 py-3 px-4 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 font-bold text-gray-900 text-sm">
-                                        <div className="flex items-center space-x-1.5 text-blue-600">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>Hệ Thống Showroom</span>
+                        ) : (
+                            /* NORMAL STATE: Logo + Location */
+                            <>
+                                <Link to="/" className="flex items-center space-x-2 group">
+                                    <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10 group-hover:bg-white/20 transition-all duration-300 shadow-inner">
+                                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/80 flex items-center justify-center font-extrabold text-xs sm:text-sm tracking-tighter">
+                                            PC
                                         </div>
-                                        <button onClick={() => setIsLocationOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                            <X className="w-4 h-4" />
-                                        </button>
                                     </div>
-                                    <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                                        {SHOWROOMS.map((sr, idx) => (
-                                            <div key={idx} className="p-2 rounded-lg bg-gray-50 border border-gray-100 hover:border-blue-300 transition-colors">
-                                                <div className="font-bold text-blue-700 text-xs">{sr.city}</div>
-                                                <div className="text-gray-600 mt-0.5 text-[11px] leading-snug">{sr.address}</div>
-                                                <div className="text-blue-600 font-semibold text-[11px] mt-1 flex items-center gap-1">
-                                                    <Phone className="w-3 h-3" />
-                                                    <a href={`tel:${sr.phone.replace(/\./g, '')}`} className="hover:underline">
-                                                        {sr.phone}
-                                                    </a>
+                                    <div className="flex flex-col justify-center leading-none">
+                                        <span className="text-base sm:text-lg md:text-xl font-black tracking-tight text-white drop-shadow-sm font-sans">
+                                            PC<span className="text-amber-300 font-extrabold">STORE</span>
+                                        </span>
+                                    </div>
+                                </Link>
+                                <div className="relative hidden md:block">
+                                    <button
+                                        onClick={() => setIsLocationOpen(!isLocationOpen)}
+                                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white transition-all duration-200"
+                                        title="Hệ thống showroom Nguyễn Công PC"
+                                    >
+                                        <MapPin className="w-4 h-4" />
+                                    </button>
+                                    {isLocationOpen && (
+                                        <div className="absolute left-0 mt-2 w-72 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 py-3 px-4 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 font-bold text-gray-900 text-sm">
+                                                <div className="flex items-center space-x-1.5 text-blue-600">
+                                                    <MapPin className="w-4 h-4" />
+                                                    <span>Hệ Thống Showroom</span>
                                                 </div>
+                                                <button onClick={() => setIsLocationOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                                    <X className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                                                {SHOWROOMS.map((sr, idx) => (
+                                                    <div key={idx} className="p-2 rounded-lg bg-gray-50 border border-gray-100 hover:border-blue-300 transition-colors">
+                                                        <div className="font-bold text-blue-700 text-xs">{sr.city}</div>
+                                                        <div className="text-gray-600 mt-0.5 text-[11px] leading-snug">{sr.address}</div>
+                                                        <div className="text-blue-600 font-semibold text-[11px] mt-1 flex items-center gap-1">
+                                                            <Phone className="w-3 h-3" />
+                                                            <a href={`tel:${sr.phone.replace(/\./g, '')}`} className="hover:underline">
+                                                                {sr.phone}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </>
+                        )}
+
+                        {/* Mobile logo on scroll */}
+                        {isScrolled && (
+                            <Link to="/" className="lg:hidden flex items-center space-x-1 font-black text-sm text-white">
+                                <span>PC<span className="text-amber-300">STORE</span></span>
+                            </Link>
+                        )}
                     </div>
                     <div ref={searchRef} className="relative flex-1 max-w-xl mx-1 sm:mx-2">
                         <form
@@ -430,7 +571,7 @@ export const Header: React.FC = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => setIsSearchOpen(true)}
                                 placeholder="Bạn cần tìm gì?"
-                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-10 py-2 sm:py-2.5 rounded-2xl shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-10 py-2 sm:py-2 rounded-2xl shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
                             />
                             {searchQuery ? (
                                 <button
@@ -493,7 +634,7 @@ export const Header: React.FC = () => {
                         {/* 1. XÂY DỰNG CẤU HÌNH */}
                         <Link
                             to="/build-pc"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
                         >
                             <PcCase className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
@@ -504,7 +645,7 @@ export const Header: React.FC = () => {
                         {/* 2. KHÁCH HÀNG LIÊN HỆ */}
                         <Link
                             to="/contact"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
                         >
                             <PhoneCall className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
@@ -515,7 +656,7 @@ export const Header: React.FC = () => {
                         {/* 3. TIN TỨC CÔNG NGHỆ */}
                         <Link
                             to="/news"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
                         >
                             <Newspaper className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
@@ -526,7 +667,7 @@ export const Header: React.FC = () => {
                         {/* 4. GIỎ HÀNG */}
                         <Link
                             to="/cart"
-                            className="relative flex flex-col items-center justify-center p-2 px-2 rounded-lg hover: transition-all text-center group"
+                            className="relative flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
                         >
                             <div className="relative">
                                 <ShoppingCart className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
@@ -634,17 +775,16 @@ export const Header: React.FC = () => {
 
                     {/* MOBILE QUICK CARTS & USER */}
                     <div className="flex lg:hidden items-center space-x-2 shrink-0">
-                        <Link to="/cart" className="relative p-2 text-white hover: rounded-lg">
+                        <Link to="/cart" className="relative p-2 text-white hover:bg-white/10 rounded-lg">
                             <ShoppingCart className="w-6 h-6" />
                             <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600">
                                 {cartCount}
                             </span>
                         </Link>
-                        <Link to="/account" className="p-2 text-white hover: rounded-lg">
+                        <Link to="/account" className="p-2 text-white hover:bg-white/10 rounded-lg">
                             <User className="w-6 h-6" />
                         </Link>
                     </div>
-
                 </div>
 
                 {/* MOBILE DRAWER NAVIGATION MENU */}
@@ -729,197 +869,107 @@ export const Header: React.FC = () => {
             </header>
 
             {/* ========================================================================= */}
-            {/* BOTTOM NAV BAR: CATEGORY NAVIGATION ROW */}
+            {/* BOTTOM NAV BAR: CATEGORY NAVIGATION ROW (Only shown when NOT scrolled) */}
             {/* ========================================================================= */}
-            <nav
-                className="bg-[#2366EF] text-white hidden lg:block border-t border-blue-400/30 relative z-40 shadow-sm"
-                onMouseLeave={() => setActiveHorizontalCategory(null)}
-            >
-                <div className="max-w-[1250px] mx-auto px-4 lg:px-6 flex items-center relative">
-
-                    {/* MEGA MENU CATEGORIES BUTTON */}
-                    <div ref={categoryRef} className="relative py-1.5 pr-3">
-                        <button
-                            onClick={() => {
-                                setIsMegaMenuOpen(!isMegaMenuOpen);
-                                setActiveHorizontalCategory(null);
-                            }}
-                            onMouseEnter={() => {
-                                setIsMegaMenuOpen(true);
-                                setActiveHorizontalCategory(null);
-                            }}
-                            className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider"
-                        >
-                            <Menu className="w-4 h-4 text-[#1752e5]" />
-                            <span>DANH MỤC SẢN PHẨM</span>
-                        </button>
-
-                        {/* MEGA MENU DROPDOWN PANEL */}
-                        {isMegaMenuOpen && (
-                            <div
-                                onMouseLeave={() => {
-                                    setIsMegaMenuOpen(false);
-                                    setActiveCategory(null);
+            {!isScrolled && (
+                <nav
+                    className="bg-[#2366EF] text-white hidden lg:block border-t border-blue-400/30 relative z-40 shadow-sm"
+                    onMouseLeave={() => setActiveHorizontalCategory(null)}
+                >
+                    <div className="max-w-[1250px] mx-auto px-4 lg:px-6 flex items-center relative">
+                        {/* MEGA MENU CATEGORIES BUTTON */}
+                        <div ref={categoryRef} className="relative py-1.5 pr-3">
+                            <button
+                                onClick={() => {
+                                    setIsMegaMenuOpen(!isMegaMenuOpen);
+                                    if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                    setActiveHorizontalCategory(null);
                                 }}
-                                className="absolute left-0 top-full mt-1.5 w-[1250px] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 flex z-50 overflow-hidden animate-in fade-in duration-150"
+                                onMouseEnter={() => {
+                                    setIsMegaMenuOpen(true);
+                                    if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                    setActiveHorizontalCategory(null);
+                                }}
+                                className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider"
                             >
-                                {/* Left side: Category List */}
-                                <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2">
-                                    {CATEGORIES.map((cat) => (
-                                        <Link
-                                            key={cat.id}
-                                            to={`/category/${cat.id}`}
-                                            onClick={() => {
-                                                setIsMegaMenuOpen(false);
-                                                setActiveCategory(null);
-                                            }}
-                                            onMouseEnter={() => setActiveCategory(cat)}
-                                            className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold transition-colors text-left ${activeCategory?.id === cat.id
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                                                }`}
-                                        >
-                                            <div className="flex items-center space-x-2.5">
-                                                <span className={activeCategory?.id === cat.id ? 'text-white' : ''}>{cat.icon}</span>
-                                                <span>{cat.name}</span>
-                                            </div>
-                                            <ChevronRight className={`w-3.5 h-3.5 ${activeCategory?.id === cat.id ? 'text-white' : 'text-gray-400'}`} />
-                                        </Link>
-                                    ))}
-                                </div>
+                                <Menu className="w-4 h-4 text-[#1752e5]" />
+                                <span>DANH MỤC SẢN PHẨM</span>
+                            </button>
 
-                                {/* Right side: Subcategories Content */}
-                                <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px] w-full">
-                                    {activeCategory ? (
-                                        <div>
-                                            <Link
-                                                to={`/category/${activeCategory.id}`}
-                                                onClick={() => {
-                                                    setIsMegaMenuOpen(false);
-                                                    setActiveCategory(null);
-                                                }}
-                                                className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
-                                            >
-                                                {activeCategory.icon}
-                                                <span>{activeCategory.name}</span>
-                                            </Link>
-                                            <div className="grid grid-cols-4 gap-6">
-                                                {activeCategory.subcategories.map((sub, idx) => (
-                                                    <div key={idx} className="space-y-2">
-                                                        <Link
-                                                            to={getSubcategoryTitleLink(sub.title, activeCategory.id)}
-                                                            onClick={() => {
-                                                                setIsMegaMenuOpen(false);
-                                                                setActiveCategory(null);
-                                                            }}
-                                                            className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
-                                                        >
-                                                            {sub.title}
-                                                        </Link>
-                                                        <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
-                                                            {sub.items.map((item, itemIdx) => (
-                                                                <li key={itemIdx}>
-                                                                    <Link
-                                                                        to={getItemLink(item, activeCategory.id, sub.title)}
-                                                                        onClick={() => {
-                                                                            setIsMegaMenuOpen(false);
-                                                                            setActiveCategory(null);
-                                                                        }}
-                                                                        className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
-                                                                    >
-                                                                        {item}
-                                                                    </Link>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                ))}
+                            {/* MEGA MENU DROPDOWN PANEL */}
+                            {isMegaMenuOpen && renderMegaMenuDropdown()}
+                        </div>
+
+                        {/* HORIZONTAL CATEGORIES LINKS */}
+                        <nav className="flex-1 w-full flex items-center justify-between py-2 text-xs font-semibold ml-4 overflow-x-auto no-scrollbar gap-1">
+                            {HORIZONTAL_CATEGORIES.map((cat) => (
+                                <div key={cat.id} className="relative">
+                                    <Link
+                                        to={`/category/${cat.id}`}
+                                        onClick={() => setActiveHorizontalCategory(null)}
+                                        onMouseEnter={() => {
+                                            setIsMegaMenuOpen(false);
+                                            setActiveHorizontalCategory(cat);
+                                        }}
+                                        className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-white whitespace-nowrap transition-colors ${activeHorizontalCategory?.id === cat.id ? 'bg-white/20' : 'hover:bg-white/15'
+                                            }`}
+                                    >
+                                        {cat.icon}
+                                        <span>{cat.name}</span>
+                                        <ChevronDown className={`w-3 h-3 text-blue-200 transition-transform duration-200 ${activeHorizontalCategory?.id === cat.id ? 'rotate-180 text-white' : ''
+                                            }`} />
+                                    </Link>
+                                </div>
+                            ))}
+                        </nav>
+
+                        {/* SHARED DROPDOWN PANEL FOR HORIZONTAL CATEGORIES */}
+                        {activeHorizontalCategory && !isMegaMenuOpen && (
+                            <div className="absolute left-0 top-full pt-1.5 w-full z-50 animate-in fade-in duration-150">
+                                <div className="bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 p-6">
+                                    <Link
+                                        to={`/category/${activeHorizontalCategory.id}`}
+                                        onClick={() => setActiveHorizontalCategory(null)}
+                                        className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
+                                    >
+                                        <span className="text-blue-600">{activeHorizontalCategory.icon}</span>
+                                        <span className="text-base">{activeHorizontalCategory.name}</span>
+                                    </Link>
+
+                                    <div className="grid grid-cols-4 gap-6 max-h-[400px] overflow-y-auto pr-2">
+                                        {activeHorizontalCategory.subcategories.map((sub, idx) => (
+                                            <div key={idx} className="space-y-2">
+                                                <Link
+                                                    to={getSubcategoryTitleLink(sub.title, activeHorizontalCategory.id)}
+                                                    onClick={() => setActiveHorizontalCategory(null)}
+                                                    className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
+                                                >
+                                                    {sub.title}
+                                                </Link>
+                                                {sub.items && sub.items.length > 0 && (
+                                                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                                                        {sub.items.map((item, itemIdx) => (
+                                                            <li key={itemIdx}>
+                                                                <Link
+                                                                    to={getItemLink(item, activeHorizontalCategory.id, sub.title)}
+                                                                    onClick={() => setActiveHorizontalCategory(null)}
+                                                                    className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
+                                                                >
+                                                                    {item}
+                                                                </Link>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 py-12">
-                                            <Menu className="w-8 h-8 stroke-1 text-gray-300" />
-                                            <span className="text-xs">Rê chuột vào danh mục bên trái để xem chi tiết</span>
-                                        </div>
-                                    )}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
                     </div>
-
-                    {/* HORIZONTAL CATEGORIES LINKS */}
-                    <nav className="flex-1 w-full flex items-center justify-between py-2 text-xs font-semibold ml-4">
-                        {HORIZONTAL_CATEGORIES.map((cat) => (
-                            <div key={cat.id} className="relative">
-                                <Link
-                                    to={`/category/${cat.id}`}
-                                    onClick={() => setActiveHorizontalCategory(null)}
-                                    onMouseEnter={() => {
-                                        setIsMegaMenuOpen(false);
-                                        setActiveHorizontalCategory(cat);
-                                    }}
-                                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-white whitespace-nowrap transition-colors ${activeHorizontalCategory?.id === cat.id ? 'bg-white/20' : 'hover:bg-white/15'
-                                        }`}
-                                >
-                                    {cat.icon}
-                                    <span>{cat.name}</span>
-                                    <ChevronDown className={`w-3 h-3 text-blue-200 transition-transform duration-200 ${activeHorizontalCategory?.id === cat.id ? 'rotate-180 text-white' : ''
-                                        }`} />
-                                </Link>
-                            </div>
-                        ))}
-                    </nav>
-
-                    {/* SHARED DROPDOWN PANEL FOR HORIZONTAL CATEGORIES */}
-                    {activeHorizontalCategory && !isMegaMenuOpen && (
-                        <div
-                            className="absolute left-0 top-full pt-1.5 w-full z-50 animate-in fade-in duration-150"
-                        >
-                            <div className="bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 p-6">
-                                {/* Header matching mega menu right side */}
-                                <Link
-                                    to={`/category/${activeHorizontalCategory.id}`}
-                                    onClick={() => setActiveHorizontalCategory(null)}
-                                    className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
-                                >
-                                    <span className="text-blue-600">{activeHorizontalCategory.icon}</span>
-                                    <span className="text-base">{activeHorizontalCategory.name}</span>
-                                </Link>
-
-                                {/* Subcategories grid - matching mega menu right side */}
-                                <div className="grid grid-cols-4 gap-6 max-h-[400px] overflow-y-auto pr-2">
-                                    {activeHorizontalCategory.subcategories.map((sub, idx) => (
-                                        <div key={idx} className="space-y-2">
-                                            <Link
-                                                to={getSubcategoryTitleLink(sub.title, activeHorizontalCategory.id)}
-                                                onClick={() => setActiveHorizontalCategory(null)}
-                                                className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
-                                            >
-                                                {sub.title}
-                                            </Link>
-                                            {sub.items && sub.items.length > 0 && (
-                                                <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
-                                                    {sub.items.map((item, itemIdx) => (
-                                                        <li key={itemIdx}>
-                                                            <Link
-                                                                to={getItemLink(item, activeHorizontalCategory.id, sub.title)}
-                                                                onClick={() => setActiveHorizontalCategory(null)}
-                                                                className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
-                                                            >
-                                                                {item}
-                                                            </Link>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </nav>
+                </nav>
+            )}
         </>
     );
 };

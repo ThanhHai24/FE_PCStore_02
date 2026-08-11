@@ -41,8 +41,9 @@ export function formatProductToCardProps(product: ApiProduct): ProductCardProps 
 
 export function formatProductToDealCardProps(product: ApiProduct): DealProductCardProps {
   const discountPercent = calculateDiscount(product.price, product.originalPrice);
-  const stock = product.stock ?? 10;
-  const sold = Math.max(1, Math.min(stock, Math.floor(stock * 0.4) || 3));
+  const stock = product.stock ?? 0;
+  const sold = product.soldCount ?? 0;
+  const totalAllocated = stock + sold;
 
   return {
     id: product.id,
@@ -52,7 +53,7 @@ export function formatProductToDealCardProps(product: ApiProduct): DealProductCa
     marketPrice: (product.originalPrice && product.originalPrice > product.price) ? formatPrice(product.originalPrice) : undefined,
     discountPercent,
     sold,
-    total: stock + sold,
+    total: totalAllocated > 0 ? totalAllocated : Math.max(10, stock),
     link: `/product/${product.id}`,
   };
 }

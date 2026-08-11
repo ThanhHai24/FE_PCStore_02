@@ -120,6 +120,7 @@ const ProductCreate: React.FC = () => {
         stock: 10,
         minStockAlert: 5,
         status: 'ACTIVE',          // trạng thái bán
+        isFeatured: false,         // Sản phẩm Nổi bật / GIÁ TỐT MỖI NGÀY
         specs: {} as SpecRecord,
     });
 
@@ -349,6 +350,7 @@ const ProductCreate: React.FC = () => {
                 specifications: Object.keys(orderedSpecs).length > 0 ? orderedSpecs : undefined,
                 warranty: warrantyNum,
                 status: formData.status,
+                isFeatured: formData.isFeatured,
             });
 
             setSaveSuccess(true);
@@ -872,6 +874,40 @@ const ProductCreate: React.FC = () => {
                                 onChange={(e) => setFormData({ ...formData, minStockAlert: Number(e.target.value) })}
                                 className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
                             />
+                        </div>
+                    </div>
+
+                    {/* Trạng thái & Tính năng Nổi bật / Deal */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng thái sản phẩm</label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all"
+                            >
+                                <option value="ACTIVE">ACTIVE - Đang kinh doanh</option>
+                                <option value="INACTIVE">INACTIVE - Ngừng kinh doanh</option>
+                                <option value="OUT_OF_STOCK">OUT_OF_STOCK - Hết hàng</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center pt-5">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.isFeatured}
+                                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                />
+                                <div>
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        ⚡ Sản phẩm Nổi bật / GIÁ TỐT MỖI NGÀY
+                                    </span>
+                                    <p className="text-[11px] text-gray-500 font-normal">
+                                        Hiển thị ở dải sản phẩm Flash Sale / Deal tại trang chủ
+                                    </p>
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>

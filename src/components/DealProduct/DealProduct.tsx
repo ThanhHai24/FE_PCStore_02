@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
@@ -52,7 +53,7 @@ function DealProduct({ deals: initialDeals }: DealProductProps) {
         getProducts({ limit: 12, isFeatured: true })
             .then((res) => {
                 if (!isMounted) return;
-                const products = res.products || [];
+                const products = (res.products || []).filter((p) => Boolean(p.isFeatured));
                 const formatted = products.map(formatProductToDealCardProps);
                 setDealsList(formatted);
             })
@@ -96,10 +97,10 @@ function DealProduct({ deals: initialDeals }: DealProductProps) {
                         </div>
                     </div>
                 </div>
-                <a href="/category/all" className="text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 hover:underline">
+                <Link to="/deals" className="text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 hover:underline">
                     <span>Xem tất cả</span>
                     <ArrowRight className="w-4 h-4" />
-                </a>
+                </Link>
             </div>
 
             {loading ? (

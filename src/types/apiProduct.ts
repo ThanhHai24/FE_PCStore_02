@@ -41,6 +41,7 @@ export interface ApiProduct {
   status?: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK';
   isFeatured?: boolean;
   viewCount?: number;
+  soldCount?: number;
   categoryId?: string;
   brandId?: string;
   category?: ApiCategory;

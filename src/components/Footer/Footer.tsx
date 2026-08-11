@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin, X } from 'lucide-react';
+import MessendgerLogo from "../../assets/images/facebook_messenger.png";
+import ZaloLogo from "../../assets/images/zalo.png";
+import leftbanner from "../../assets/images/leftbanner.jpg";
+import rightbanner from "../../assets/images/rightbanner.jpg";
+import bct from "../../assets/images/footer-bct.png";
+import dmca from "../../assets/images/dmca-compliant-grayscale.png"
 
 interface ContactBranch {
   id: number;
@@ -277,12 +283,12 @@ export const Footer: React.FC = () => {
               <div className="flex flex-wrap gap-2 pt-2 items-center">
                 {/* Bộ Công Thương Badge */}
                 <a href="#" className="inline-block hover:opacity-90 transition-opacity">
-                  <img src="src/assets/images/footer-bct.png" alt="Bộ Công Thương" className='h-16 w-24 object-contain' />
+                  <img src={bct} alt="Bộ Công Thương" className='h-16 w-24 object-contain' />
                 </a>
 
                 {/* DMCA Badge */}
                 <a href="#" className="inline-block hover:opacity-90 transition-opacity">
-                  <img src="src/assets/images/dmca-compliant-grayscale.png" alt="DMCA" className='h-16 w-24 object-contain' />
+                  <img src={dmca} alt="DMCA" className='h-16 w-24 object-contain' />
                 </a>
               </div>
             </div>
@@ -464,7 +470,7 @@ export const Footer: React.FC = () => {
               href="#"
               className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
             >
-              <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/zalo.png" alt="zalo" />
+              <img className="h-10 w-10 object-contain shrink-0" src={ZaloLogo} alt="zalo" />
               <div className="text-left leading-tight">
                 <div className="text-sm font-bold text-[#0066ff]">
                   Chat Zalo
@@ -492,7 +498,7 @@ export const Footer: React.FC = () => {
               href="#"
               className="w-[175px] flex items-center space-x-3 bg-white border border-gray-200 text-[#0066ff] px-3.5 py-2 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 group hover:-translate-y-0.5"
             >
-              <img className="h-10 w-10 object-contain shrink-0" src="src/assets/images/facebook_messenger.png" alt="messenger" />
+              <img className="h-10 w-10 object-contain shrink-0" src={MessendgerLogo} alt="messenger" />
               <div className="text-left leading-tight">
                 <div className="text-sm font-bold text-[#0066ff]">
                   Chat Facebook
@@ -515,12 +521,12 @@ export const Footer: React.FC = () => {
         )}
       </div>
 
-      {/* 5. FIXED SIDE BANNERS (Outside 1250px container) */}
+      {/* 5. FIXED SIDE BANNERS (Flush against screen edges) */}
       <div className="hidden xl:block">
         {/* Left Banner */}
         {showLeftBanner && (
           <div
-            className={`fixed z-40 transition-all duration-300 ease-in-out left-2 2xl:left-[calc(50%-635px)] 2xl:-translate-x-full ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+            className={`fixed z-40 transition-all duration-300 ease-in-out left-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
               }`}
           >
             <button
@@ -535,9 +541,9 @@ export const Footer: React.FC = () => {
             </button>
             <a href="#">
               <img
-                src="src/assets/images/leftbanner.jpg"
+                src={leftbanner}
                 alt="Left Banner"
-                className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+                className="w-[140px] 2xl:w-[150px] h-auto shadow-md hover:scale-105 transition-transform rounded-r-lg"
               />
             </a>
           </div>
@@ -546,7 +552,7 @@ export const Footer: React.FC = () => {
         {/* Right Banner */}
         {showRightBanner && (
           <div
-            className={`fixed z-40 transition-all duration-300 ease-in-out right-2 2xl:left-[calc(50%+635px)] 2xl:translate-x-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
+            className={`fixed z-40 transition-all duration-300 ease-in-out right-0 ${isScrolled ? 'top-[80px] -translate-y-0' : 'top-1/2 -translate-y-1/2'
               }`}
           >
             <button
@@ -554,16 +560,16 @@ export const Footer: React.FC = () => {
                 e.preventDefault();
                 setShowRightBanner(false);
               }}
-              className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-gray-900/80 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-colors z-50 group"
+              className="absolute -top-2.5 -left-2.5 w-6 h-6 rounded-full bg-gray-900/80 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-colors z-50 group"
               title="Ẩn"
             >
               <X className="w-3.5 h-3.5" />
             </button>
             <a href="#">
               <img
-                src="src/assets/images/rightbanner.jpg"
+                src={rightbanner}
                 alt="Right Banner"
-                className="w-[150px] 2xl:w-[135px] h-auto rounded shadow-md hover:scale-105 transition-transform"
+                className="w-[140px] 2xl:w-[150px] h-auto shadow-md hover:scale-105 transition-transform rounded-l-lg"
               />
             </a>
           </div>
