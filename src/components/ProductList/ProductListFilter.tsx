@@ -17,6 +17,9 @@ interface ProductListFilterProps {
   brands?: ApiBrand[];
   selectedPriceRange?: string | null;
   onSelectPriceRange?: (id: string | null) => void;
+  customMinPrice?: number | null;
+  customMaxPrice?: number | null;
+  onApplyCustomPrice?: (min: number | null, max: number | null) => void;
   selectedBrandId?: string | null;
   onSelectBrand?: (brandId: string | null) => void;
   selectedFilters?: Record<string, string>;
@@ -39,6 +42,9 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
   brands = [],
   selectedPriceRange,
   onSelectPriceRange,
+  customMinPrice = null,
+  customMaxPrice = null,
+  onApplyCustomPrice,
   selectedBrandId,
   onSelectBrand,
   selectedFilters = {},
@@ -50,8 +56,15 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
     return getCategoryFilterConfig(categoryKey || categoryDisplayName);
   }, [categoryKey, categoryDisplayName]);
 
-  // Slider state (in Millions VND)
-  const [sliderMax, setSliderMax] = useState<number>(100);
+  // Custom price input local state
+  const [inputMin, setInputMin] = useState<string>(customMinPrice !== null && customMinPrice !== undefined ? customMinPrice.toString() : '');
+  const [inputMax, setInputMax] = useState<string>(customMaxPrice !== null && customMaxPrice !== undefined ? customMaxPrice.toString() : '');
+
+  // Keep local inputs in sync with props
+  React.useEffect(() => {
+    setInputMin(customMinPrice !== null && customMinPrice !== undefined ? customMinPrice.toString() : '');
+    setInputMax(customMaxPrice !== null && customMaxPrice !== undefined ? customMaxPrice.toString() : '');
+  }, [customMinPrice, customMaxPrice]);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     price: true,
@@ -65,19 +78,23 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
     }));
   };
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setSliderMax(val);
-    if (val <= 15) onSelectPriceRange?.('lt-15');
-    else if (val <= 20) onSelectPriceRange?.('15-20');
-    else if (val <= 50) onSelectPriceRange?.('20-50');
-    else if (val <= 100) onSelectPriceRange?.('50-100');
-    else onSelectPriceRange?.('gt-100');
+  const handleApplyCustomInput = () => {
+    const minVal = inputMin.trim() ? Number(inputMin) : null;
+    const maxVal = inputMax.trim() ? Number(inputMax) : null;
+    onApplyCustomPrice?.(minVal, maxVal);
   };
+
+  const handleClearCustomPrice = () => {
+    setInputMin('');
+    setInputMax('');
+    onApplyCustomPrice?.(null, null);
+  };
+
+  const isCustomPriceActive = customMinPrice !== null || customMaxPrice !== null;
 
   const activeFiltersCount =
     Object.keys(selectedFilters).filter((k) => selectedFilters[k]).length +
-    (selectedPriceRange ? 1 : 0) +
+    (selectedPriceRange || isCustomPriceActive ? 1 : 0) +
     (selectedBrandId ? 1 : 0);
 
   return (
@@ -109,7 +126,7 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
         </div>
       </div>
 
-      {/* 1. KHOẢNG GIÁ - SLIDER & PRESETS */}
+      {/* 1. KHOẢNG GIÁ - SLIDER, INPUT & PRESETS */}
       <div className="border-b border-gray-100 pb-5 space-y-3">
         <button
           onClick={() => toggleSection('price')}
@@ -125,33 +142,67 @@ export const ProductListFilter: React.FC<ProductListFilterProps> = ({
 
         {expandedSections['price'] !== false && (
           <div className="space-y-4 pt-1">
-            {/* Range Slider */}
-            <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
-              <div className="flex justify-between items-center text-xs font-bold text-gray-700">
-                <span>0đ</span>
-                <span className="text-red-600 font-black text-xs sm:text-sm">
-                  Đến {sliderMax.toLocaleString('vi-VN')} triệu đ
-                </span>
+            {/* Custom Min-Max Price Inputs */}
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-200/80 space-y-2.5">
+              <div className="font-bold text-gray-800 text-[11px] flex items-center justify-between">
+                <span>Tùy chỉnh khoảng giá (đ):</span>
+                {isCustomPriceActive && (
+                  <button
+                    onClick={handleClearCustomPrice}
+                    className="text-red-600 font-bold text-[10px] hover:underline flex items-center gap-0.5"
+                  >
+                    <X className="w-3 h-3" /> Bỏ tùy chỉnh
+                  </button>
+                )}
               </div>
-              <input
-                type="range"
-                min="5"
-                max="150"
-                step="5"
-                value={sliderMax}
-                onChange={handleSliderChange}
-                className="w-full accent-blue-600 h-2 bg-gray-200 rounded-lg cursor-pointer"
-              />
+              <div className="flex items-center space-x-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="500000"
+                    placeholder="Giá từ"
+                    value={inputMin}
+                    onChange={(e) => setInputMin(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <span className="text-gray-400 font-bold">-</span>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min="0"
+                    step="500000"
+                    placeholder="Đến giá"
+                    value={inputMax}
+                    onChange={(e) => setInputMax(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyCustomInput}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors shadow-xs"
+              >
+                Áp Dụng Giá Tùy Chỉnh
+              </button>
             </div>
 
             {/* Quick Range Buttons */}
             <div className="grid grid-cols-1 gap-1.5">
               {defaultPriceRanges.map((range) => {
-                const isSelected = selectedPriceRange === range.id;
+                const isSelected = selectedPriceRange === range.id && !isCustomPriceActive;
                 return (
                   <button
                     key={range.id}
-                    onClick={() => onSelectPriceRange?.(isSelected ? null : range.id)}
+                    onClick={() => {
+                      if (isSelected) {
+                        onSelectPriceRange?.(null);
+                      } else {
+                        onSelectPriceRange?.(range.id);
+                      }
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-xl border transition-all text-xs font-semibold flex items-center justify-between ${
                       isSelected
                         ? 'border-red-600 bg-red-50 text-red-600 font-bold shadow-sm'

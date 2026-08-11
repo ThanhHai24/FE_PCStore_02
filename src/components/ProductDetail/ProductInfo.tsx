@@ -250,12 +250,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         {/* Action Buttons Row */}
         <div className="flex flex-wrap items-center gap-2">
           <button
-            disabled={!product.inStock || product.stockQuantity === 0}
-            className="flex-1 min-w-[100px] bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed"
-          >
-            TRẢ GÓP
-          </button>
-          <button
             onClick={handleBuyNow}
             disabled={!product.inStock || product.stockQuantity === 0}
             className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-extrabold py-3 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors disabled:cursor-not-allowed cursor-pointer"

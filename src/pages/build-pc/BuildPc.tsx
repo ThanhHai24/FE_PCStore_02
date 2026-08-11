@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from '../../components/BuildPC/Modal';
 import ItemDrive from '../../components/BuildPC/ItemDrive';
-import { AlertTriangle, CheckCircle2, Image, Printer, RotateCcw, Sheet, ShoppingCart, Zap } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Image, Printer, RotateCcw, Sheet, ShoppingCart, Zap, Loader2 } from 'lucide-react';
 import type { BuilderProduct } from '../../data/builderProducts';
 import { fetchApiBuilderProducts } from '../../utils/pcBuilderApiAdapter';
 import { useCart } from '../../context/CartContext';
@@ -26,7 +27,22 @@ const driveItems = [
 ];
 
 export const BuildPc: React.FC = () => {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
+
+  // Toast state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'warning' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (message: string, type: 'success' | 'warning' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   // Multi-configuration slots (Configs 1 to 5)
   const [configs, setConfigs] = useState<
@@ -118,11 +134,11 @@ export const BuildPc: React.FC = () => {
     }));
   };
 
-  // Add active configuration items to Cart
+  // Add active configuration items to Cart & redirect
   const handleAddToCart = () => {
     const itemsList = Object.values(selectedItems);
     if (itemsList.length === 0) {
-      alert(`Vui lòng chọn ít nhất 1 linh kiện trong Cấu hình ${activeConfigId} trước khi thêm vào giỏ hàng!`);
+      showToast(`Vui lòng chọn ít nhất 1 linh kiện trong Cấu hình ${activeConfigId} trước khi thêm vào giỏ hàng!`, 'warning');
       return;
     }
 
@@ -148,14 +164,20 @@ export const BuildPc: React.FC = () => {
       addToCart(cartProduct, quantity);
     });
 
-    alert(`🎉 Đã thêm ${itemsList.length} linh kiện của Cấu hình ${activeConfigId} vào giỏ hàng thành công!`);
+    showToast(`Đã thêm ${itemsList.length} linh kiện của Cấu hình ${activeConfigId} vào giỏ hàng! Đang chuyển hướng...`, 'success');
+
+    // Redirect to cart page after short delay
+    setTimeout(() => {
+      navigate('/cart');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 1000);
   };
 
   // Export Excel CSV
   const handleExportExcel = () => {
     const itemsList = Object.values(selectedItems);
     if (itemsList.length === 0) {
-      alert(`Chưa có linh kiện nào trong Cấu hình ${activeConfigId} để xuất Excel!`);
+      showToast(`Chưa có linh kiện nào trong Cấu hình ${activeConfigId} để xuất Excel!`, 'warning');
       return;
     }
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
@@ -382,6 +404,32 @@ export const BuildPc: React.FC = () => {
         selectedItems={selectedItems}
         onSelectProduct={handleSelectProduct}
       />
+
+      {/* Toast Notification Popup */}
+      {toast.show && (
+        <div className={`fixed top-24 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-2xl border flex items-center space-x-3.5 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300 max-w-md ${
+          toast.type === 'success'
+            ? 'bg-gray-900/95 text-white border-emerald-500/50 shadow-emerald-950/20'
+            : toast.type === 'warning'
+            ? 'bg-amber-900/95 text-white border-amber-500/50 shadow-amber-950/20'
+            : 'bg-red-900/95 text-white border-red-500/50 shadow-red-950/20'
+        }`}>
+          {toast.type === 'success' && (
+            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 border border-emerald-500/40">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            </div>
+          )}
+          {toast.type === 'warning' && (
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 border border-amber-500/40">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+            </div>
+          )}
+          <div className="flex-1 leading-snug">{toast.message}</div>
+          {toast.type === 'success' && (
+            <Loader2 className="w-4 h-4 text-emerald-400 animate-spin shrink-0" />
+          )}
+        </div>
+      )}
     </div>
   );
 };

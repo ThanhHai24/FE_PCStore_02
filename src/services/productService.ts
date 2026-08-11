@@ -145,7 +145,6 @@ export function mapApiProductToProduct(apiProd: ApiProduct): Product {
     categoryName: apiProd.category?.name || 'PC GAMING',
     brand: apiProd.brand?.name || '',
     promotions: [
-      'Quý khách có thể tùy chọn nâng cấp lên hoặc xuống cấu hình tương đương với: CPU, RAM, SSD theo nhu cầu.',
       'Miễn phí giao hàng toàn quốc.',
       'Tặng Voucher giảm giá 500.000đ cho lần mua tiếp theo.',
     ],

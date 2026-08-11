@@ -23,10 +23,13 @@ import {
     Package,
     Truck,
     Tv,
-    Gamepad2
+    Gamepad2,
+    Loader2
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { getProducts } from '../../services/productService';
+import type { ApiProduct } from '../../types/apiProduct';
 
 interface CategoryItem {
     id: string;
@@ -308,10 +311,39 @@ export const Header: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [searchResults, setSearchResults] = useState<ApiProduct[]>([]);
+    const [isSearchLoading, setIsSearchLoading] = useState(false);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Live search fetch with debouncing
+    useEffect(() => {
+        const query = searchQuery.trim();
+        if (!query) {
+            setSearchResults([]);
+            setIsSearchLoading(false);
+            return;
+        }
+
+        setIsSearchLoading(true);
+        const timer = setTimeout(() => {
+            getProducts({ search: query, limit: 6, status: 'ACTIVE' })
+                .then((res) => {
+                    setSearchResults(res.products || []);
+                })
+                .catch((err) => {
+                    console.error('Live search error:', err);
+                    setSearchResults([]);
+                })
+                .finally(() => {
+                    setIsSearchLoading(false);
+                });
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Track scroll position & click outside
     useEffect(() => {
@@ -329,22 +361,30 @@ export const Header: React.FC = () => {
         };
 
         const handleScroll = () => {
-            const scrolled = window.scrollY > 500;
+            const currentScrollY = window.scrollY;
             setIsScrolled((prev) => {
-                if (prev !== scrolled) {
+                let nextScrolled = prev;
+                // Use Hysteresis to prevent continuous toggling jitter at scroll boundaries
+                if (currentScrollY > 450) {
+                    nextScrolled = true;
+                } else if (currentScrollY < 300) {
+                    nextScrolled = false;
+                }
+
+                if (prev !== nextScrolled) {
                     setIsMegaMenuOpen(false);
                     setActiveHorizontalCategory(null);
                     setIsLocationOpen(false);
                     setIsSearchOpen(false);
                 }
-                return scrolled;
+                return nextScrolled;
             });
         };
 
         handleScroll();
 
         document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
             window.removeEventListener('scroll', handleScroll);
@@ -591,41 +631,141 @@ export const Header: React.FC = () => {
                             </button>
                         </form>
                         {isSearchOpen && (
-                            <div className="absolute left-0 right-0 mt-1.5 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
-                                <div className="flex items-center space-x-1.5 font-bold text-gray-900 mb-2">
-                                    <Flame className="w-4 h-4 text-red-500" />
-                                    <span>Tìm kiếm phổ biến</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {POPULAR_SEARCHES.map((item, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => {
-                                                setSearchQuery(item);
-                                                setIsSearchOpen(false);
-                                                navigate(`/products?search=${encodeURIComponent(item)}`);
-                                            }}
-                                            className="px-2.5 py-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-xs font-medium transition-colors border border-gray-200/60"
-                                        >
-                                            {item}
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="absolute left-0 right-0 mt-1.5 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 text-xs animate-in fade-in slide-in-from-top-1 duration-150 max-h-[480px] overflow-y-auto">
+                                {searchQuery.trim() ? (
+                                    <div>
+                                        <div className="flex items-center justify-between font-bold text-gray-900 pb-2 mb-2 border-b border-gray-100">
+                                            <div className="flex items-center space-x-1.5">
+                                                <Search className="w-4 h-4 text-blue-600" />
+                                                <span>Gợi ý sản phẩm cho "{searchQuery.trim()}"</span>
+                                            </div>
+                                            {isSearchLoading && (
+                                                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                                            )}
+                                        </div>
 
-                                <div className="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-                                        Cam kết chính hãng 100%
-                                    </span>
-                                    <Link
-                                        to="/products"
-                                        onClick={() => setIsSearchOpen(false)}
-                                        className="text-blue-600 font-semibold cursor-pointer hover:underline"
-                                    >
-                                        Xem tất cả sản phẩm →
-                                    </Link>
-                                </div>
+                                        {isSearchLoading ? (
+                                            <div className="py-6 flex items-center justify-center space-x-2 text-gray-400">
+                                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                                <span>Đang tìm kiếm sản phẩm...</span>
+                                            </div>
+                                        ) : searchResults.length > 0 ? (
+                                            <div className="space-y-1.5">
+                                                {searchResults.map((product) => {
+                                                    const imgUrl = product.images && product.images.length > 0
+                                                        ? product.images[0]
+                                                        : 'https://placehold.co/100x100?text=No+Image';
+
+                                                    return (
+                                                        <Link
+                                                            key={product.id}
+                                                            to={`/product/${product.id}`}
+                                                            onClick={() => {
+                                                                setIsSearchOpen(false);
+                                                                setSearchQuery('');
+                                                            }}
+                                                            className="flex items-center space-x-3 p-2 rounded-xl hover:bg-blue-50/70 transition-colors group border border-transparent hover:border-blue-100"
+                                                        >
+                                                            <img
+                                                                src={imgUrl}
+                                                                alt={product.name}
+                                                                className="w-12 h-12 object-cover rounded-lg bg-gray-50 border border-gray-100 shrink-0 group-hover:scale-105 transition-transform"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="font-semibold text-gray-800 text-xs group-hover:text-blue-600 truncate">
+                                                                    {product.name}
+                                                                </div>
+                                                                <div className="flex items-center space-x-2 mt-0.5">
+                                                                    <span className="font-bold text-red-600 text-xs">
+                                                                        {product.price.toLocaleString('vi-VN')}đ
+                                                                    </span>
+                                                                    {product.originalPrice && product.originalPrice > product.price && (
+                                                                        <span className="text-[10px] text-gray-400 line-through">
+                                                                            {product.originalPrice.toLocaleString('vi-VN')}đ
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {product.category?.name && (
+                                                                <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0 font-medium hidden sm:inline">
+                                                                    {product.category.name}
+                                                                </span>
+                                                            )}
+                                                        </Link>
+                                                    );
+                                                })}
+
+                                                <div className="border-t border-gray-100 pt-2.5 mt-2 flex items-center justify-between">
+                                                    <span className="text-[11px] text-gray-500">
+                                                        Hiển thị {searchResults.length} sản phẩm
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setIsSearchOpen(false);
+                                                            navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                                                        }}
+                                                        className="text-blue-600 font-bold hover:underline text-xs flex items-center gap-1"
+                                                    >
+                                                        Xem tất cả kết quả →
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="py-6 text-center text-gray-500 space-y-2">
+                                                <Package className="w-8 h-8 text-gray-300 mx-auto stroke-1" />
+                                                <div className="text-xs font-medium">Không tìm thấy sản phẩm nào cho từ khóa "{searchQuery}"</div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsSearchOpen(false);
+                                                        navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                                                    }}
+                                                    className="text-xs text-blue-600 font-semibold hover:underline inline-block mt-1"
+                                                >
+                                                    Tìm trong tất cả sản phẩm →
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex items-center space-x-1.5 font-bold text-gray-900 mb-2">
+                                            <Flame className="w-4 h-4 text-red-500" />
+                                            <span>Tìm kiếm phổ biến</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {POPULAR_SEARCHES.map((item, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchQuery(item);
+                                                        setIsSearchOpen(false);
+                                                        navigate(`/products?search=${encodeURIComponent(item)}`);
+                                                    }}
+                                                    className="px-2.5 py-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-xs font-medium transition-colors border border-gray-200/60"
+                                                >
+                                                    {item}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
+                                            <span className="flex items-center gap-1">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                                                Cam kết chính hãng 100%
+                                            </span>
+                                            <Link
+                                                to="/products"
+                                                onClick={() => setIsSearchOpen(false)}
+                                                className="text-blue-600 font-semibold cursor-pointer hover:underline"
+                                            >
+                                                Xem tất cả sản phẩm →
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

@@ -173,7 +173,7 @@ export const Cart: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[950px] mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-[1100px] mx-auto px-4 py-6 space-y-6">
       {/* Top Header Row matching screenshot */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-3">
         <h1 className="text-lg font-extrabold text-gray-900 flex items-center space-x-2">
@@ -435,9 +435,8 @@ export const Cart: React.FC = () => {
           </div>
 
           {/* PHƯƠNG THỨC THANH TOÁN Box */}
-          <div className={`bg-white rounded-2xl p-5 border transition-all space-y-3 shadow-sm text-xs ${
-            paymentError ? 'border-red-500 bg-red-50/20 ring-2 ring-red-100' : 'border-gray-200'
-          }`}>
+          <div className={`bg-white rounded-2xl p-5 border transition-all space-y-3 shadow-sm text-xs ${paymentError ? 'border-red-500 bg-red-50/20 ring-2 ring-red-100' : 'border-gray-200'
+            }`}>
             <div className="flex items-center justify-between">
               <h2 className="font-extrabold text-blue-600 uppercase tracking-wider">
                 PHƯƠNG THỨC THANH TOÁN *

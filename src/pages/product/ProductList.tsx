@@ -34,6 +34,12 @@ export const ProductList: React.FC = () => {
 
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(searchParamCategory);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
+  const [customMinPrice, setCustomMinPrice] = useState<number | null>(
+    searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null
+  );
+  const [customMaxPrice, setCustomMaxPrice] = useState<number | null>(
+    searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null
+  );
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(searchParamBrand);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
   const [currentSort, setCurrentSort] = useState<SortOptionKey>('price-asc');
@@ -120,10 +126,14 @@ export const ProductList: React.FC = () => {
     setError(null);
 
     try {
-      let minPrice: number | undefined = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
-      let maxPrice: number | undefined = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
+      let minPrice: number | undefined = customMinPrice !== null
+        ? customMinPrice
+        : (searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined);
+      let maxPrice: number | undefined = customMaxPrice !== null
+        ? customMaxPrice
+        : (searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined);
 
-      if (selectedPriceRange) {
+      if (selectedPriceRange && customMinPrice === null && customMaxPrice === null) {
         const found = defaultPriceRanges.find((r) => r.id === selectedPriceRange);
         if (found) {
           minPrice = found.minPrice;
@@ -183,7 +193,7 @@ export const ProductList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedSubCategory, selectedBrandId, selectedPriceRange, currentSort, searchParamQuery, isDealsPage, searchParams]);
+  }, [page, selectedSubCategory, selectedBrandId, selectedPriceRange, customMinPrice, customMaxPrice, currentSort, searchParamQuery, isDealsPage, searchParams]);
 
   useEffect(() => {
     fetchProductsList();
@@ -215,6 +225,8 @@ export const ProductList: React.FC = () => {
 
   const handleResetFilters = () => {
     setSelectedPriceRange(null);
+    setCustomMinPrice(null);
+    setCustomMaxPrice(null);
     setSelectedBrandId(null);
     setSelectedFilters({});
     setSelectedSubCategory(null);
@@ -226,6 +238,15 @@ export const ProductList: React.FC = () => {
 
   const handleSelectPriceRange = (rangeId: string | null) => {
     setSelectedPriceRange(rangeId);
+    setCustomMinPrice(null);
+    setCustomMaxPrice(null);
+    setPage(1);
+  };
+
+  const handleApplyCustomPrice = (min: number | null, max: number | null) => {
+    setCustomMinPrice(min);
+    setCustomMaxPrice(max);
+    setSelectedPriceRange(null);
     setPage(1);
   };
 
@@ -293,6 +314,9 @@ export const ProductList: React.FC = () => {
             brands={brands}
             selectedPriceRange={selectedPriceRange}
             onSelectPriceRange={handleSelectPriceRange}
+            customMinPrice={customMinPrice}
+            customMaxPrice={customMaxPrice}
+            onApplyCustomPrice={handleApplyCustomPrice}
             selectedBrandId={selectedBrandId}
             onSelectBrand={handleSelectBrand}
             selectedFilters={selectedFilters}

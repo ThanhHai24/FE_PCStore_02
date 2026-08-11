@@ -93,12 +93,12 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, title })
         </div>
 
         {/* Khách hàng vừa mua notification banner */}
-        <div className="flex items-center space-x-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg font-medium w-full">
+        {/* <div className="flex items-center space-x-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg font-medium w-full">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
           <span>
             <strong className="font-bold text-emerald-800">Khách hàng Hương (037 964 xxxx)</strong> Đã mua hàng 25 phút trước
           </span>
-        </div>
+        </div> */}
       </div>
     </div>
   );
