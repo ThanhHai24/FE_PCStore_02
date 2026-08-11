@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User as UserIcon,
@@ -15,16 +15,8 @@ import {
   AlertCircle,
   Loader2,
   Building,
-  Package,
-  ExternalLink,
-  XCircle,
-  Filter,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getMyOrdersApi, cancelOrderApi } from '../../services/orderService';
-import { getImageUrl } from '../../services/api';
-import type { Order, OrderStatus } from '../../types/order';
-import { ORDER_STATUS_MAP } from '../../types/order';
 
 export const Account: React.FC = () => {
   const { user, login, logout, updateProfile, changePassword } = useAuth();
@@ -37,8 +29,8 @@ export const Account: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Profile View tabs: 'info' | 'orders' | 'edit' | 'password'
-  const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'edit' | 'password'>('info');
+  // Profile View tabs: 'info' | 'edit' | 'password'
+  const [activeTab, setActiveTab] = useState<'info' | 'edit' | 'password'>('info');
 
   // Edit Profile state
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -55,34 +47,6 @@ export const Account: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passMsg, setPassMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isChangingPass, setIsChangingPass] = useState(false);
-
-  // My Orders state
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-
-  // Cancel order modal
-  const [cancelModalOrder, setCancelModalOrder] = useState<Order | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
-
-  const fetchMyOrders = async (status: string) => {
-    setOrdersLoading(true);
-    try {
-      const res = await getMyOrdersApi({ page: 1, limit: 50, status });
-      setOrders(res.orders || []);
-    } catch (err) {
-      console.error('Failed to fetch user orders:', err);
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user && activeTab === 'orders') {
-      fetchMyOrders(statusFilter);
-    }
-  }, [user, activeTab, statusFilter]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,21 +123,6 @@ export const Account: React.FC = () => {
       setPassMsg({ type: 'error', text: err.message || 'Đổi mật khẩu thất bại' });
     } finally {
       setIsChangingPass(false);
-    }
-  };
-
-  const handleConfirmCancelOrder = async () => {
-    if (!cancelModalOrder) return;
-    setIsCancellingOrder(true);
-    try {
-      await cancelOrderApi(cancelModalOrder.id, cancelReason);
-      setCancelModalOrder(null);
-      setCancelReason('');
-      fetchMyOrders(statusFilter);
-    } catch (err: any) {
-      alert(err.message || 'Hủy đơn hàng không thành công');
-    } finally {
-      setIsCancellingOrder(false);
     }
   };
 
@@ -283,9 +232,8 @@ export const Account: React.FC = () => {
               </div>
             )}
             <span
-              className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${
-                user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
+              className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}
               title={`Trạng thái: ${user.status}`}
             />
           </div>
@@ -302,35 +250,21 @@ export const Account: React.FC = () => {
           <div className="w-full pt-4 border-t border-gray-100 space-y-2">
             <button
               onClick={() => setActiveTab('info')}
-              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                activeTab === 'info'
+              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${activeTab === 'info'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <UserCheck className="w-4 h-4" />
               <span>Thông tin tài khoản</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('orders')}
-              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                activeTab === 'orders'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <Package className="w-4 h-4" />
-              <span>Đơn hàng của tôi</span>
-            </button>
-
-            <button
               onClick={() => setActiveTab('edit')}
-              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                activeTab === 'edit'
+              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${activeTab === 'edit'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <UserIcon className="w-4 h-4" />
               <span>Chỉnh sửa thông tin</span>
@@ -338,11 +272,10 @@ export const Account: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('password')}
-              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                activeTab === 'password'
+              className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${activeTab === 'password'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <KeyRound className="w-4 h-4" />
               <span>Đổi mật khẩu</span>
@@ -409,135 +342,6 @@ export const Account: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'orders' && (
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">Đơn Hàng Của Tôi</h3>
-                  <p className="text-xs text-gray-500">Quản lý và theo dõi tiến độ các đơn hàng đã đặt</p>
-                </div>
-                <Link
-                  to="/track-order"
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center space-x-1 bg-blue-50 px-3 py-1.5 rounded-xl"
-                >
-                  <span>Tra cứu chi tiết</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-
-              {/* Status Filter Pills */}
-              <div className="flex items-center space-x-1.5 overflow-x-auto pb-2 border-b border-gray-100">
-                {[
-                  { key: 'ALL', label: 'Tất cả' },
-                  { key: 'PENDING', label: 'Chờ xác nhận' },
-                  { key: 'CONFIRMED', label: 'Đã xác nhận' },
-                  { key: 'PROCESSING', label: 'Đang đóng gói' },
-                  { key: 'SHIPPING', label: 'Đang giao' },
-                  { key: 'DELIVERED', label: 'Đã giao' },
-                  { key: 'CANCELLED', label: 'Đã hủy' },
-                ].map((pill) => (
-                  <button
-                    key={pill.key}
-                    onClick={() => setStatusFilter(pill.key)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                      statusFilter === pill.key
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {pill.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Orders List */}
-              {ordersLoading ? (
-                <div className="py-12 text-center text-gray-400 space-y-2">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                  <p className="text-xs">Đang tải danh sách đơn hàng...</p>
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 space-y-3">
-                  <Package className="w-12 h-12 mx-auto text-gray-300" />
-                  <p className="text-xs font-semibold text-gray-600">Chưa tìm thấy đơn hàng nào</p>
-                  <Link
-                    to="/products"
-                    className="inline-block bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow"
-                  >
-                    Khám phá sản phẩm
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((ord) => (
-                    <div
-                      key={ord.id}
-                      className="p-5 rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all space-y-4 bg-gray-50/40"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-100">
-                        <div>
-                          <span className="text-[10px] font-mono text-gray-400 block">
-                            {new Date(ord.createdAt).toLocaleString('vi-VN')}
-                          </span>
-                          <span className="text-xs font-mono font-bold text-gray-900">
-                            {ord.code}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <span
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
-                              ORDER_STATUS_MAP[ord.status]?.bgColor || 'bg-gray-100 text-gray-700'
-                            } ${ORDER_STATUS_MAP[ord.status]?.color || ''}`}
-                          >
-                            {ORDER_STATUS_MAP[ord.status]?.label || ord.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-                        <div>
-                          <p className="text-xs text-gray-500">
-                            Người nhận: <span className="font-semibold text-gray-800">{ord.customerName}</span>
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Phương thức: <span className="font-semibold text-blue-600">{ord.paymentMethod}</span>
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[11px] text-gray-400">Tổng tiền:</span>
-                          <p className="text-sm font-extrabold text-blue-700">
-                            {ord.totalAmount.toLocaleString('vi-VN')} đ
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
-                        {(ord.status === 'PENDING' || ord.status === 'CONFIRMED') && (
-                          <button
-                            onClick={() => setCancelModalOrder(ord)}
-                            className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 font-semibold text-xs rounded-xl transition-colors flex items-center space-x-1"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>Hủy đơn</span>
-                          </button>
-                        )}
-                        <Link
-                          to={`/track-order?code=${ord.code}`}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center space-x-1"
-                        >
-                          <span>Theo dõi chi tiết</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {activeTab === 'edit' && (
             <div className="space-y-6">
               <div>
@@ -547,11 +351,10 @@ export const Account: React.FC = () => {
 
               {profileMsg && (
                 <div
-                  className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
-                    profileMsg.type === 'success'
+                  className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${profileMsg.type === 'success'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-red-50 text-red-600 border border-red-200'
-                  }`}
+                    }`}
                 >
                   {profileMsg.type === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -626,11 +429,10 @@ export const Account: React.FC = () => {
 
               {passMsg && (
                 <div
-                  className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
-                    passMsg.type === 'success'
+                  className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${passMsg.type === 'success'
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-red-50 text-red-600 border border-red-200'
-                  }`}
+                    }`}
                 >
                   {passMsg.type === 'success' ? (
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -717,50 +519,9 @@ export const Account: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Cancel Order Modal */}
-      {cancelModalOrder && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-gray-900 flex items-center space-x-2 text-red-600">
-              <XCircle className="w-5 h-5" />
-              <span>Hủy Đơn Hàng {cancelModalOrder.code}</span>
-            </h3>
-
-            <p className="text-xs text-gray-600">
-              Bạn có chắc muốn hủy đơn hàng này không? Sản phẩm sẽ được hoàn lại vào kho.
-            </p>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Lý do hủy đơn</label>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Nhập lý do (tùy chọn)"
-                className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none h-20"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-2">
-              <button
-                onClick={() => setCancelModalOrder(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Trở Về
-              </button>
-              <button
-                onClick={handleConfirmCancelOrder}
-                disabled={isCancellingOrder}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center space-x-1 disabled:opacity-70"
-              >
-                {isCancellingOrder ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Xác Nhận Hủy</span>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default Account;
+
