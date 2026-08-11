@@ -269,14 +269,15 @@ export const AdminOrderDetail: React.FC = () => {
         <h2 className="text-sm font-bold text-gray-900">Trạng thái đơn hàng</h2>
 
         <div className="relative pt-4 pb-2 px-8">
-          {/* Progress bar background line */}
-          <div className="absolute top-8 left-16 right-16 h-0.5 bg-gray-200 -z-0"></div>
-          {currentStepIdx >= 0 && (
-            <div
-              className="absolute top-8 left-16 h-0.5 bg-blue-600 transition-all duration-500 -z-0"
-              style={{ width: `${(currentStepIdx / (steps.length - 1)) * 100}%` }}
-            ></div>
-          )}
+          {/* Progress bar background line & active blue line */}
+          <div className="absolute top-[29px] left-16 right-16 h-0.5 bg-gray-200 z-0 overflow-hidden">
+            {currentStepIdx >= 0 && (
+              <div
+                className="h-full bg-blue-600 transition-all duration-500"
+                style={{ width: `${(currentStepIdx / (steps.length - 1)) * 100}%` }}
+              ></div>
+            )}
+          </div>
 
           {/* Step Items */}
           <div className="flex items-start justify-between relative z-10">
