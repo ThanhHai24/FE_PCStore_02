@@ -5,6 +5,7 @@ import type { BuilderProduct } from "../../data/builderProducts";
 interface SelectedItemProps {
   product?: BuilderProduct;
   quantity?: number;
+  maxQuantity?: number;
   onQuantityChange?: (qty: number) => void;
   onChangeProduct?: () => void;
   onRemove?: () => void;
@@ -13,6 +14,7 @@ interface SelectedItemProps {
 function SelectedItem({
   product,
   quantity = 1,
+  maxQuantity = 99,
   onQuantityChange,
   onChangeProduct,
   onRemove,
@@ -21,6 +23,7 @@ function SelectedItem({
   const title = product?.title || "CPU AMD Ryzen 5 3400G 3.7 GHz (4.2 GHz with boost) / 6MB / 4 cores 8 threads / Radeon Vega 11 / 65W)";
   const warranty = product?.warranty || "36 tháng";
   const stockStatus = product?.stockStatus || "Còn hàng";
+  const stockQuantity = product?.stockQuantity;
   const productCode = product?.productCode || "CPU000109H";
   const image = product?.image || "src/assets/images/products/pc.jpg";
   const saleFrame = product?.saleFrame;
@@ -62,7 +65,7 @@ function SelectedItem({
             Bảo hành: <span className="font-normal">{warranty}</span>
           </div>
           <div className="text-[13px] text-[#464646] mt-0.5">
-            Kho hàng: <span className="text-[#d00] font-medium">{stockStatus}</span> | Mã SP: <span className="text-[#d00] font-medium">{productCode}</span>
+            Kho hàng: <span className="text-[#d00] font-medium">{stockStatus}{stockQuantity !== undefined ? ` (tồn: ${stockQuantity})` : ''}</span> | Mã SP: <span className="text-[#d00] font-medium">{productCode}</span>
           </div>
         </div>
       </div>
@@ -73,18 +76,27 @@ function SelectedItem({
           {unitPrice.toLocaleString('vi-VN')}
         </span>
         <span className="text-gray-500 text-[14px] px-0.5">x</span>
-        <input
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(e) => {
-            const newQty = Math.max(1, parseInt(e.target.value) || 1);
-            if (onQuantityChange) onQuantityChange(newQty);
-          }}
-          name="quantity"
-          id="quantity"
-          className="w-[44px] h-[28px] border border-gray-400 text-center text-sm font-semibold rounded-[2px] focus:outline-none focus:border-[#0f5b99]"
-        />
+        <div className="flex flex-col items-center">
+          <input
+            type="number"
+            min={1}
+            max={maxQuantity}
+            value={quantity}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10) || 1;
+              const clamped = Math.max(1, Math.min(maxQuantity, val));
+              if (onQuantityChange) onQuantityChange(clamped);
+            }}
+            name="quantity"
+            id="quantity"
+            className="w-[48px] h-[28px] border border-gray-400 text-center text-sm font-semibold rounded-[2px] focus:outline-none focus:border-[#0f5b99]"
+          />
+          {maxQuantity < 99 && (
+            <span className="text-[10px] text-gray-500 font-medium leading-tight mt-0.5" title={`Tối đa cho phép: ${maxQuantity}`}>
+              (Tối đa: {maxQuantity})
+            </span>
+          )}
+        </div>
         <span className="text-gray-500 text-xs px-0.5">=</span>
         <span className="sum-price text-[14px] font-bold text-[#d00]">
           {(unitPrice * quantity).toLocaleString('vi-VN')}

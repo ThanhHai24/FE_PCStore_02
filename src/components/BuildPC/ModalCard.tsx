@@ -45,8 +45,11 @@ function ModalCard({
     const productId = product?.id;
     const productDetailUrl = productId ? `/product/${productId}` : "#";
 
+    const stockQty = product?.stockQuantity;
+    const isOutOfStock = stockQty === 0 || displayStockStatus === 'Hết hàng';
+
     return (
-        <div className={`item flex items-start justify-between gap-4 py-4 px-5 border-b border-[#e5e5e5] ${incompatibilityReason ? "bg-red-50/50" : "bg-white"}`}>
+        <div className={`item flex items-start justify-between gap-4 py-4 px-5 border-b border-[#e5e5e5] ${isOutOfStock ? "bg-gray-50/70 opacity-80" : incompatibilityReason ? "bg-red-50/50" : "bg-white"}`}>
             {/* Product Image & Sale Frame */}
             <Link
                 to={productDetailUrl}
@@ -94,7 +97,14 @@ function ModalCard({
                     <div className="flex items-center gap-6">
                         <span className="font-bold w-[75px]">Kho hàng:</span>
                         <span>
-                            {displayStockStatus} <span className="mx-1 text-gray-400">|</span> <span className="font-bold">Mã SP:</span> {displayProductCode}
+                            {isOutOfStock ? (
+                                <span className="text-red-600 font-bold">Hết hàng</span>
+                            ) : (
+                                <span className="text-emerald-700 font-medium">
+                                    Còn hàng {stockQty !== undefined ? `(tồn: ${stockQty})` : ''}
+                                </span>
+                            )}{' '}
+                            <span className="mx-1 text-gray-400">|</span> <span className="font-bold">Mã SP:</span> {displayProductCode}
                         </span>
                     </div>
                 </div>
@@ -120,15 +130,18 @@ function ModalCard({
             {/* Action Button */}
             <button
                 type="button"
+                disabled={isOutOfStock}
                 onClick={onSelect}
-                className={`btn-select shrink-0 self-start text-white text-[13px] font-bold px-3.5 py-2 rounded-[3px] uppercase flex items-center gap-0.5 transition-colors cursor-pointer ${
-                    incompatibilityReason
-                        ? "bg-amber-600 hover:bg-amber-700"
-                        : "bg-[#005aab] hover:bg-[#004788]"
+                className={`btn-select shrink-0 self-start text-white text-[13px] font-bold px-3.5 py-2 rounded-[3px] uppercase flex items-center gap-0.5 transition-colors ${
+                    isOutOfStock
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : incompatibilityReason
+                        ? "bg-amber-600 hover:bg-amber-700 cursor-pointer"
+                        : "bg-[#005aab] hover:bg-[#004788] cursor-pointer"
                 }`}
             >
-                {incompatibilityReason ? "Vẫn chọn" : "Thêm vào cấu hình"}
-                <ChevronRight className="w-4 h-4 stroke-[3]" />
+                {isOutOfStock ? "Hết hàng" : incompatibilityReason ? "Vẫn chọn" : "Thêm vào cấu hình"}
+                {!isOutOfStock && <ChevronRight className="w-4 h-4 stroke-[3]" />}
             </button>
         </div>
     )

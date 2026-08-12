@@ -187,6 +187,37 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
     tdp = 0;
   }
 
+  // RAM Slots (Mainboard) & Sticks Count (RAM)
+  let ramSlots: number | undefined;
+  if (slotIndex === 2) {
+    const slotsStr = getSpecVal('số khe ram', 'khe ram', 'khe cắm ram', 'ram slots', 'slot ram');
+    if (slotsStr) {
+      const match = slotsStr.match(/(\d+)/);
+      if (match) ramSlots = parseInt(match[1], 10);
+    }
+    if (!ramSlots) {
+      if (lowerTitle.includes('2 khe') || lowerTitle.includes('2x ram')) ramSlots = 2;
+      else if (lowerTitle.includes('4 khe') || lowerTitle.includes('4x ram')) ramSlots = 4;
+      else ramSlots = 4;
+    }
+  }
+
+  let sticksCount: number | undefined;
+  if (slotIndex === 3) {
+    const sticksStr = getSpecVal('số thanh', 'số lượng thanh', 'quy cách', 'dong goi');
+    if (sticksStr) {
+      const match = sticksStr.match(/(\d+)/);
+      if (match) sticksCount = parseInt(match[1], 10);
+    }
+    if (!sticksCount) {
+      if (/2x\d+gb/i.test(lowerTitle) || lowerTitle.includes('kit 2') || lowerTitle.includes('(2x')) sticksCount = 2;
+      else if (/4x\d+gb/i.test(lowerTitle) || lowerTitle.includes('kit 4') || lowerTitle.includes('(4x')) sticksCount = 4;
+      else sticksCount = 1;
+    }
+  }
+
+  const stockVal = p.stock !== undefined && p.stock !== null ? p.stock : 10;
+
   return {
     id: p.id,
     slotIndex,
@@ -197,12 +228,15 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
       ? `-${Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%`
       : undefined,
     warranty: p.warranty ? `${p.warranty} tháng` : '36 tháng',
-    stockStatus: (p.stock ?? 1) > 0 ? 'Còn hàng' : 'Hết hàng',
+    stockStatus: stockVal > 0 ? 'Còn hàng' : 'Hết hàng',
+    stockQuantity: stockVal,
     productCode: p.sku || `PROD-${p.id}`,
     image: p.image ? getImageUrl(p.image) : '',
     specs: {
       socket,
       ramType,
+      ramSlots,
+      sticksCount,
       formFactor,
       wattage,
       recommendedPsu,

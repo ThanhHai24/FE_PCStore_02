@@ -318,7 +318,6 @@ export const Header: React.FC = () => {
     const categoryRef = useRef<HTMLDivElement>(null);
     const userDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Live search fetch with debouncing
     useEffect(() => {
         const query = searchQuery.trim();
         if (!query) {
@@ -345,7 +344,6 @@ export const Header: React.FC = () => {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Track scroll position & click outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {

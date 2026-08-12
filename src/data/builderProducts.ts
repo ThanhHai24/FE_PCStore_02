@@ -47,6 +47,7 @@ export interface BuilderProduct {
   discountPercent?: string;
   warranty: string;
   stockStatus: string;
+  stockQuantity?: number;
   productCode: string;
   image: string;
   saleFrame?: string;

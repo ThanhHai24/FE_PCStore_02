@@ -9,6 +9,7 @@ interface ItemDriveProps {
   specialOffer?: string;
   selectedProduct?: BuilderProduct;
   quantity?: number;
+  maxQuantity?: number;
   onOpenModal?: () => void;
   onUpdateQuantity?: (qty: number) => void;
   onRemoveItem?: () => void;
@@ -21,6 +22,7 @@ function ItemDrive({
   specialOffer,
   selectedProduct,
   quantity = 1,
+  maxQuantity = 99,
   onOpenModal,
   onUpdateQuantity,
   onRemoveItem,
@@ -47,6 +49,7 @@ function ItemDrive({
             <SelectedItem
               product={selectedProduct}
               quantity={quantity}
+              maxQuantity={maxQuantity}
               onQuantityChange={onUpdateQuantity}
               onChangeProduct={onOpenModal}
               onRemove={onRemoveItem}

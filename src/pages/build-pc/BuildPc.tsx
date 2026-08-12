@@ -11,6 +11,8 @@ import {
   calculateRecommendedPsu,
   calculateTotalTdp,
   validatePcBuild,
+  getMaxProductQuantity,
+  getMaxRamQuantity,
 } from '../../utils/pcBuilderValidator';
 
 const driveItems = [
@@ -86,30 +88,75 @@ export const BuildPc: React.FC = () => {
 
   const handleSelectProduct = (product: BuilderProduct) => {
     if (activeSlotIndex !== null) {
-      setConfigs((prev) => ({
-        ...prev,
-        [activeConfigId]: {
-          ...(prev[activeConfigId] || {}),
-          [activeSlotIndex]: {
-            product,
-            quantity: prev[activeConfigId]?.[activeSlotIndex]?.quantity || 1,
-          },
-        },
-      }));
+      const maxInfo = getMaxProductQuantity(product, activeSlotIndex, selectedItems);
+      if (maxInfo.maxQty <= 0) {
+        if (maxInfo.ramLimit !== undefined && maxInfo.ramLimit <= 0) {
+          showToast(`Không thể chọn bộ RAM này vì vượt quá số khe cắm trên Bo mạch chủ!`, 'warning');
+        } else {
+          showToast(`Sản phẩm này hiện đã hết hàng!`, 'warning');
+        }
+        return;
+      }
+
+      setConfigs((prev) => {
+        const currentConfig = { ...(prev[activeConfigId] || {}) };
+        const existingQty = currentConfig[activeSlotIndex]?.quantity || 1;
+        const finalQty = Math.min(existingQty, maxInfo.maxQty);
+
+        currentConfig[activeSlotIndex] = {
+          product,
+          quantity: finalQty,
+        };
+
+        // If Mainboard changed (slotIndex === 2), auto-adjust existing RAM (slotIndex === 3)
+        if (activeSlotIndex === 2 && currentConfig[3]) {
+          const ramItem = currentConfig[3];
+          const newMaxRamQty = getMaxRamQuantity(ramItem.product, product);
+          if (newMaxRamQty <= 0) {
+            delete currentConfig[3];
+            showToast(`Đã bỏ RAM khỏi cấu hình do Bo mạch chủ mới không phù hợp khe RAM!`, 'warning');
+          } else if (ramItem.quantity > newMaxRamQty) {
+            currentConfig[3] = {
+              ...ramItem,
+              quantity: newMaxRamQty,
+            };
+            showToast(`Đã tự động chỉnh số lượng RAM xuống ${newMaxRamQty} bộ cho khớp khe cắm trên Bo mạch chủ!`, 'warning');
+          }
+        }
+
+        return {
+          ...prev,
+          [activeConfigId]: currentConfig,
+        };
+      });
     }
   };
 
   const handleUpdateQuantity = (slotIndex: number, quantity: number) => {
     setConfigs((prev) => {
       const currentConfig = prev[activeConfigId] || {};
-      if (!currentConfig[slotIndex]) return prev;
+      const targetItem = currentConfig[slotIndex];
+      if (!targetItem) return prev;
+
+      const maxInfo = getMaxProductQuantity(targetItem.product, slotIndex, currentConfig);
+      let validQty = quantity;
+
+      if (quantity > maxInfo.maxQty) {
+        validQty = maxInfo.maxQty;
+        if (maxInfo.ramLimit !== undefined && quantity > maxInfo.ramLimit) {
+          showToast(`Số lượng RAM không được vượt quá số khe cắm trên Bo mạch chủ (Tối đa ${maxInfo.ramLimit} bộ)!`, 'warning');
+        } else if (quantity > maxInfo.stockLimit) {
+          showToast(`Số lượng không được vượt quá số lượng tồn kho (Tối đa ${maxInfo.stockLimit} sản phẩm)!`, 'warning');
+        }
+      }
+
       return {
         ...prev,
         [activeConfigId]: {
           ...currentConfig,
           [slotIndex]: {
-            ...currentConfig[slotIndex],
-            quantity,
+            ...targetItem,
+            quantity: Math.max(1, validQty),
           },
         },
       };
@@ -332,21 +379,29 @@ export const BuildPc: React.FC = () => {
         </div>
 
         <div className="list-drive list-none border border-[#e1e1e1] clear-both">
-          {driveItems.map((item) => (
-            <ItemDrive
-              key={item.index}
-              index={item.index}
-              title={item.title}
-              description={item.description}
-              specialOffer={item.specialOffer}
-              selectedProduct={selectedItems[item.index]?.product}
-              quantity={selectedItems[item.index]?.quantity}
-              issues={slotIssuesMap[item.index] || []}
-              onOpenModal={() => handleOpenModal(item.index)}
-              onUpdateQuantity={(qty) => handleUpdateQuantity(item.index, qty)}
-              onRemoveItem={() => handleRemoveItem(item.index)}
-            />
-          ))}
+          {driveItems.map((item) => {
+            const selectedProd = selectedItems[item.index]?.product;
+            const maxQty = selectedProd
+              ? getMaxProductQuantity(selectedProd, item.index, selectedItems).maxQty
+              : 99;
+
+            return (
+              <ItemDrive
+                key={item.index}
+                index={item.index}
+                title={item.title}
+                description={item.description}
+                specialOffer={item.specialOffer}
+                selectedProduct={selectedProd}
+                quantity={selectedItems[item.index]?.quantity}
+                maxQuantity={maxQty}
+                issues={slotIssuesMap[item.index] || []}
+                onOpenModal={() => handleOpenModal(item.index)}
+                onUpdateQuantity={(qty) => handleUpdateQuantity(item.index, qty)}
+                onRemoveItem={() => handleRemoveItem(item.index)}
+              />
+            );
+          })}
         </div>
 
         <div className="flex justify-end my-4">

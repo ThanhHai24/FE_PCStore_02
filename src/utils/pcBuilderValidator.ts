@@ -199,7 +199,7 @@ export function validatePcBuild(
       issues.push({
         id: "rule-ram-quantity",
         ruleName: "Số lượng RAM",
-        message: "Số lượng thanh RAM vượt quá số khe cắm",
+        message: `Số lượng thanh RAM (${totalSticks} thanh) vượt quá số khe cắm trên Bo mạch chủ (${mainSpecs.ramSlots} khe)`,
         affectedSlots: [2, 3],
       });
     }
@@ -316,3 +316,42 @@ export function isProductCompatibleWithBuild(
 ): boolean {
   return getIncompatibilityReason(candidateProduct, slotIndex, selectedItems) === null;
 }
+
+/**
+ * Calculates max RAM packages (kits) allowed for a given RAM product on a Mainboard
+ */
+export function getMaxRamQuantity(
+  ramProduct: BuilderProduct,
+  mainboardProduct?: BuilderProduct
+): number {
+  if (!mainboardProduct) return 99;
+  const mainSpecs = getProductSpecs(mainboardProduct);
+  const ramSpecs = getProductSpecs(ramProduct);
+  const ramSlots = mainSpecs.ramSlots ?? 4;
+  const sticksCount = ramSpecs.sticksCount || 1;
+  return Math.floor(ramSlots / sticksCount);
+}
+
+/**
+ * Gets maximum allowed quantity for a product in current build context
+ * (accounting for product stock quantity and RAM slots limit if applicable)
+ */
+export function getMaxProductQuantity(
+  product: BuilderProduct,
+  slotIndex: number,
+  selectedItems: Record<number, { product: BuilderProduct; quantity: number }>
+): { maxQty: number; stockLimit: number; ramLimit?: number } {
+  const stockLimit = product.stockQuantity ?? (product.stockStatus === 'Hết hàng' ? 0 : 10);
+
+  if (slotIndex === 3) {
+    const mainboardProduct = selectedItems[2]?.product;
+    if (mainboardProduct) {
+      const ramLimit = getMaxRamQuantity(product, mainboardProduct);
+      const maxQty = Math.max(0, Math.min(stockLimit, ramLimit));
+      return { maxQty, stockLimit, ramLimit };
+    }
+  }
+
+  return { maxQty: stockLimit, stockLimit };
+}
+
