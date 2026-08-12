@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import pcImg from "../../assets/images/products/pc.jpg"
 import khungSaleCpu from "../../assets/images/khung-sale-cpu.png"
@@ -41,11 +42,18 @@ function ModalCard({
     const displayPrice = product ? `${product.price.toLocaleString('vi-VN')}đ` : (price || "0đ");
     const displayMarketPrice = product?.marketPrice ? `${product.marketPrice.toLocaleString('vi-VN')}đ` : marketPrice;
     const displayDiscountPercent = product?.discountPercent || discountPercent;
+    const productId = product?.id;
+    const productDetailUrl = productId ? `/product/${productId}` : "#";
 
     return (
         <div className={`item flex items-start justify-between gap-4 py-4 px-5 border-b border-[#e5e5e5] ${incompatibilityReason ? "bg-red-50/50" : "bg-white"}`}>
             {/* Product Image & Sale Frame */}
-            <a href="#" className="relative block w-[140px] shrink-0 aspect-square">
+            <Link
+                to={productDetailUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block w-[140px] shrink-0 aspect-square"
+            >
                 <img
                     src={displayImage}
                     alt={displayTitle}
@@ -58,16 +66,18 @@ function ModalCard({
                         className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                     />
                 )}
-            </a>
+            </Link>
 
             {/* Product Info */}
             <div className="flex-1 min-w-0 pr-2 text-sm">
-                <a
-                    href="#"
+                <Link
+                    to={productDetailUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="p-name text-[#111111] font-bold text-[15px] leading-[1.35] hover:text-[#005aab] block mb-2"
                 >
                     {displayTitle}
-                </a>
+                </Link>
 
                 {incompatibilityReason && (
                     <div className="mb-2 bg-red-100 border border-red-300 text-red-700 text-xs px-2.5 py-1 rounded inline-flex items-center gap-1.5 font-medium">

@@ -103,18 +103,6 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
     else if (lowerTitle.includes('atx')) formFactor = 'ATX';
   }
 
-  // Wattage
-  let wattage: number | undefined;
-  const wattStr = getSpecVal('công suất', 'tdp được hỗ trợ', 'tdp');
-  if (wattStr) {
-    const match = wattStr.match(/(\d+)\s*w/i);
-    if (match) wattage = parseInt(match[1], 10);
-  }
-  if (!wattage) {
-    const match = lowerTitle.match(/(\d{3,4})\s*w/i);
-    if (match) wattage = parseInt(match[1], 10);
-  }
-
   // Cooler type
   let coolerType: 'AIR' | 'AIO' | undefined;
   if (slotIndex === 8) {
@@ -126,6 +114,77 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
     } else {
       coolerType = 'AIR';
     }
+  }
+
+  // Wattage & Recommended PSU
+  let wattage: number | undefined;
+  let recommendedPsu: number | undefined;
+
+  const wattStr = getSpecVal('công suất nguồn', 'công suất thực', 'công suất', 'tdp được hỗ trợ', 'tdp', 'wattage');
+  if (wattStr) {
+    const match = wattStr.match(/(\d+)/);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val >= 100 && val <= 3000) wattage = val;
+    }
+  }
+  if (!wattage && slotIndex === 7) {
+    const match = lowerTitle.match(/(\d{3,4})\s*w/i) || lowerTitle.match(/(\d{3,4})/i);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val >= 250 && val <= 2500) wattage = val;
+    }
+  }
+
+  const recPsuStr = getSpecVal('nguồn đề xuất', 'psu đề xuất', 'công suất nguồn đề xuất', 'công suất nguồn khuyên dùng', 'recommended psu');
+  if (recPsuStr) {
+    const match = recPsuStr.match(/(\d+)/);
+    if (match) recommendedPsu = parseInt(match[1], 10);
+  }
+
+  // TDP calculation per slot (only read spec TDP for CPU and VGA; coolers specify thermal capacity, not power consumption)
+  let tdp: number | undefined;
+  if (slotIndex === 1 || slotIndex === 4) {
+    const tdpStr = getSpecVal('công suất tiêu thụ', 'điện năng tiêu thụ', 'tdp');
+    if (tdpStr) {
+      const match = tdpStr.match(/(\d+)/);
+      if (match) tdp = parseInt(match[1], 10);
+    }
+  }
+
+  if (slotIndex === 1) { // CPU
+    if (!tdp) {
+      if (/i9|ryzen\s*9/i.test(lowerTitle)) tdp = 150;
+      else if (/i7|ryzen\s*7/i.test(lowerTitle)) tdp = 105;
+      else tdp = 65;
+    }
+  } else if (slotIndex === 2) { // Mainboard
+    tdp = 30;
+  } else if (slotIndex === 3) { // RAM
+    tdp = 5;
+  } else if (slotIndex === 4) { // VGA
+    if (!tdp) {
+      if (/4090/i.test(lowerTitle)) tdp = 450;
+      else if (/4080|7900/i.test(lowerTitle)) tdp = 320;
+      else if (/4070|7800/i.test(lowerTitle)) tdp = 220;
+      else if (/4060|3060|6700|7600/i.test(lowerTitle)) tdp = 115;
+      else tdp = 150;
+    }
+    if (!recommendedPsu) {
+      if (/4090/i.test(lowerTitle)) recommendedPsu = 850;
+      else if (/4080|7900/i.test(lowerTitle)) recommendedPsu = 750;
+      else if (/4070|7800/i.test(lowerTitle)) recommendedPsu = 650;
+      else if (/4060|3060|6700|7600/i.test(lowerTitle)) recommendedPsu = 550;
+      else recommendedPsu = 500;
+    }
+  } else if (slotIndex === 5 || slotIndex === 6) { // SSD / HDD
+    tdp = 5;
+  } else if (slotIndex === 8) { // Cooler (electrical power is fan/pump ~10-15W)
+    tdp = coolerType === 'AIO' ? 15 : 10;
+  } else if (slotIndex === 10) { // Fan
+    tdp = 5;
+  } else if (slotIndex === 7 || slotIndex === 9) { // PSU or Case
+    tdp = 0;
   }
 
   return {
@@ -146,8 +205,9 @@ export function mapApiProductToBuilderProduct(p: ApiProduct): BuilderProduct {
       ramType,
       formFactor,
       wattage,
+      recommendedPsu,
       coolerType,
-      tdp: 65,
+      tdp: tdp ?? 0,
     },
   };
 }

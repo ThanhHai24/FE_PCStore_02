@@ -56,18 +56,39 @@ export function getProductSpecs(product: BuilderProduct): ProductSpecs {
 
   if (product.slotIndex === 1 && !specs.tdp) {
     specs.tdp = 65; // Default CPU TDP
-  } else if (product.slotIndex === 2 && !specs.tdp) {
+  } else if (product.slotIndex === 2) {
     specs.tdp = 30; // Default Mainboard TDP
-  } else if (product.slotIndex === 3 && !specs.tdp) {
+  } else if (product.slotIndex === 3) {
     specs.tdp = 5;
   } else if (product.slotIndex === 4 && !specs.tdp) {
     specs.tdp = 150; // Default VGA TDP
-  } else if ((product.slotIndex === 5 || product.slotIndex === 6) && !specs.tdp) {
+  } else if (product.slotIndex === 5 || product.slotIndex === 6) {
     specs.tdp = 5;
-  } else if (product.slotIndex === 8 && !specs.tdp) {
-    specs.tdp = 10;
-  } else if (product.slotIndex === 10 && !specs.tdp) {
+  } else if (product.slotIndex === 8) {
+    // Electrical power consumption for cooler fan/pump (10W Air / 15W AIO)
+    specs.tdp = specs.coolerType === "AIO" ? 15 : 10;
+  } else if (product.slotIndex === 10) {
     specs.tdp = 5;
+  } else if (product.slotIndex === 7 || product.slotIndex === 9) {
+    specs.tdp = 0;
+  }
+
+  // Fallback for PSU wattage
+  if (product.slotIndex === 7 && !specs.wattage) {
+    const match = title.match(/(\d{3,4})\s*w/i) || title.match(/(\d{3,4})/i);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val >= 250 && val <= 2500) specs.wattage = val;
+    }
+  }
+
+  // Fallback for VGA recommended PSU
+  if (product.slotIndex === 4 && !specs.recommendedPsu) {
+    if (/4090/i.test(title)) specs.recommendedPsu = 850;
+    else if (/4080|7900/i.test(title)) specs.recommendedPsu = 750;
+    else if (/4070|7800/i.test(title)) specs.recommendedPsu = 650;
+    else if (/4060|3060|6700|7600/i.test(title)) specs.recommendedPsu = 550;
+    else specs.recommendedPsu = 500;
   }
 
   if (product.slotIndex === 3 && specs.sticksCount === undefined) {
@@ -242,22 +263,18 @@ export function validatePcBuild(
     }
   }
 
-  // Rule 8: Tính công suất PSU (PSU.Wattage >= Tổng TDP * 1.3 HOẶC PSU.Wattage >= VGA.Recommended_PSU)
+  // Rule 8: Tính công suất PSU (PSU.Wattage >= max(Tổng TDP * 1.3, VGA.Recommended_PSU))
   if (psuSpecs?.wattage !== undefined) {
     const totalTdp = calculateTotalTdp(selectedItems);
-    const requiredByTdp = totalTdp * 1.3;
-    const requiredByVga = vgaSpecs?.recommendedPsu || 0;
+    const recommendedPsu = calculateRecommendedPsu(selectedItems);
 
-    const meetsTdpReq = psuSpecs.wattage >= requiredByTdp;
-    const meetsVgaReq = requiredByVga > 0 ? psuSpecs.wattage >= requiredByVga : true;
-
-    // Must satisfy PSU.Wattage >= Total TDP * 1.3 OR PSU.Wattage >= VGA.Recommended_PSU
-    if (!meetsTdpReq && !meetsVgaReq) {
+    if (psuSpecs.wattage < recommendedPsu) {
+      const affectedSlots = vga ? [4, 7] : [7];
       issues.push({
         id: "rule-psu-wattage",
         ruleName: "Công suất PSU",
-        message: "Công suất nguồn quá thấp, có thể gây sập nguồn",
-        affectedSlots: [7],
+        message: `Công suất nguồn (${psuSpecs.wattage}W) quá thấp so với yêu cầu hệ thống (cần tối thiểu ${recommendedPsu}W, tổng TDP ${totalTdp}W)`,
+        affectedSlots,
       });
     }
   }

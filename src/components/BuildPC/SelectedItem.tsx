@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { SquarePen, Trash2 } from "lucide-react";
 import type { BuilderProduct } from "../../data/builderProducts";
 
@@ -23,12 +24,19 @@ function SelectedItem({
   const productCode = product?.productCode || "CPU000109H";
   const image = product?.image || "src/assets/images/products/pc.jpg";
   const saleFrame = product?.saleFrame;
+  const productId = product?.id;
+  const productDetailUrl = productId ? `/product/${productId}` : "#";
 
   return (
     <div className="contain-item-drive flex items-center justify-between gap-3 w-full py-1">
       {/* Left: Product Thumbnail & Details */}
       <div className="flex items-start gap-3 flex-1 min-w-0">
-        <a href="#" className="relative h-[80px] w-[80px] shrink-0 border border-[#e1e1e1] flex items-center justify-center p-1 bg-white rounded-sm overflow-hidden block">
+        <Link
+          to={productDetailUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative h-[80px] w-[80px] shrink-0 border border-[#e1e1e1] flex items-center justify-center p-1 bg-white rounded-sm overflow-hidden block"
+        >
           <img src={image} alt={title} className="w-full h-full object-contain" />
           {saleFrame && (
             <span className="p-icon-holder absolute inset-0 w-full h-full leading-none">
@@ -39,12 +47,17 @@ function SelectedItem({
               />
             </span>
           )}
-        </a>
+        </Link>
 
         <div className="name text-[14px] text-[#000] leading-snug">
-          <a href="#" className="font-bold text-black hover:text-[#0f5b99] transition-colors block mb-1">
+          <Link
+            to={productDetailUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-black hover:text-[#0f5b99] transition-colors block mb-1"
+          >
             {title}
-          </a>
+          </Link>
           <div className="text-[13px] text-[#464646]">
             Bảo hành: <span className="font-normal">{warranty}</span>
           </div>
